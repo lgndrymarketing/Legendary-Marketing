@@ -13,28 +13,29 @@
   --color-4: 195 100% 63%;
   --color-5: 90 100% 63%;
 
-  /* Legendary Marketing — Blue & Gold Palette (light default) */
+  /* Legendary Marketing — Orange on White (light default) */
   --background: #ffffff;
-  --foreground: #14151A;
+  --foreground: #0F1010;
   --card: #ffffff;
-  --card-foreground: #14151A;
+  --card-foreground: #0F1010;
   --popover: #ffffff;
-  --popover-foreground: #14151A;
-  --primary: #2954E5;
+  --popover-foreground: #0F1010;
+  --primary: #F54A00;
   --primary-foreground: #ffffff;
-  --secondary: #F5F6F8;
-  --secondary-foreground: #14151A;
-  --muted: #F5F6F8;
-  --muted-foreground: #6B7280;
-  --accent: #EFF3FF;
-  --accent-foreground: #14151A;
+  --secondary: #F7F7F7;
+  --secondary-foreground: #0F1010;
+  --muted: #F7F7F7;
+  --muted-foreground: #7A7F85;
+  --accent: #FFF3EC;
+  --accent-foreground: #0F1010;
   --destructive: #DC2626;
   --destructive-foreground: #ffffff;
-  --border: #E7E8EC;
-  --input: #E7E8EC;
-  --ring: #2954E5;
+  --border: #ECECEC;
+  --input: #ECECEC;
+  --ring: #F54A00;
   --success: #16A34A;
-  --warning: #C9972C;
+  --warning: #D97706;
+  --sidebar: #FAFAFA;
 }
 
 .dark {
@@ -44,7 +45,7 @@
   --card-foreground: #F5F6F8;
   --popover: #12141B;
   --popover-foreground: #F5F6F8;
-  --primary: #3B6BFF;
+  --primary: #FF6A2B;
   --primary-foreground: #ffffff;
   --secondary: #1A1D26;
   --secondary-foreground: #F5F6F8;
@@ -56,9 +57,10 @@
   --destructive-foreground: #ffffff;
   --border: #262A36;
   --input: #262A36;
-  --ring: #3B6BFF;
+  --ring: #FF6A2B;
   --success: #22C55E;
-  --warning: #E0B93C;
+  --warning: #F0A24A;
+  --sidebar: #101216;
 }
 
 @theme inline {
@@ -85,19 +87,18 @@
   --color-warning: var(--warning);
 
   /* Token names kept as "charcoal"/"orange" for compatibility with existing
-     utility classes (bg-orange, text-orange, bg-charcoal-dark, etc.) — the
-     values below are Legendary Marketing's blue & gold brand colors. */
-  --color-charcoal: #14151A;
-  --color-charcoal-light: #F5F6F8;
+     utility classes — values are the orange-on-white system in design.md. */
+  --color-charcoal: #0F1010;
+  --color-charcoal-light: #F7F7F7;
   --color-charcoal-dark: #ffffff;
-  --color-orange: #2954E5;
-  --color-orange-light: #5B82FF;
-  --color-orange-dark: #1E3FBF;
-  --color-orange-glow: rgba(41, 84, 229, 0.35);
-  --color-gold: #C9972C;
+  --color-orange: #F54A00;
+  --color-orange-light: #FF7A33;
+  --color-orange-dark: #D63F00;
+  --color-orange-glow: rgba(245, 74, 0, 0.35);
+  --color-sidebar: var(--sidebar);
 
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -145,8 +146,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(41, 84, 229, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(41, 84, 229, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 74, 0, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(245, 74, 0, 0.6); }
 }
 
 @keyframes rainbow {
@@ -162,7 +163,7 @@ body {
 
 /* Utility classes */
 .text-gradient-orange {
-  background: linear-gradient(135deg, #2954E5, #5B82FF, #C9972C);
+  background: linear-gradient(135deg, #F54A00, #FF6A2B, #FF9159);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -170,14 +171,41 @@ body {
 
 .glow-button {
   position: relative;
-  background: linear-gradient(135deg, #2954E5, #1E3FBF);
-  box-shadow: 0 0 20px rgba(41, 84, 229, 0.4);
+  background: linear-gradient(135deg, #F54A00, #D63F00);
+  box-shadow: 0 0 20px rgba(245, 74, 0, 0.35);
   transition: all 0.3s ease;
 }
 
 .glow-button:hover {
-  box-shadow: 0 0 30px rgba(41, 84, 229, 0.6);
+  box-shadow: 0 0 30px rgba(245, 74, 0, 0.5);
   transform: translateY(-1px);
+}
+
+/* Firecrawl-style utilities (see design.md) */
+.micro-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.bracket-label {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
+.bracket-label b {
+  color: var(--color-orange);
+  font-weight: 600;
+}
+
+.dot-texture {
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 12px 12px;
 }
 
 /* Phase tracker connector line */
@@ -196,7 +224,7 @@ body {
 }
 
 .phase-connector.completed::after {
-  background: linear-gradient(90deg, #2954E5, #5B82FF);
+  background: linear-gradient(90deg, #F54A00, #FF7A33);
 }
 
 @media (prefers-reduced-motion: reduce) {

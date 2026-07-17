@@ -1,16 +1,16 @@
-import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { AdminNav } from "@/components/dashboard/admin-nav";
-import { NotificationBell } from "@/components/dashboard/notification-bell";
-import { GlobalSearch } from "@/components/dashboard/global-search";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Logo } from "@/components/ui/logo";
-import { isStaff, ROLE_LABELS } from "@/lib/permissions";
+import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
+import {
+  isStaff,
+  canManageAgency,
+  canManageLeads,
+  canViewAllProjects,
+  ROLE_LABELS,
+} from "@/lib/permissions";
 
 export default async function AdminLayout({
   children,
@@ -29,32 +29,40 @@ export default async function AdminLayout({
   if (!user || !isStaff(user.role)) {
     redirect("/dashboard");
   }
-  return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="flex items-center gap-2">
-              <Logo size={32} />
-              <span className="font-semibold hidden sm:inline">Legendary Marketing</span>
-              <span className="rounded bg-orange/10 px-2 py-0.5 text-xs font-medium text-orange">
-                {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? "Admin"}
-              </span>
-            </Link>
-            <AdminNav role={user.role} />
-          </div>
-          <div className="flex items-center gap-2">
-            <GlobalSearch />
-            <NotificationBell />
-            <ThemeToggle />
-            <UserButton />
-          </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-        {children}
-      </main>
-    </div>
+  // Same role gating as before, expressed as serializable nav config for the
+  // client shell (icon = lucide name).
+  const navItems: ShellNavItem[] = [
+    { label: "Overview", href: "/admin", icon: "LayoutDashboard", exact: true },
+    ...(canViewAllProjects(user.role)
+      ? [{ label: "Clients", href: "/admin/clients", icon: "Users" }]
+      : []),
+    ...(canManageLeads(user.role)
+      ? [{ label: "Leads", href: "/admin/leads", icon: "Inbox" }]
+      : []),
+    { label: "Projects", href: "/admin/projects", icon: "FolderKanban" },
+    { label: "Messages", href: "/admin/messages", icon: "MessageSquare" },
+    ...(canManageAgency(user.role)
+      ? [
+          { label: "Payments", href: "/admin/payments", icon: "CreditCard" },
+          { label: "Team", href: "/admin/team", icon: "UserCog" },
+          { label: "Integrations", href: "/admin/integrations", icon: "Plug" },
+        ]
+      : []),
+  ];
+
+  return (
+    <AppShell
+      navItems={navItems}
+      roleLabel={ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? "Staff"}
+      cta={
+        canManageLeads(user.role)
+          ? { label: "Triage Leads", href: "/admin/leads" }
+          : undefined
+      }
+      accountEmail={user.email}
+    >
+      {children}
+    </AppShell>
   );
 }
