@@ -60,7 +60,10 @@ export async function POST(req: Request) {
     const { projectId, content } = parsed.data;
 
     await verifyProjectAccess(projectId, user.id, user.role);
-    await checkRateLimit(user.id + ':messages', 30);
+    const rateLimit = checkRateLimit(user.id + ":messages", 30);
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const [message] = await db
       .insert(messages)

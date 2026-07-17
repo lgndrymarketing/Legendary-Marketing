@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects, messages, files } from "@/db/schema";
-import { eq, ilike, and, inArray } from "drizzle-orm";
-import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { ilike, and, inArray } from "drizzle-orm";
+import { getAuthenticatedUser, getAccessibleProjectIds } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { isStaff } from "@/lib/permissions";
 
 export async function GET(req: Request) {
   try {
@@ -23,16 +22,12 @@ export async function GET(req: Request) {
 
     const pattern = `%${q}%`;
 
-    // Get accessible project IDs based on role
-    const accessibleProjects = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(
-        isStaff(user.role) ? undefined : eq(projects.userId, user.id)
-      );
-    const accessibleProjectIds = accessibleProjects.map((p) => p.id);
+    // Resolve the projects this user may search within, by role.
+    const accessible = await getAccessibleProjectIds(user.id, user.role);
+    const seesAll = accessible === "all";
+    const accessibleProjectIds = seesAll ? [] : accessible;
 
-    if (accessibleProjectIds.length === 0) {
+    if (!seesAll && accessibleProjectIds.length === 0) {
       return NextResponse.json([]);
     }
 
@@ -41,10 +36,10 @@ export async function GET(req: Request) {
       .select()
       .from(projects)
       .where(
-        isStaff(user.role)
+        seesAll
           ? ilike(projects.name, pattern)
           : and(
-              eq(projects.userId, user.id),
+              inArray(projects.id, accessibleProjectIds),
               ilike(projects.name, pattern)
             )
       )
@@ -55,10 +50,12 @@ export async function GET(req: Request) {
       .select()
       .from(messages)
       .where(
-        and(
-          ilike(messages.content, pattern),
-          inArray(messages.projectId, accessibleProjectIds)
-        )
+        seesAll
+          ? ilike(messages.content, pattern)
+          : and(
+              ilike(messages.content, pattern),
+              inArray(messages.projectId, accessibleProjectIds)
+            )
       )
       .limit(5);
 
@@ -67,10 +64,12 @@ export async function GET(req: Request) {
       .select()
       .from(files)
       .where(
-        and(
-          ilike(files.name, pattern),
-          inArray(files.projectId, accessibleProjectIds)
-        )
+        seesAll
+          ? ilike(files.name, pattern)
+          : and(
+              ilike(files.name, pattern),
+              inArray(files.projectId, accessibleProjectIds)
+            )
       )
       .limit(5);
 

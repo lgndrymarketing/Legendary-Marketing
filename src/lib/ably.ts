@@ -31,9 +31,14 @@ export function isAblyConfigured(): boolean {
 }
 
 /**
- * Build a token request scoped to a single channel, capable only of
- * subscribing and publishing on it — used to hand clients a narrowly scoped
- * credential for their project's message channel.
+ * Build a token request scoped to a single channel, SUBSCRIBE-ONLY.
+ *
+ * Clients must never publish directly: message rows are the source of truth
+ * and the server broadcasts them via publishToChannel() after persisting +
+ * assigning the trusted role. Granting "publish" here would let a client
+ * inject a forged message object (e.g. role:"admin") straight to the socket,
+ * which every subscriber would render as a genuine agency message. So the
+ * token only permits "subscribe" + "presence".
  */
 export async function createTokenRequest(
   clientId: string,
@@ -43,7 +48,7 @@ export async function createTokenRequest(
   return rest.auth.createTokenRequest({
     clientId,
     capability: {
-      [channel]: ["subscribe", "publish"],
+      [channel]: ["subscribe", "presence"],
     },
   });
 }

@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuthenticatedUser } from "@/lib/auth-utils";
-import { isStaff } from "@/lib/permissions";
+import { inArray } from "drizzle-orm";
+import { getAuthenticatedUser, getAccessibleProjectIds } from "@/lib/auth-utils";
 
 export async function GET() {
   try {
     const user = await getAuthenticatedUser();
 
-    const userProjects =
-      isStaff(user.role)
-        ? await db.select().from(projects).limit(100)
-        : await db
-            .select()
-            .from(projects)
-            .where(eq(projects.userId, user.id));
+    const accessible = await getAccessibleProjectIds(user.id, user.role);
+
+    if (accessible === "all") {
+      const userProjects = await db.select().from(projects).limit(100);
+      return NextResponse.json(userProjects);
+    }
+
+    if (accessible.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    const userProjects = await db
+      .select()
+      .from(projects)
+      .where(inArray(projects.id, accessible));
 
     return NextResponse.json(userProjects);
   } catch (error) {

@@ -13,22 +13,29 @@ import {
   Plug,
   Inbox,
 } from "lucide-react";
-import { canManageAgency } from "@/lib/permissions";
+import {
+  canManageAgency,
+  canManageLeads,
+  canViewAllProjects,
+} from "@/lib/permissions";
 
+// `show` decides visibility by role. Overview/Projects/Messages are visible to
+// all staff (VAs see a scoped subset inside those pages); Clients/Leads are
+// admin+PM; Payments/Team/Integrations are admin-only.
 const navItems = [
-  { label: "Overview", href: "/admin", icon: LayoutDashboard, adminOnly: false },
-  { label: "Clients", href: "/admin/clients", icon: Users, adminOnly: false },
-  { label: "Leads", href: "/admin/leads", icon: Inbox, adminOnly: false },
-  { label: "Projects", href: "/admin/projects", icon: FolderKanban, adminOnly: false },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: false },
-  { label: "Payments", href: "/admin/payments", icon: CreditCard, adminOnly: true },
-  { label: "Team", href: "/admin/team", icon: UserCog, adminOnly: true },
-  { label: "Integrations", href: "/admin/integrations", icon: Plug, adminOnly: true },
+  { label: "Overview", href: "/admin", icon: LayoutDashboard, show: () => true },
+  { label: "Clients", href: "/admin/clients", icon: Users, show: canViewAllProjects },
+  { label: "Leads", href: "/admin/leads", icon: Inbox, show: canManageLeads },
+  { label: "Projects", href: "/admin/projects", icon: FolderKanban, show: () => true },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare, show: () => true },
+  { label: "Payments", href: "/admin/payments", icon: CreditCard, show: canManageAgency },
+  { label: "Team", href: "/admin/team", icon: UserCog, show: canManageAgency },
+  { label: "Integrations", href: "/admin/integrations", icon: Plug, show: canManageAgency },
 ];
 
 export function AdminNav({ role }: { role: string }) {
   const pathname = usePathname();
-  const items = navItems.filter((item) => !item.adminOnly || canManageAgency(role));
+  const items = navItems.filter((item) => item.show(role));
 
   return (
     <nav className="flex items-center gap-1">

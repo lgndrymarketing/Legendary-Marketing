@@ -43,11 +43,22 @@ export async function PATCH(
 
     const { dueDate, ...rest } = parsed.data;
 
+    // VAs may only move their assigned task's status/notes — not retitle,
+    // reprioritize, reassign, or reschedule it. Managers may edit everything.
+    const changes = canManageProjects(user.role)
+      ? {
+          ...rest,
+          ...(dueDate !== undefined ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),
+        }
+      : {
+          ...(rest.status !== undefined ? { status: rest.status } : {}),
+          ...(rest.description !== undefined ? { description: rest.description } : {}),
+        };
+
     const [updated] = await db
       .update(tasks)
       .set({
-        ...rest,
-        ...(dueDate !== undefined ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),
+        ...changes,
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, id))

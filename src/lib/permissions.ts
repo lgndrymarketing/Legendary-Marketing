@@ -29,6 +29,20 @@ export function canManageProjects(role: string): boolean {
   return role === "admin" || role === "project_manager";
 }
 
+/**
+ * See every project/client/lead in the agency. Admins and project managers do;
+ * VAs are scoped to only the projects they're assigned work on (enforced in
+ * verifyProjectAccess), and clients see only their own.
+ */
+export function canViewAllProjects(role: string): boolean {
+  return role === "admin" || role === "project_manager";
+}
+
+/** Read lead PII (name/email/phone/budget) and triage the pipeline. */
+export function canManageLeads(role: string): boolean {
+  return role === "admin" || role === "project_manager";
+}
+
 /** Update the status/notes of tasks — any staff member, scoped to their own assignments for VAs. */
 export function canUpdateTask(
   role: string,

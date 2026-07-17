@@ -2,10 +2,20 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { isGhlConfigured, syncContactToGhl } from "@/lib/ghl";
-import { requireStaff } from "@/lib/auth-utils";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { canManageLeads } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
+
+/** Require the caller to be allowed to view/triage leads (admin or PM). */
+async function requireLeadManager() {
+  const user = await getAuthenticatedUser();
+  if (!canManageLeads(user.role)) {
+    throw NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return user;
+}
 
 const leadSchema = z.object({
   name: z.string().min(1).max(255),
@@ -106,7 +116,7 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    await requireStaff();
+    await requireLeadManager();
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
@@ -144,7 +154,7 @@ const updateLeadSchema = z.object({
  */
 export async function PATCH(req: Request) {
   try {
-    await requireStaff();
+    await requireLeadManager();
 
     const body = await req.json();
     const parsed = updateLeadSchema.safeParse(body);

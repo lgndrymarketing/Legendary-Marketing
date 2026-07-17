@@ -93,6 +93,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, skipped: "no opportunityId" });
     }
 
+    // Normalize/validate untrusted payload fields before they touch the DB.
+    // Map GHL's free-form status onto our known set; anything unrecognized is
+    // treated as "pending" rather than persisted verbatim. Clamp the amount to
+    // a non-negative integer number of cents.
+    const rawStatus = (status ?? "").toLowerCase();
+    const paymentStatus =
+      rawStatus === "won" || rawStatus === "completed" || rawStatus === "paid"
+        ? "completed"
+        : rawStatus === "lost" || rawStatus === "abandoned"
+          ? "cancelled"
+          : "pending";
+    const safeAmount =
+      typeof monetaryValue === "number" && Number.isFinite(monetaryValue)
+        ? Math.max(0, Math.round(monetaryValue))
+        : 0;
+
     const [project] = await db
       .select({ id: projects.id, userId: projects.userId })
       .from(projects)
@@ -104,8 +120,6 @@ export async function POST(req: Request) {
         skipped: "no matching project for opportunity",
       });
     }
-
-    const paymentStatus = status === "won" ? "completed" : status ?? "pending";
 
     // Idempotency check: skip if this payment is already recorded with the
     // same status.
@@ -136,7 +150,7 @@ export async function POST(req: Request) {
           .update(payments)
           .set({
             status: paymentStatus,
-            ...(monetaryValue !== undefined ? { amount: Math.round(monetaryValue) } : {}),
+            ...(monetaryValue !== undefined ? { amount: safeAmount } : {}),
             updatedAt: new Date(),
           })
           .where(eq(payments.ghlPaymentId, opportunityId));
@@ -144,7 +158,7 @@ export async function POST(req: Request) {
         await db.insert(payments).values({
           projectId: project.id,
           userId: project.userId,
-          amount: Math.round(monetaryValue ?? 0),
+          amount: safeAmount,
           status: paymentStatus,
           source: "ghl",
           ghlPaymentId: opportunityId,

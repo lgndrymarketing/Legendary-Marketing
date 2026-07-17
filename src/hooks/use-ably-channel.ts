@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Ably from "ably";
 
 const MESSAGE_EVENT = "message";
 
 interface UseAblyChannelResult<T> {
   messages: T[];
-  publish: (data: T) => Promise<void>;
   connectionState: Ably.ConnectionState | "disabled";
 }
 
@@ -38,8 +37,6 @@ export function useAblyChannel<T = unknown>(
   const [connectionState, setConnectionState] = useState<
     Ably.ConnectionState | "disabled"
   >("disabled");
-  const channelRef = useRef<Ably.RealtimeChannel | null>(null);
-
   useEffect(() => {
     if (!channelName) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- resets connection state when the channel disappears (e.g. project deselected)
@@ -79,7 +76,6 @@ export function useAblyChannel<T = unknown>(
     client.connection.on(onConnectionChange);
 
     const channel = client.channels.get(channelName);
-    channelRef.current = channel;
 
     const listener = (msg: Ably.InboundMessage) => {
       if (!cancelled) setMessages((prev) => [...prev, msg.data as T]);
@@ -94,20 +90,9 @@ export function useAblyChannel<T = unknown>(
       channel.unsubscribe(MESSAGE_EVENT, listener);
       client.connection.off(onConnectionChange);
       client.close();
-      channelRef.current = null;
       setMessages([]);
     };
   }, [channelName]);
 
-  const publish = useCallback(async (data: T) => {
-    const channel = channelRef.current;
-    if (!channel) return;
-    try {
-      await channel.publish(MESSAGE_EVENT, data);
-    } catch (err) {
-      console.error("Ably publish failed:", err);
-    }
-  }, []);
-
-  return { messages, connectionState, publish };
+  return { messages, connectionState };
 }

@@ -56,7 +56,10 @@ export async function POST(req: Request) {
     const { projectId, name, url, size, type } = parsed.data;
 
     await verifyProjectAccess(projectId, user.id, user.role);
-    await checkRateLimit(user.id + ':files', 20);
+    const rateLimit = checkRateLimit(user.id + ":files", 20);
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const [file] = await db
       .insert(files)
