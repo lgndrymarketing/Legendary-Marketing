@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { BarChart3 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
   id: string;
@@ -34,15 +36,22 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Analytics</h1>
-        <p className="text-muted-foreground mt-1">
-          Track performance metrics for your launched projects.
-        </p>
-      </div>
+      <PageHeader
+        title="Analytics"
+        description="Track performance metrics for your launched projects."
+      />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </div>
+            <Skeleton className="h-64" />
+          </CardContent>
+        </Card>
       ) : projects.length === 0 ? (
         <Card>
           <EmptyState

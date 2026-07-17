@@ -16,7 +16,6 @@ export default function AdminIntegrationsPage() {
         description="Connect Legendary Marketing to the tools that power revenue tracking and real-time client communication."
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
@@ -49,7 +48,7 @@ export default function AdminIntegrationsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">

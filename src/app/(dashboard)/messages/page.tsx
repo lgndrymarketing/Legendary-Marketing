@@ -120,22 +120,30 @@ export default function MessagesPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Messages</h1>
-          <p className="text-muted-foreground mt-1">Loading...</p>
-        </div>
+        <PageHeader
+          title="Messages"
+          description="Chat with the Legendary Marketing team about your project."
+        />
+        <Card className="flex flex-col" style={{ height: "calc(100vh - 300px)" }}>
+          <CardHeader className="border-b border-border">
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="flex-1 space-y-4 p-4">
+            <Skeleton className="h-16 w-2/3" />
+            <Skeleton className="ml-auto h-12 w-1/2" />
+            <Skeleton className="h-16 w-3/5" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Messages</h1>
-        <p className="text-muted-foreground mt-1">
-          Chat with the Legendary Marketing team about your project.
-        </p>
-      </div>
+      <PageHeader
+        title="Messages"
+        description="Chat with the Legendary Marketing team about your project."
+      />
 
       {projects.length === 0 ? (
         <Card>

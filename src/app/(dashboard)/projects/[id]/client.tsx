@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
 import { FilePreviewCard } from "@/components/dashboard/file-preview";
@@ -102,15 +103,16 @@ export function ProjectDetailClient({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">{project.name}</h1>
-          <p className="text-muted-foreground mt-1">{project.serviceType}</p>
-        </div>
-        <Badge variant="orange" className="text-sm px-3 py-1">
-          {project.status}
-        </Badge>
-      </div>
+      <PageHeader
+        eyebrow="Project"
+        title={project.name}
+        description={project.serviceType}
+        action={
+          <Badge variant="orange" className="text-sm px-3 py-1">
+            {project.status}
+          </Badge>
+        }
+      />
 
       {/* NPS Survey */}
       {showSurvey && (

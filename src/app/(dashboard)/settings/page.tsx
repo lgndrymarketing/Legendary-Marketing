@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,15 +21,13 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account and preferences.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your account and preferences."
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="transition-shadow hover:shadow-md">
           <CardHeader>
             <CardTitle>Account</CardTitle>
             <CardDescription>Your profile information from Clerk.</CardDescription>
@@ -49,7 +48,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-shadow hover:shadow-md">
           <CardHeader>
             <CardTitle>Billing</CardTitle>
             <CardDescription>Payment history and invoices.</CardDescription>

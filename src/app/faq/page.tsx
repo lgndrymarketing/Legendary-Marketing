@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const faqCategories = [
   {

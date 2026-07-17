@@ -10,7 +10,7 @@ import { FolderKanban, MessageSquare, Upload, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, messages, files, users } from "@/db/schema";
-import { eq, count, and, inArray } from "drizzle-orm";
+import { eq, count, inArray } from "drizzle-orm";
 import { isStaff } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
 

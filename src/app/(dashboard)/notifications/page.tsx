@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Bell,
   Check,
@@ -16,6 +15,8 @@ import {
   Star,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -105,32 +106,34 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Notifications</h1>
-          <p className="text-muted-foreground mt-1">Loading...</p>
-        </div>
+        <PageHeader title="Notifications" description="Loading your latest updates…" />
+        <Card>
+          <CardContent className="p-6">
+            <TableSkeleton rows={5} />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Notifications</h1>
-          <p className="text-muted-foreground mt-1">
-            {unreadCount > 0
-              ? `You have ${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
-              : "All caught up!"}
-          </p>
-        </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllRead}>
-            <Check className="mr-1 h-4 w-4" />
-            Mark all read
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Notifications"
+        description={
+          unreadCount > 0
+            ? `You have ${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
+            : "All caught up!"
+        }
+        action={
+          unreadCount > 0 ? (
+            <Button variant="outline" size="sm" onClick={markAllRead}>
+              <Check className="mr-1 h-4 w-4" />
+              Mark all read
+            </Button>
+          ) : undefined
+        }
+      />
 
       {notifications.length === 0 ? (
         <Card>

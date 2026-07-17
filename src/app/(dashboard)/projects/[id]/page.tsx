@@ -6,10 +6,9 @@ import {
   projectPhases,
   files as filesTable,
   invoices,
-  payments,
   users,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ProjectDetailClient } from "./client";
 import { isStaff } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
