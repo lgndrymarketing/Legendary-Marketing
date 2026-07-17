@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { BarChart3 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero } from "@/components/ui/firecrawl";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
@@ -36,30 +35,28 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <PageHero
         title="Analytics"
         description="Track performance metrics for your launched projects."
       />
 
       {loading ? (
-        <Card>
-          <CardContent className="space-y-4 p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-            </div>
-            <Skeleton className="h-64" />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="h-64" />
+        </div>
       ) : projects.length === 0 ? (
-        <Card>
+        <div className="rounded-xl border border-border">
           <EmptyState
             icon={BarChart3}
             title="No analytics yet"
             description="Analytics will appear here once you have an active project."
           />
-        </Card>
+        </div>
       ) : (
         <>
           {projects.length > 1 && (

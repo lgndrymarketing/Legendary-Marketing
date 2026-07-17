@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
 import { Users } from "lucide-react";
 import { db } from "@/db";
 import { users, projects } from "@/db/schema";
@@ -34,61 +32,59 @@ export default async function AdminClientsPage() {
     .orderBy(users.createdAt);
 
   return (
-    <div className="space-y-8">
-      <PageHeader title="Clients" description="Manage all registered clients." />
+    <div className="space-y-10">
+      <PageHero title="Clients" description="Manage all registered clients." />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-orange" />
-            All Clients
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {clients.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="No clients yet"
-              description="Clients who sign up will appear here."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">Name</th>
-                    <th className="pb-3 font-medium">Email</th>
-                    <th className="pb-3 font-medium">Projects</th>
-                    <th className="pb-3 font-medium">Joined</th>
+      <section>
+        <BracketLabel n={clients.length} label="REGISTERED CLIENTS" className="pb-4" />
+        {clients.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No clients yet"
+            description="Clients who sign up will appear here."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="micro-label py-3 pr-4">Name</th>
+                  <th className="micro-label py-3 pr-4">Email</th>
+                  <th className="micro-label py-3 pr-4">Projects</th>
+                  <th className="micro-label py-3">Joined</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clients.map((client) => (
+                  <tr
+                    key={client.id}
+                    className="group transition-colors hover:bg-muted/50"
+                  >
+                    <td className="py-3 pr-4 font-medium transition-colors group-hover:text-orange">
+                      {[client.firstName, client.lastName]
+                        .filter(Boolean)
+                        .join(" ") || "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground">
+                      {client.email}
+                    </td>
+                    <td className="py-3 pr-4 font-mono text-xs">
+                      {client.projectCount}
+                    </td>
+                    <td className="py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(client.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {clients.map((client) => (
-                    <tr key={client.id} className="group hover:bg-muted/50">
-                      <td className="py-3 font-medium transition-colors group-hover:text-orange">
-                        {[client.firstName, client.lastName]
-                          .filter(Boolean)
-                          .join(" ") || "—"}
-                      </td>
-                      <td className="py-3 text-muted-foreground">{client.email}</td>
-                      <td className="py-3">
-                        <Badge variant="secondary">{client.projectCount}</Badge>
-                      </td>
-                      <td className="py-3 text-muted-foreground">
-                        {new Date(client.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

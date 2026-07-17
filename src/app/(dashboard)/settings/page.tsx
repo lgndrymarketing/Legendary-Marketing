@@ -1,7 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero } from "@/components/ui/firecrawl";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,45 +19,46 @@ export default async function SettingsPage() {
   const role = (dbUser?.role ?? "client") as UserRole;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-10">
+      <PageHero
         title="Settings"
         description="Manage your account and preferences."
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="transition-shadow hover:shadow-md">
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>Your profile information from Clerk.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between text-sm">
+      {/* Hairline-divided sections, no card shadows */}
+      <div className="animate-fade-up grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+        <section className="pb-8 lg:pb-10 lg:pr-10">
+          <h2 className="text-[15px] font-semibold">Account</h2>
+          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+            Your profile information from Clerk.
+          </p>
+          <div className="mt-6 space-y-4 text-sm">
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Name</span>
               <span>{user?.firstName} {user?.lastName}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Email</span>
-              <span>{user?.emailAddresses[0]?.emailAddress}</span>
+              <span className="font-mono text-xs">
+                {user?.emailAddresses[0]?.emailAddress}
+              </span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Role</span>
               <Badge variant="secondary">{ROLE_LABELS[role]}</Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <Card className="transition-shadow hover:shadow-md">
-          <CardHeader>
-            <CardTitle>Billing</CardTitle>
-            <CardDescription>Payment history and invoices.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Payments are processed securely through Creem.io. Contact us for billing inquiries.
-            </div>
-          </CardContent>
-        </Card>
+        <section className="py-8 lg:py-0 lg:pb-10 lg:pl-10">
+          <h2 className="text-[15px] font-semibold">Billing</h2>
+          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+            Payment history and invoices.
+          </p>
+          <div className="mt-6 text-sm text-muted-foreground">
+            Payments are processed securely through Creem.io. Contact us for billing inquiries.
+          </div>
+        </section>
       </div>
     </div>
   );

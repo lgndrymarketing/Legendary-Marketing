@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 import { RefreshCw } from "lucide-react";
 
 type RevisionStatus = "pending" | "in_progress" | "completed" | "rejected";
@@ -15,11 +15,12 @@ interface Revision {
   createdAt: string;
 }
 
-const statusVariant: Record<RevisionStatus, "warning" | "orange" | "success" | "destructive"> = {
-  pending: "warning",
-  in_progress: "orange",
-  completed: "success",
-  rejected: "destructive",
+// Same semantics as the old badge variants, rendered as uppercase mono text.
+const statusClass: Record<RevisionStatus, string> = {
+  pending: "text-warning",
+  in_progress: "text-orange",
+  completed: "text-success",
+  rejected: "text-destructive",
 };
 
 const statusOptions: RevisionStatus[] = ["pending", "in_progress", "completed", "rejected"];
@@ -87,17 +88,25 @@ export function RevisionManager({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="divide-y divide-border border-y border-border">
       {revisions.map((rev) => (
-        <div key={rev.id} className="rounded-lg border border-border p-4 space-y-2">
+        <div
+          key={rev.id}
+          className="space-y-2 py-4 transition-colors hover:bg-muted/50"
+        >
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm">{rev.description}</p>
-            <Badge variant={statusVariant[rev.status]} className="shrink-0">
+            <span
+              className={cn(
+                "shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap",
+                statusClass[rev.status]
+              )}
+            >
               {statusLabels[rev.status]}
-            </Badge>
+            </span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">
+            <span className="font-mono text-xs text-muted-foreground">
               {new Date(rev.createdAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -106,7 +115,7 @@ export function RevisionManager({
             </span>
             {!readOnly && (
               <select
-                className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                className="cursor-pointer rounded-lg border border-border bg-background px-2.5 py-1 font-mono text-[11px] transition-colors hover:border-orange/40 focus:outline-none focus:ring-2 focus:ring-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
                 value={rev.status}
                 disabled={updating === rev.id}
                 onChange={(e) => updateStatus(rev.id, e.target.value as RevisionStatus)}

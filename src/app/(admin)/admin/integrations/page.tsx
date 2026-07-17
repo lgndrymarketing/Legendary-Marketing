@@ -1,12 +1,36 @@
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero } from "@/components/ui/firecrawl";
 import { Plug, Radio } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { isGhlConfigured } from "@/lib/ghl";
 import { GhlSyncButton } from "./ghl-sync-button";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { canManageAgency } from "@/lib/permissions";
+
+/** Connected / Not-configured status chip — uppercase mono, semantic color. */
+function StatusChip({ connected }: { connected: boolean }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap",
+        connected
+          ? "border-success/30 bg-success/10 text-success"
+          : "border-warning/30 bg-warning/10 text-warning"
+      )}
+    >
+      {connected ? "Connected" : "Not configured"}
+    </span>
+  );
+}
+
+/** Masked-value pill (design.md §5 — API-key pill look). */
+function MaskedPill({ label }: { label: string }) {
+  return (
+    <code className="rounded-lg bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground whitespace-nowrap">
+      {label} ••••••••
+    </code>
+  );
+}
 
 export default async function AdminIntegrationsPage() {
   // Integration config is admin-only (the layout only checks isStaff).
@@ -19,25 +43,23 @@ export default async function AdminIntegrationsPage() {
   const ablyConfigured = Boolean(process.env.ABLY_API_KEY);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-10">
+      <PageHero
         title="Integrations"
         description="Connect Legendary Marketing to the tools that power revenue tracking and real-time client communication."
       />
 
-      <Card className="transition-shadow hover:shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <Plug className="h-5 w-5 text-orange" />
-              GoHighLevel
-            </span>
-            <Badge variant={ghlConfigured ? "success" : "warning"}>
-              {ghlConfigured ? "Connected" : "Not configured"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* GoHighLevel */}
+      <section className="border-b border-border pb-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Plug className="h-4 w-4 text-orange" />
+            <h2 className="text-[15px] font-semibold">GoHighLevel</h2>
+          </div>
+          <MaskedPill label="GHL" />
+          <StatusChip connected={ghlConfigured} />
+        </div>
+        <div className="mt-4 max-w-2xl space-y-4">
           <p className="text-sm text-muted-foreground">
             Connects the agency&apos;s GoHighLevel account so revenue and pipeline
             data (opportunities, invoices) shows up alongside Creem checkout
@@ -48,28 +70,26 @@ export default async function AdminIntegrationsPage() {
             <GhlSyncButton />
           ) : (
             <p className="text-xs text-muted-foreground">
-              Set <code className="rounded bg-muted px-1 py-0.5">GHL_API_KEY</code>,{" "}
-              <code className="rounded bg-muted px-1 py-0.5">GHL_LOCATION_ID</code>, and{" "}
-              <code className="rounded bg-muted px-1 py-0.5">GHL_WEBHOOK_SECRET</code>{" "}
+              Set <code className="rounded bg-muted px-1 py-0.5 font-mono">GHL_API_KEY</code>,{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono">GHL_LOCATION_ID</code>, and{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono">GHL_WEBHOOK_SECRET</code>{" "}
               in your environment to enable this integration.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card className="transition-shadow hover:shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <Radio className="h-5 w-5 text-orange" />
-              Ably (Real-time Messaging)
-            </span>
-            <Badge variant={ablyConfigured ? "success" : "warning"}>
-              {ablyConfigured ? "Connected" : "Not configured"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Ably */}
+      <section className="border-b border-border pb-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-orange" />
+            <h2 className="text-[15px] font-semibold">Ably (Real-time Messaging)</h2>
+          </div>
+          <MaskedPill label="ABLY" />
+          <StatusChip connected={ablyConfigured} />
+        </div>
+        <div className="mt-4 max-w-2xl space-y-4">
           <p className="text-sm text-muted-foreground">
             Powers instant delivery of client &lt;&gt; agency messages on top of
             the existing Messages system — the database stays the source of
@@ -78,13 +98,13 @@ export default async function AdminIntegrationsPage() {
           </p>
           {!ablyConfigured && (
             <p className="text-xs text-muted-foreground">
-              Set <code className="rounded bg-muted px-1 py-0.5">ABLY_API_KEY</code>{" "}
+              Set <code className="rounded bg-muted px-1 py-0.5 font-mono">ABLY_API_KEY</code>{" "}
               in your environment to enable real-time messaging. Without it, messages
               still send and load normally — clients just won&apos;t see live updates.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

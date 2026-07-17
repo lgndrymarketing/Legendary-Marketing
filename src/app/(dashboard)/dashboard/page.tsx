@@ -1,10 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { FolderKanban, MessageSquare, Upload, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,6 +19,16 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+/** Status → uppercase-mono text color (design.md §2.1 semantics). */
+const statusTone: Record<string, string> = {
+  onboarding: "text-muted-foreground",
+  payment_pending: "text-warning",
+  in_progress: "text-orange",
+  revision: "text-warning",
+  completed: "text-success",
+  cancelled: "text-destructive",
+};
+
 export default async function DashboardPage() {
   const user = await currentUser();
   if (!user) return null;
@@ -35,8 +42,7 @@ export default async function DashboardPage() {
   if (!dbUser) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          eyebrow="Dashboard"
+        <PageHero
           title={`Welcome, ${user.firstName || "there"}`}
           description="Your account is being set up. Please refresh in a moment."
         />
@@ -89,11 +95,16 @@ export default async function DashboardPage() {
         )[0]?.value ?? 0
       : 0;
 
+  const stats = [
+    { label: "Active Projects", value: activeProjects.length },
+    { label: "Messages", value: messageCount },
+    { label: "Files Uploaded", value: fileCount },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Welcome */}
-      <PageHeader
-        eyebrow="Dashboard"
+      <PageHero
         title={`Welcome back, ${user.firstName || "there"}`}
         description="Here's an overview of your projects."
         action={
@@ -106,16 +117,21 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Active Projects" value={activeProjects.length} icon={FolderKanban} />
-        <StatCard label="Messages" value={messageCount} icon={MessageSquare} />
-        <StatCard label="Files Uploaded" value={fileCount} icon={Upload} />
+      {/* Stats — hairline-divided 3-up, big numerals */}
+      <div className="animate-fade-up grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {stats.map((stat) => (
+          <div key={stat.label} className="py-6 sm:px-8 sm:first:pl-0">
+            <p className="text-4xl font-bold tracking-tight">
+              {stat.value.toLocaleString("en-US")}
+            </p>
+            <p className="micro-label mt-2">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Active Projects */}
       {activeProjects.length === 0 ? (
-        <Card>
+        <div className="animate-fade-up rounded-xl border border-border">
           <EmptyState
             icon={FolderKanban}
             title="No active projects yet"
@@ -129,7 +145,7 @@ export default async function DashboardPage() {
               </Button>
             }
           />
-        </Card>
+        </div>
       ) : (
         activeProjects.map((project) => {
           const phases = allPhases
@@ -142,42 +158,62 @@ export default async function DashboardPage() {
               order: p.order,
             })) satisfies Phase[];
 
+          const completedPhases = phases.filter(
+            (p) => p.status === "completed"
+          ).length;
+
           return (
-            <Card key={project.id} className="transition-shadow hover:shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between">
+            <section
+              key={project.id}
+              className="animate-fade-up border-b border-border pb-8"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <CardTitle className="text-xl">{project.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    {project.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {serviceLabels[project.serviceType] || project.serviceType}
                   </p>
                 </div>
-                <Badge variant="orange">
+                <span
+                  className={`font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${
+                    statusTone[project.status] || "text-orange"
+                  }`}
+                >
                   {statusLabels[project.status] || project.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {phases.length > 0 && (
+                </span>
+              </div>
+
+              {phases.length > 0 && (
+                <div className="mt-6 space-y-4">
+                  <BracketLabel
+                    n={completedPhases}
+                    m={phases.length}
+                    label="Phases"
+                  />
                   <PhaseTrackerHorizontal phases={phases} />
-                )}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/projects/${project.id}`}>View Details</Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/messages">
-                      <MessageSquare className="mr-1 h-4 w-4" />
-                      Messages
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/projects/${project.id}`}>
-                      <Upload className="mr-1 h-4 w-4" />
-                      Upload Files
-                    </Link>
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+
+              <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/projects/${project.id}`}>View Details</Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/messages">
+                    <MessageSquare className="mr-1 h-4 w-4" />
+                    Messages
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/projects/${project.id}`}>
+                    <Upload className="mr-1 h-4 w-4" />
+                    Upload Files
+                  </Link>
+                </Button>
+              </div>
+            </section>
           );
         })
       )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
   Bell,
@@ -17,8 +17,9 @@ import {
   Star,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero } from "@/components/ui/firecrawl";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -110,19 +111,17 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Notifications" description="Loading your latest updates…" />
-        <Card>
-          <CardContent className="p-6">
-            <TableSkeleton rows={5} />
-          </CardContent>
-        </Card>
+        <PageHero title="Notifications" description="Loading your latest updates…" />
+        <div className="rounded-xl border border-border p-6">
+          <TableSkeleton rows={5} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <PageHero
         title="Notifications"
         description={
           unreadCount > 0
@@ -140,28 +139,32 @@ export default function NotificationsPage() {
       />
 
       {notifications.length === 0 ? (
-        <Card>
+        <div className="rounded-xl border border-border">
           <EmptyState
             icon={Bell}
             title="You're all caught up"
             description="Project updates, messages, and payment confirmations will show up here."
           />
-        </Card>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {Object.entries(grouped).map(([date, items]) => (
             <div key={date}>
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">{date}</h3>
-              <Card>
-                <CardContent className="p-0 divide-y divide-border">
-                  {items.map((notification) => {
-                    const Icon = typeIcons[notification.type] || Bell;
-                    return (
+              <h3 className="micro-label mb-3">{date}</h3>
+              <motion.div
+                variants={rowCascade}
+                initial="hidden"
+                animate="visible"
+                className="divide-y divide-border border-y border-border"
+              >
+                {items.map((notification) => {
+                  const Icon = typeIcons[notification.type] || Bell;
+                  return (
+                    <motion.div key={notification.id} variants={rowItem}>
                       <Link
-                        key={notification.id}
                         href={notification.actionUrl || "#"}
                         className={cn(
-                          "flex gap-4 px-4 py-4 transition-colors hover:bg-muted",
+                          "flex gap-4 px-3 py-4 transition-colors hover:bg-muted/50",
                           !notification.read && "bg-orange/5"
                         )}
                       >
@@ -174,7 +177,7 @@ export default function NotificationsPage() {
                               {notification.title}
                             </p>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs text-muted-foreground">
+                              <span className="font-mono text-[11px] text-muted-foreground">
                                 {formatRelativeTime(notification.createdAt)}
                               </span>
                               {!notification.read && (
@@ -189,10 +192,10 @@ export default function NotificationsPage() {
                           )}
                         </div>
                       </Link>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </div>
           ))}
         </div>

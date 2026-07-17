@@ -1,9 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { Plus, ArrowRight, FolderKanban } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,9 +19,14 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
-const statusVariants: Record<string, "orange" | "success" | "secondary"> = {
-  in_progress: "orange",
-  completed: "success",
+/** Status → uppercase-mono text color (design.md §2.1 semantics). */
+const statusTone: Record<string, string> = {
+  onboarding: "text-muted-foreground",
+  payment_pending: "text-warning",
+  in_progress: "text-orange",
+  revision: "text-warning",
+  completed: "text-success",
+  cancelled: "text-destructive",
 };
 
 export default async function ProjectsPage() {
@@ -38,7 +41,7 @@ export default async function ProjectsPage() {
   if (!dbUser) {
     return (
       <div className="space-y-8">
-        <PageHeader
+        <PageHero
           title="Projects"
           description="Your account is being set up. Please refresh in a moment."
         />
@@ -62,8 +65,8 @@ export default async function ProjectsPage() {
       : [];
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-10">
+      <PageHero
         title="Projects"
         description="Manage and track all your projects."
         action={
@@ -77,7 +80,7 @@ export default async function ProjectsPage() {
       />
 
       {userProjects.length === 0 ? (
-        <Card>
+        <div className="animate-fade-up rounded-xl border border-border">
           <EmptyState
             icon={FolderKanban}
             title="No projects yet"
@@ -91,9 +94,9 @@ export default async function ProjectsPage() {
               </Button>
             }
           />
-        </Card>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="animate-fade-up divide-y divide-border border-b border-border">
           {userProjects.map((project) => {
             const phases = allPhases
               .filter((p) => p.projectId === project.id)
@@ -105,33 +108,50 @@ export default async function ProjectsPage() {
                 order: p.order,
               })) satisfies Phase[];
 
+            const completedPhases = phases.filter(
+              (p) => p.status === "completed"
+            ).length;
+
             return (
-              <Card key={project.id} className="transition-all hover:shadow-md hover:border-orange/30">
-                <CardHeader className="flex flex-row items-center justify-between">
+              <section key={project.id} className="py-8 first:pt-0">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <CardTitle>{project.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h2 className="text-xl font-semibold tracking-tight">
+                      {project.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {serviceLabels[project.serviceType] || project.serviceType}
                     </p>
                   </div>
-                  <Badge variant={statusVariants[project.status] || "orange"}>
+                  <span
+                    className={`font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${
+                      statusTone[project.status] || "text-orange"
+                    }`}
+                  >
                     {statusLabels[project.status] || project.status}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {phases.length > 0 && (
+                  </span>
+                </div>
+
+                {phases.length > 0 && (
+                  <div className="mt-6 space-y-4">
+                    <BracketLabel
+                      n={completedPhases}
+                      m={phases.length}
+                      label="Phases"
+                    />
                     <PhaseTrackerHorizontal phases={phases} />
-                  )}
-                  <div className="flex justify-end">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/projects/${project.id}`}>
-                        View Project
-                        <ArrowRight className="ml-1 h-4 w-4" />
-                      </Link>
-                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+
+                <div className="mt-6 flex justify-end">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/projects/${project.id}`} className="group">
+                      View Project
+                      <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </Button>
+                </div>
+              </section>
             );
           })}
         </div>

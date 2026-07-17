@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero, StatHeader } from "@/components/ui/firecrawl";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { rowCascade, rowItem } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import { CreditCard } from "lucide-react";
 
 interface PaymentRow {
@@ -33,14 +35,15 @@ function formatCents(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
 }
 
-const statusVariant = (status: string): "success" | "warning" | "destructive" | "secondary" =>
+// Same semantics as the old badge variants, rendered as uppercase mono text.
+const statusClass = (status: string): string =>
   status === "completed"
-    ? "success"
+    ? "text-success"
     : status === "pending"
-    ? "warning"
+    ? "text-warning"
     : status === "failed" || status === "refunded"
-    ? "destructive"
-    : "secondary";
+    ? "text-destructive"
+    : "text-muted-foreground";
 
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -68,103 +71,112 @@ export default function AdminPaymentsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <PageHeader title="Payments" description="Track all payments and revenue." />
+    <div className="space-y-10">
+      <PageHero title="Payments" description="Track all payments and revenue." />
 
-      {/* Revenue summary */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="transition-shadow hover:shadow-md">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold tracking-tight">
-              {formatCents(summary.total)}
-            </p>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-          </CardContent>
-        </Card>
-        <Card className="transition-shadow hover:shadow-md">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold tracking-tight text-success">
-              {formatCents(summary.paid)}
-            </p>
-            <p className="text-sm text-muted-foreground">Paid</p>
-          </CardContent>
-        </Card>
-        <Card className="transition-shadow hover:shadow-md">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold tracking-tight text-warning">
-              {formatCents(summary.pending)}
-            </p>
-            <p className="text-sm text-muted-foreground">Pending</p>
-          </CardContent>
-        </Card>
+      {/* Revenue summary — hairline-divided 3-up */}
+      <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <StatHeader
+          className="px-5 py-6"
+          title="Total Revenue"
+          caption="ALL SOURCES"
+          value={summary.total}
+          format={formatCents}
+        />
+        <StatHeader
+          className="px-5 py-6"
+          title="Paid"
+          caption="COMPLETED"
+          value={summary.paid}
+          format={formatCents}
+        />
+        <StatHeader
+          className="px-5 py-6"
+          title="Pending"
+          caption="AWAITING PAYMENT"
+          value={summary.pending}
+          format={formatCents}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-orange" />
-            Payment History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
+      <section>
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <CreditCard className="h-4 w-4 text-orange" />
+          <h2 className="text-[15px] font-semibold">Payment History</h2>
+        </div>
+        {loading ? (
+          <div className="pt-4">
             <TableSkeleton rows={6} />
-          ) : payments.length === 0 ? (
-            <EmptyState
-              icon={CreditCard}
-              title="No payments yet"
-              description="Payments will appear here as clients check out via Creem or as invoices sync in from GoHighLevel."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">Client</th>
-                    <th className="pb-3 font-medium">Project</th>
-                    <th className="pb-3 font-medium">Amount</th>
-                    <th className="pb-3 font-medium">Status</th>
-                    <th className="pb-3 font-medium">Source</th>
-                    <th className="pb-3 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-muted/50">
-                      <td className="py-3 font-medium">{clientName(payment)}</td>
-                      <td className="py-3 text-muted-foreground">
-                        {payment.projectName ?? "—"}
-                      </td>
-                      <td className="py-3 font-semibold">
-                        {formatCents(payment.amount)}
-                      </td>
-                      <td className="py-3">
-                        <Badge variant={statusVariant(payment.status)}>
-                          {payment.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3">
-                        <Badge
-                          variant={payment.source === "ghl" ? "orange" : "secondary"}
-                        >
-                          {payment.source === "ghl" ? "GoHighLevel" : "Creem"}
-                        </Badge>
-                      </td>
-                      <td className="py-3 text-muted-foreground whitespace-nowrap">
-                        {new Date(payment.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        ) : payments.length === 0 ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No payments yet"
+            description="Payments will appear here as clients check out via Creem or as invoices sync in from GoHighLevel."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="micro-label py-3 pr-4">Client</th>
+                  <th className="micro-label py-3 pr-4">Project</th>
+                  <th className="micro-label py-3 pr-4">Amount</th>
+                  <th className="micro-label py-3 pr-4">Status</th>
+                  <th className="micro-label py-3 pr-4">Source</th>
+                  <th className="micro-label py-3">Date</th>
+                </tr>
+              </thead>
+              <motion.tbody
+                variants={rowCascade}
+                initial="hidden"
+                animate="visible"
+                className="divide-y divide-border"
+              >
+                {payments.map((payment) => (
+                  <motion.tr
+                    key={payment.id}
+                    variants={rowItem}
+                    className="transition-colors hover:bg-muted/50"
+                  >
+                    <td className="py-3 pr-4 font-medium">{clientName(payment)}</td>
+                    <td className="py-3 pr-4 text-muted-foreground">
+                      {payment.projectName ?? "—"}
+                    </td>
+                    <td className="py-3 pr-4 font-mono font-semibold">
+                      {formatCents(payment.amount)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span
+                        className={cn(
+                          "font-mono text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap",
+                          statusClass(payment.status)
+                        )}
+                      >
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Badge
+                        variant={payment.source === "ghl" ? "orange" : "secondary"}
+                      >
+                        {payment.source === "ghl" ? "GoHighLevel" : "Creem"}
+                      </Badge>
+                    </td>
+                    <td className="py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(payment.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                  </motion.tr>
+                ))}
+              </motion.tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

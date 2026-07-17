@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Send, MessageSquare } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero } from "@/components/ui/firecrawl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAblyChannel } from "@/hooks/use-ably-channel";
@@ -139,39 +138,49 @@ export default function MessagesPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <PageHeader
+        <PageHero
           title="Messages"
           description="Chat with the Legendary Marketing team about your project."
         />
-        <Card className="flex flex-col" style={{ height: "calc(100vh - 300px)" }}>
-          <CardHeader className="border-b border-border">
+        <div
+          className="flex flex-col rounded-xl border border-border"
+          style={{ height: "calc(100vh - 300px)" }}
+        >
+          <div className="border-b border-border px-4 py-4">
             <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent className="flex-1 space-y-4 p-4">
+          </div>
+          <div className="flex-1 space-y-4 p-4">
             <Skeleton className="h-16 w-2/3" />
             <Skeleton className="ml-auto h-12 w-1/2" />
             <Skeleton className="h-16 w-3/5" />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <PageHero
         title="Messages"
         description="Chat with the Legendary Marketing team about your project."
+        action={
+          connectionState === "connected" ? (
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-orange">
+              [ Live ]
+            </span>
+          ) : undefined
+        }
       />
 
       {projects.length === 0 ? (
-        <Card>
+        <div className="rounded-xl border border-border">
           <EmptyState
             icon={MessageSquare}
             title="No messages yet"
             description="Once you have an active project, you can chat directly with the Legendary Marketing team here."
           />
-        </Card>
+        </div>
       ) : (
         <>
           {/* Project selector */}
@@ -190,15 +199,18 @@ export default function MessagesPage() {
             </div>
           )}
 
-          <Card className="flex flex-col" style={{ height: "calc(100vh - 300px)" }}>
-            <CardHeader className="border-b border-border">
-              <CardTitle className="text-lg">
+          <div
+            className="flex flex-col overflow-hidden rounded-xl border border-border"
+            style={{ height: "calc(100vh - 300px)" }}
+          >
+            <div className="border-b border-border px-4 py-3.5">
+              <h2 className="text-[15px] font-semibold">
                 {selectedProject?.name || "Select a project"}
-              </CardTitle>
-            </CardHeader>
+              </h2>
+            </div>
 
             {/* Messages area */}
-            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center h-full">
                   <div className="text-center">
@@ -226,7 +238,7 @@ export default function MessagesPage() {
                     >
                       {message.content}
                     </div>
-                    <span className="mt-1 text-xs text-muted-foreground">
+                    <span className="mt-1 font-mono text-[11px] text-muted-foreground">
                       {message.role === "admin" ? "Legendary Marketing Team" : "You"} &middot;{" "}
                       {new Date(message.createdAt).toLocaleString()}
                     </span>
@@ -234,7 +246,7 @@ export default function MessagesPage() {
                 ))
               )}
               <div ref={messagesEndRef} />
-            </CardContent>
+            </div>
 
             {/* Message input */}
             <div className="border-t border-border p-4">
@@ -250,7 +262,7 @@ export default function MessagesPage() {
                 </Button>
               </form>
             </div>
-          </Card>
+          </div>
         </>
       )}
     </div>

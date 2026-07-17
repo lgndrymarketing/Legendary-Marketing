@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
 import { FolderKanban, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { db } from "@/db";
 import { projects, users, projectPhases } from "@/db/schema";
 import { eq, inArray, desc, and } from "drizzle-orm";
@@ -20,13 +18,14 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
-const statusVariant: Record<string, "success" | "warning" | "orange" | "secondary"> = {
-  onboarding: "secondary",
-  payment_pending: "warning",
-  in_progress: "orange",
-  revision: "warning",
-  completed: "success",
-  cancelled: "secondary",
+// Same semantics as the old badge variants, rendered as uppercase mono text.
+const statusClass: Record<string, string> = {
+  onboarding: "text-muted-foreground",
+  payment_pending: "text-warning",
+  in_progress: "text-orange",
+  revision: "text-warning",
+  completed: "text-success",
+  cancelled: "text-muted-foreground",
 };
 
 export default async function AdminProjectsPage() {
@@ -77,84 +76,91 @@ export default async function AdminProjectsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-10">
+      <PageHero
         title="Projects"
         description="Manage all client projects and update phases."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderKanban className="h-5 w-5 text-orange" />
-            All Projects
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {rows.length === 0 ? (
-            <EmptyState
-              icon={FolderKanban}
-              title="No projects yet"
-              description="Client projects will appear here once they're created."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">Project</th>
-                    <th className="pb-3 font-medium">Client</th>
-                    <th className="pb-3 font-medium">Service</th>
-                    <th className="pb-3 font-medium">Phase</th>
-                    <th className="pb-3 font-medium">Status</th>
-                    <th className="pb-3 font-medium"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {rows.map((project) => {
-                    const clientName =
-                      [project.clientFirstName, project.clientLastName]
-                        .filter(Boolean)
-                        .join(" ") ||
-                      project.clientEmail ||
-                      "—";
-                    return (
-                      <tr key={project.id} className="group hover:bg-muted/50">
-                        <td className="py-3 font-medium transition-colors group-hover:text-orange">
-                          {project.name}
-                        </td>
-                        <td className="py-3 text-muted-foreground">{clientName}</td>
-                        <td className="py-3 text-muted-foreground">
-                          {serviceLabels[project.serviceType] || project.serviceType}
-                        </td>
-                        <td className="py-3">
-                          {phaseMap.has(project.id) ? (
-                            <Badge variant="secondary">{phaseMap.get(project.id)}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
+      <section>
+        <BracketLabel n={rows.length} label="ALL PROJECTS" className="pb-4" />
+        {rows.length === 0 ? (
+          <EmptyState
+            icon={FolderKanban}
+            title="No projects yet"
+            description="Client projects will appear here once they're created."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="micro-label py-3 pr-4">Project</th>
+                  <th className="micro-label py-3 pr-4">Client</th>
+                  <th className="micro-label py-3 pr-4">Service</th>
+                  <th className="micro-label py-3 pr-4">Phase</th>
+                  <th className="micro-label py-3 pr-4">Status</th>
+                  <th className="py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((project) => {
+                  const clientName =
+                    [project.clientFirstName, project.clientLastName]
+                      .filter(Boolean)
+                      .join(" ") ||
+                    project.clientEmail ||
+                    "—";
+                  return (
+                    <tr
+                      key={project.id}
+                      className="group transition-colors hover:bg-muted/50"
+                    >
+                      <td className="py-3 pr-4 font-medium transition-colors group-hover:text-orange">
+                        {project.name}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {clientName}
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {serviceLabels[project.serviceType] || project.serviceType}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {phaseMap.has(project.id) ? (
+                          <span className="font-mono text-xs text-foreground">
+                            {phaseMap.get(project.id)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={cn(
+                            "font-mono text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap",
+                            statusClass[project.status] ?? "text-muted-foreground"
                           )}
-                        </td>
-                        <td className="py-3">
-                          <Badge variant={statusVariant[project.status] ?? "secondary"}>
-                            {statusLabels[project.status] || project.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/admin/projects/${project.id}`}>
-                              Manage <ArrowRight className="ml-1 h-3 w-3" />
-                            </Link>
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                        >
+                          {statusLabels[project.status] || project.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <Link
+                          href={`/admin/projects/${project.id}`}
+                          aria-label={`Manage ${project.name}`}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-orange/40 hover:bg-orange/5 hover:text-orange active:scale-[0.98]"
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

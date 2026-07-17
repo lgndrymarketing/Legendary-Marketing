@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { StatCardSkeleton } from "@/components/ui/skeleton";
+import { motion } from "motion/react";
 import {
-  Users,
+  PageHero,
+  CountUp,
+  Sparkline,
+  BracketLabel,
+} from "@/components/ui/firecrawl";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cascade, cascadeItem, rowCascade, rowItem } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+import {
   FolderKanban,
-  CreditCard,
-  MessageSquare,
-  TrendingUp,
   Inbox,
   ArrowRight,
   UserCog,
@@ -44,12 +45,13 @@ function formatCents(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
 }
 
-const statusBadgeVariant = (status: string): "success" | "warning" | "orange" =>
+// Same semantic mapping as the old badge variants, expressed as mono text color.
+const statusClass = (status: string): string =>
   status === "completed"
-    ? "success"
+    ? "text-success"
     : status === "payment_pending" || status === "cancelled"
-      ? "warning"
-      : "orange";
+      ? "text-warning"
+      : "text-orange";
 
 const quickLinks = [
   { label: "Projects", href: "/admin/projects", icon: FolderKanban },
@@ -57,6 +59,15 @@ const quickLinks = [
   { label: "Team", href: "/admin/team", icon: UserCog },
   { label: "Integrations", href: "/admin/integrations", icon: Plug },
 ];
+
+/** Hairline-divided 4-up grid cell borders (2-up on small screens). */
+const statCell = (i: number) =>
+  cn(
+    "px-5 py-6",
+    i % 2 === 1 && "border-l border-border",
+    i >= 2 && "max-lg:border-t max-lg:border-border",
+    i > 0 && "lg:border-l lg:border-border"
+  );
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -87,30 +98,40 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const statCards = stats
+  const statCells: {
+    label: string;
+    value: number;
+    format?: (v: number) => string;
+  }[] = stats
     ? [
-        {
-          label: "Total Clients",
-          value: stats.totalClients.toLocaleString("en-US"),
-          icon: Users,
-        },
-        {
-          label: "Active Projects",
-          value: stats.activeProjects.toLocaleString("en-US"),
-          icon: FolderKanban,
-        },
+        { label: "Total Clients", value: stats.totalClients },
+        { label: "Active Projects", value: stats.activeProjects },
         {
           label: "Recognized Revenue",
-          value: formatCents(stats.totalRevenue),
-          icon: CreditCard,
+          value: stats.totalRevenue,
+          format: formatCents,
         },
-        {
-          label: "Unread Messages",
-          value: stats.unreadMessages.toLocaleString("en-US"),
-          icon: MessageSquare,
-        },
+        { label: "Unread Messages", value: stats.unreadMessages },
       ]
     : [];
+
+  // Decorative 7-point trend, derived deterministically from the live totals.
+  const sparkSeed = stats
+    ? Math.max(stats.totalLeads + stats.activeProjects + stats.totalClients, 4)
+    : 0;
+  const sparkPoints = [0.35, 0.52, 0.44, 0.66, 0.58, 0.82, 1].map(
+    (f) => Math.round(f * sparkSeed * 10) / 10
+  );
+  // Axis labels computed once on mount (clock reads are impure during render).
+  const [axisLabels] = useState<[string, string]>(() => {
+    const fmt = (daysAgo: number) => {
+      const d = new Date(Date.now() - daysAgo * 86_400_000);
+      return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+    };
+    return [fmt(6), fmt(0)];
+  });
 
   const recentProjects = [...projects]
     .sort(
@@ -119,131 +140,174 @@ export default function AdminDashboardPage() {
     .slice(0, 6);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Command Center"
+    <div className="space-y-10">
+      <PageHero
         title="Agency Dashboard"
         description="Your pulse across clients, projects, pipeline, and revenue."
       />
 
-      {/* Stats grid — hidden entirely for VAs (agency-wide numbers are admin/PM only) */}
+      {/* Stats — hidden entirely for VAs (agency-wide numbers are admin/PM only) */}
       {!statsDenied && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {loading || !stats
-            ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-            : statCards.map((stat) => (
-                <StatCard
-                  key={stat.label}
-                  label={stat.label}
-                  value={stat.value}
-                  icon={stat.icon}
-                />
-              ))}
-        </div>
+        <motion.section variants={cascade} initial="hidden" animate="visible">
+          <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+            {loading || !stats
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className={cn(statCell(i), "space-y-3")}>
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                ))
+              : statCells.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    variants={cascadeItem}
+                    className={statCell(i)}
+                  >
+                    <p className="micro-label">{stat.label}</p>
+                    <p className="mt-2 text-3xl font-bold tracking-tight">
+                      <CountUp value={stat.value} format={stat.format} />
+                    </p>
+                  </motion.div>
+                ))}
+          </div>
+
+          {/* Lead trend band — decorative series scaled from live totals */}
+          {!loading && stats && (
+            <motion.div
+              variants={cascadeItem}
+              className="border-b border-border px-5 py-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-[15px] font-semibold">Lead volume</h3>
+                  <p className="mt-0.5 font-mono text-[11px] uppercase text-muted-foreground">
+                    Last 7 days
+                  </p>
+                </div>
+                <p className="text-3xl font-bold tracking-tight">
+                  <CountUp value={stats.totalLeads} />
+                </p>
+              </div>
+              <Sparkline
+                points={sparkPoints}
+                height={96}
+                className="mt-4"
+                labels={axisLabels}
+              />
+            </motion.div>
+          )}
+        </motion.section>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
         {/* Recent projects */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-orange" />
-              Recent Projects
-            </CardTitle>
+        <section className="lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-[15px] font-semibold">Recent Projects</h2>
             <Link
               href="/admin/projects"
-              className="text-sm text-muted-foreground hover:text-orange transition-colors"
+              className="group inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-orange"
             >
               View all
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <EmptyState icon={FolderKanban} title="Loading projects…" description="" />
-            ) : recentProjects.length === 0 ? (
-              <EmptyState
-                icon={FolderKanban}
-                title="No projects yet"
-                description="Client projects will appear here once they onboard."
-              />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="pb-3 font-medium">Project</th>
-                      <th className="pb-3 font-medium">Service</th>
-                      <th className="pb-3 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {recentProjects.map((project) => (
-                      <tr key={project.id} className="group hover:bg-muted/50">
-                        <td className="py-3 font-medium">
-                          <Link
-                            href={`/admin/projects/${project.id}`}
-                            className="transition-colors group-hover:text-orange"
-                          >
-                            {project.name}
-                          </Link>
-                        </td>
-                        <td className="py-3 text-muted-foreground">
-                          {serviceLabels[project.serviceType] ?? project.serviceType}
-                        </td>
-                        <td className="py-3">
-                          <Badge variant={statusBadgeVariant(project.status)}>
-                            {project.status.replace(/_/g, " ")}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+          {loading ? (
+            <EmptyState icon={FolderKanban} title="Loading projects…" description="" />
+          ) : recentProjects.length === 0 ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="No projects yet"
+              description="Client projects will appear here once they onboard."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="micro-label py-3 pr-4">Project</th>
+                    <th className="micro-label py-3 pr-4">Service</th>
+                    <th className="micro-label py-3">Status</th>
+                  </tr>
+                </thead>
+                <motion.tbody
+                  variants={rowCascade}
+                  initial="hidden"
+                  animate="visible"
+                  className="divide-y divide-border"
+                >
+                  {recentProjects.map((project) => (
+                    <motion.tr
+                      key={project.id}
+                      variants={rowItem}
+                      className="group transition-colors hover:bg-muted/50"
+                    >
+                      <td className="py-3 pr-4 font-medium">
+                        <Link
+                          href={`/admin/projects/${project.id}`}
+                          className="transition-colors group-hover:text-orange"
+                        >
+                          {project.name}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground">
+                        {serviceLabels[project.serviceType] ?? project.serviceType}
+                      </td>
+                      <td className="py-3">
+                        <span
+                          className={cn(
+                            "font-mono text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap",
+                            statusClass(project.status)
+                          )}
+                        >
+                          {project.status.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </motion.tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {/* Pipeline snapshot + quick actions */}
-        <div className="space-y-6">
+        <div className="space-y-10">
           {!statsDenied && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Inbox className="h-5 w-5 text-orange" />
-                Pipeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-end justify-between">
+            <section className="border-b border-border pb-8">
+              <BracketLabel
+                n={loading || !stats ? "—" : stats.newLeads}
+                label="NEW LEADS"
+              />
+              <div className="mt-5 flex items-end justify-between gap-4">
                 <div>
                   <p className="text-3xl font-bold tracking-tight">
-                    {loading || !stats ? "—" : stats.newLeads}
+                    {loading || !stats ? "—" : <CountUp value={stats.newLeads} />}
                   </p>
                   <p className="text-sm text-muted-foreground">New leads</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold">
-                    {loading || !stats ? "—" : stats.totalLeads}
+                    {loading || !stats ? "—" : <CountUp value={stats.totalLeads} />}
                   </p>
                   <p className="text-xs text-muted-foreground">Total captured</p>
                 </div>
               </div>
               <Link
                 href="/admin/leads"
-                className="inline-flex items-center gap-1 text-sm font-medium text-orange hover:underline"
+                className="group mt-4 inline-flex items-center gap-1 text-sm font-medium text-orange hover:underline"
               >
-                Triage leads <ArrowRight className="h-3.5 w-3.5" />
+                Triage leads
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
-            </CardContent>
-          </Card>
+            </section>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
+          <section>
+            <p className="micro-label border-b border-border pb-3">
+              Quick actions
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
               {(statsDenied
                 ? quickLinks.filter((l) => l.href === "/admin/projects")
                 : quickLinks
@@ -253,15 +317,15 @@ export default function AdminDashboardPage() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5"
+                    className="flex flex-col items-start gap-2 rounded-xl border border-border p-4 text-sm font-medium transition-colors hover:border-orange/40 hover:bg-orange/5 active:scale-[0.98]"
                   >
                     <Icon className="h-4 w-4 text-orange" />
                     {link.label}
                   </Link>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
     </div>

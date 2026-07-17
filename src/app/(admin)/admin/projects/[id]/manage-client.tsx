@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { BracketLabel, MetricRing } from "@/components/ui/firecrawl";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
 import { KanbanBoard } from "@/components/dashboard/kanban-board";
 import { CampaignList } from "@/components/dashboard/campaign-list";
 import { RevisionManager } from "./revision-manager";
+import { cascade, cascadeItem } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   MessageSquare,
@@ -20,13 +22,14 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-const statusVariant: Record<string, "success" | "warning" | "orange" | "secondary"> = {
-  onboarding: "secondary",
-  payment_pending: "warning",
-  in_progress: "orange",
-  revision: "warning",
-  completed: "success",
-  cancelled: "secondary",
+// Same semantics as the old badge variants, rendered as uppercase mono text.
+const statusClass: Record<string, string> = {
+  onboarding: "text-muted-foreground",
+  payment_pending: "text-warning",
+  in_progress: "text-orange",
+  revision: "text-warning",
+  completed: "text-success",
+  cancelled: "text-muted-foreground",
 };
 
 const phaseStatusOptions: Phase["status"][] = [
@@ -87,6 +90,7 @@ export function ManageClient({
 
   const allDone =
     phases.length > 0 && phases.every((p) => p.status === "completed");
+  const completedCount = phases.filter((p) => p.status === "completed").length;
 
   const patchPhase = async (
     phaseId: string,
@@ -173,47 +177,81 @@ export function ManageClient({
     }
   };
 
+  const selectClass =
+    "cursor-pointer rounded-lg border border-border bg-background px-2.5 py-1 font-mono text-[11px] transition-colors hover:border-orange/40 focus:outline-none focus:ring-2 focus:ring-orange/30 disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/projects">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
+    <div className="space-y-10">
+      {/* Header — back arrow + oversized title, closed by a hairline */}
+      <div className="flex items-center gap-4 border-b border-border pb-6">
+        <Link
+          href="/admin/projects"
+          aria-label="Back to projects"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-orange/40 hover:bg-orange/5 hover:text-orange active:scale-[0.98]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{projectName}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {projectName}
+          </h1>
+          <p className="mt-1 text-muted-foreground">
             Client: {clientName} &middot; {serviceLabel}
           </p>
         </div>
-        <Badge
-          variant={statusVariant[status] ?? "secondary"}
-          className="text-sm px-3 py-1"
+        <span
+          className={cn(
+            "font-mono text-xs font-semibold uppercase tracking-wide whitespace-nowrap",
+            statusClass[status] ?? "text-muted-foreground"
+          )}
         >
           {statusLabel}
-        </Badge>
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
         {/* Left: Phase management, tasks, campaigns, messaging */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>{canManage ? "Phase Management" : "Phases"}</CardTitle>
-              {canManage && (
-                <Button
-                  onClick={advancePhase}
-                  disabled={advancing || allDone || phases.length === 0}
-                  size="sm"
-                >
-                  <SkipForward className="mr-1 h-4 w-4" />
-                  {advancing ? "Advancing..." : "Advance Phase"}
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-6">
+        <motion.div
+          variants={cascade}
+          initial="hidden"
+          animate="visible"
+          className="lg:col-span-2 space-y-10"
+        >
+          {/* Phases */}
+          <motion.section
+            variants={cascadeItem}
+            className="border-b border-border pb-8"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-2">
+                <BracketLabel
+                  n={completedCount}
+                  m={phases.length}
+                  label="PHASES"
+                />
+                <h2 className="text-[15px] font-semibold">
+                  {canManage ? "Phase Management" : "Phases"}
+                </h2>
+              </div>
+              <div className="flex items-center gap-4">
+                <MetricRing
+                  value={completedCount}
+                  max={phases.length}
+                  label={`of ${phases.length} complete`}
+                />
+                {canManage && (
+                  <Button
+                    onClick={advancePhase}
+                    disabled={advancing || allDone || phases.length === 0}
+                    size="sm"
+                  >
+                    <SkipForward className="mr-1 h-4 w-4" />
+                    {advancing ? "Advancing..." : "Advance Phase"}
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 space-y-6">
               {phaseError && (
                 <p className="text-sm text-destructive">{phaseError}</p>
               )}
@@ -225,91 +263,84 @@ export function ManageClient({
                 <>
                   <PhaseTracker phases={phases} />
                   {canManage && (
-                  <div className="space-y-2 border-t border-border pt-4">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Set phase status
-                    </p>
-                    {[...phases]
-                      .sort((a, b) => a.order - b.order)
-                      .map((phase) => (
-                        <div
-                          key={phase.id}
-                          className="flex items-center justify-between gap-3"
-                        >
-                          <span className="text-sm truncate">{phase.name}</span>
-                          <select
-                            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                            value={phase.status}
-                            onChange={(e) =>
-                              setPhaseStatus(
-                                phase.id,
-                                e.target.value as Phase["status"]
-                              )
-                            }
+                    <div className="space-y-2 border-t border-border pt-4">
+                      <p className="micro-label">Set phase status</p>
+                      {[...phases]
+                        .sort((a, b) => a.order - b.order)
+                        .map((phase) => (
+                          <div
+                            key={phase.id}
+                            className="flex items-center justify-between gap-3"
                           >
-                            {phaseStatusOptions.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {phaseStatusLabels[opt]}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                  </div>
+                            <span className="text-sm truncate">{phase.name}</span>
+                            <select
+                              className={selectClass}
+                              value={phase.status}
+                              onChange={(e) =>
+                                setPhaseStatus(
+                                  phase.id,
+                                  e.target.value as Phase["status"]
+                                )
+                              }
+                            >
+                              {phaseStatusOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {phaseStatusLabels[opt]}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </motion.section>
 
           {/* Task board */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KanbanSquare className="h-5 w-5 text-orange" />
-                Task Board
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <KanbanBoard projectId={projectId} />
-            </CardContent>
-          </Card>
+          <motion.section
+            variants={cascadeItem}
+            className="border-b border-border pb-8"
+          >
+            <div className="flex items-center gap-2 pb-4">
+              <KanbanSquare className="h-4 w-4 text-orange" />
+              <h2 className="text-[15px] font-semibold">Task Board</h2>
+            </div>
+            <KanbanBoard projectId={projectId} />
+          </motion.section>
 
           {/* Ad campaigns */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-orange" />
-                Ad Campaigns
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CampaignList projectId={projectId} canEdit={canManage} />
-            </CardContent>
-          </Card>
+          <motion.section
+            variants={cascadeItem}
+            className="border-b border-border pb-8"
+          >
+            <div className="flex items-center gap-2 pb-4">
+              <Megaphone className="h-4 w-4 text-orange" />
+              <h2 className="text-[15px] font-semibold">Ad Campaigns</h2>
+            </div>
+            <CampaignList projectId={projectId} canEdit={canManage} />
+          </motion.section>
 
           {/* Revision requests */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-orange" />
-                Revision Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RevisionManager projectId={projectId} readOnly={!canManage} />
-            </CardContent>
-          </Card>
+          <motion.section
+            variants={cascadeItem}
+            className="border-b border-border pb-8"
+          >
+            <div className="flex items-center gap-2 pb-4">
+              <RefreshCw className="h-4 w-4 text-orange" />
+              <h2 className="text-[15px] font-semibold">Revision Requests</h2>
+            </div>
+            <RevisionManager projectId={projectId} readOnly={!canManage} />
+          </motion.section>
 
           {/* Admin message to client */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-orange" />
-                Message Client
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <motion.section variants={cascadeItem}>
+            <div className="flex items-center gap-2 pb-4">
+              <MessageSquare className="h-4 w-4 text-orange" />
+              <h2 className="text-[15px] font-semibold">Message Client</h2>
+            </div>
+            <div className="space-y-4">
               <Textarea
                 placeholder="Send a message to the client..."
                 rows={3}
@@ -331,17 +362,22 @@ export function ManageClient({
                 <Send className="mr-1 h-4 w-4" />
                 {sending ? "Sending..." : "Send Message"}
               </Button>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </motion.section>
+        </motion.div>
 
         {/* Right: Client info & onboarding */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+        <motion.div
+          variants={cascade}
+          initial="hidden"
+          animate="visible"
+          className="space-y-10"
+        >
+          <motion.section variants={cascadeItem}>
+            <p className="micro-label border-b border-border pb-3">
+              Client Details
+            </p>
+            <div className="mt-4 space-y-3 text-sm">
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Name</span>
                 <span className="text-right">{clientName}</span>
@@ -356,21 +392,23 @@ export function ManageClient({
               </div>
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Status</span>
-                <Badge
-                  variant={statusVariant[status] ?? "secondary"}
-                  className="text-xs"
+                <span
+                  className={cn(
+                    "font-mono text-[11px] font-semibold uppercase tracking-wide",
+                    statusClass[status] ?? "text-muted-foreground"
+                  )}
                 >
                   {statusLabel}
-                </Badge>
+                </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </motion.section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Onboarding Data</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+          <motion.section variants={cascadeItem}>
+            <p className="micro-label border-b border-border pb-3">
+              Onboarding Data
+            </p>
+            <div className="mt-4 space-y-3 text-sm">
               {onboarding ? (
                 <>
                   <div>
@@ -415,20 +453,18 @@ export function ManageClient({
                   No onboarding submission on file yet.
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </motion.section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Files</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Files coming from the client portal.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+          <motion.section variants={cascadeItem}>
+            <p className="micro-label border-b border-border pb-3">
+              Client Files
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Files coming from the client portal.
+            </p>
+          </motion.section>
+        </motion.div>
       </div>
     </div>
   );

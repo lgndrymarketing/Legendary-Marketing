@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { rowCascade, rowItem } from "@/lib/motion";
 import { UserCog, ShieldCheck } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { UserRole } from "@/db/schema";
@@ -78,24 +79,23 @@ export default function AdminTeamPage() {
     : null;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-10">
+      <PageHero
         title="Team"
         description="Manage staff access. Admins have full control, project managers run client work day-to-day, and VAs have scoped, task-level access."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="h-5 w-5 text-orange" />
-            Promote a Client to Staff
-          </CardTitle>
-          <CardDescription>
-            Team members sign up like any client first — enter their account email to
-            grant them a staff role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Promote a client to staff */}
+      <section className="border-b border-border pb-8">
+        <div className="flex items-center gap-2">
+          <UserCog className="h-4 w-4 text-orange" />
+          <h2 className="text-[15px] font-semibold">Promote a Client to Staff</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Team members sign up like any client first — enter their account email to
+          grant them a staff role.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             placeholder="teammate@legendarymarketing.com"
             value={promoteEmail}
@@ -115,81 +115,90 @@ export default function AdminTeamPage() {
               </Button>
             ))}
           </div>
-        </CardContent>
+        </div>
         {promoteEmail && !matchingClient && (
-          <CardContent className="pt-0">
-            <p className="text-xs text-muted-foreground">
-              No client account found with that email yet — they need to sign up first.
-            </p>
-          </CardContent>
+          <p className="mt-3 text-xs text-muted-foreground">
+            No client account found with that email yet — they need to sign up first.
+          </p>
         )}
-      </Card>
+      </section>
 
       {error && (
         <p className="text-sm text-destructive">{error}</p>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-orange" />
-            Staff Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
+      {/* Staff members */}
+      <section>
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-orange" />
+            <h2 className="text-[15px] font-semibold">Staff Members</h2>
+          </div>
+          <BracketLabel n={staff.length} label="STAFF" />
+        </div>
+        {loading ? (
+          <div className="pt-4">
             <TableSkeleton rows={4} />
-          ) : staff.length === 0 ? (
-            <EmptyState
-              icon={UserCog}
-              title="No staff members yet"
-              description="Promote a client account above to give them agency access."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">Name</th>
-                    <th className="pb-3 font-medium">Email</th>
-                    <th className="pb-3 font-medium">Role</th>
-                    <th className="pb-3 font-medium">Change Role</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {staff.map((member) => (
-                    <tr key={member.id} className="group hover:bg-muted/50">
-                      <td className="py-3 font-medium transition-colors group-hover:text-orange">
-                        {[member.firstName, member.lastName].filter(Boolean).join(" ") || "—"}
-                      </td>
-                      <td className="py-3 text-muted-foreground">{member.email}</td>
-                      <td className="py-3">
-                        <Badge variant={roleBadgeVariant[member.role]}>
-                          {ROLE_LABELS[member.role]}
-                        </Badge>
-                      </td>
-                      <td className="py-3">
-                        <select
-                          className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                          value={member.role}
-                          disabled={updating === member.id}
-                          onChange={(e) => updateRole(member.id, e.target.value as UserRole)}
-                        >
-                          {roleOptions.map((role) => (
-                            <option key={role} value={role}>
-                              {ROLE_LABELS[role]}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        ) : staff.length === 0 ? (
+          <EmptyState
+            icon={UserCog}
+            title="No staff members yet"
+            description="Promote a client account above to give them agency access."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="micro-label py-3 pr-4">Name</th>
+                  <th className="micro-label py-3 pr-4">Email</th>
+                  <th className="micro-label py-3 pr-4">Role</th>
+                  <th className="micro-label py-3">Change Role</th>
+                </tr>
+              </thead>
+              <motion.tbody
+                variants={rowCascade}
+                initial="hidden"
+                animate="visible"
+                className="divide-y divide-border"
+              >
+                {staff.map((member) => (
+                  <motion.tr
+                    key={member.id}
+                    variants={rowItem}
+                    className="group transition-colors hover:bg-muted/50"
+                  >
+                    <td className="py-3 pr-4 font-medium transition-colors group-hover:text-orange">
+                      {[member.firstName, member.lastName].filter(Boolean).join(" ") || "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground">{member.email}</td>
+                    <td className="py-3 pr-4">
+                      <Badge variant={roleBadgeVariant[member.role]}>
+                        {ROLE_LABELS[member.role]}
+                      </Badge>
+                    </td>
+                    <td className="py-3">
+                      <select
+                        className="cursor-pointer rounded-lg border border-border bg-background px-2.5 py-1 font-mono text-[11px] transition-colors hover:border-orange/40 focus:outline-none focus:ring-2 focus:ring-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={member.role}
+                        disabled={updating === member.id}
+                        onChange={(e) => updateRole(member.id, e.target.value as UserRole)}
+                      >
+                        {roleOptions.map((role) => (
+                          <option key={role} value={role}>
+                            {ROLE_LABELS[role]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </motion.tr>
+                ))}
+              </motion.tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -105,7 +105,7 @@ export default function GetStartedPage() {
         {/* Hero */}
         <section className="relative py-16 sm:py-20 overflow-hidden">
           <div className="absolute inset-0 bg-background" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(41,84,229,0.12),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,74,0,0.12),transparent_50%)]" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

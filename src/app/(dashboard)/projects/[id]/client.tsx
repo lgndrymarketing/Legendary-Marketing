@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
 import { FilePreviewCard } from "@/components/dashboard/file-preview";
@@ -13,16 +11,15 @@ import { NPSSurvey } from "@/components/dashboard/nps-survey";
 import { InvoiceCard } from "@/components/dashboard/invoice-card";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { CampaignList } from "@/components/dashboard/campaign-list";
+import { BracketLabel, MetricRing } from "@/components/ui/firecrawl";
 import { UploadDropzone } from "@/lib/uploadthing";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
-  Upload,
   Send,
-  MessageSquare,
   RotateCcw,
   BarChart3,
   MessageCircle,
-  Megaphone,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,14 +67,12 @@ interface Revision {
   createdAt: string;
 }
 
-const revisionStatusVariant: Record<
-  RevisionStatus,
-  "warning" | "orange" | "success" | "destructive"
-> = {
-  pending: "warning",
-  in_progress: "orange",
-  completed: "success",
-  rejected: "destructive",
+/** Revision status → uppercase-mono text color (design.md §2.1 semantics). */
+const revisionStatusTone: Record<RevisionStatus, string> = {
+  pending: "text-warning",
+  in_progress: "text-orange",
+  completed: "text-success",
+  rejected: "text-destructive",
 };
 
 const revisionStatusLabels: Record<RevisionStatus, string> = {
@@ -85,6 +80,16 @@ const revisionStatusLabels: Record<RevisionStatus, string> = {
   in_progress: "In Progress",
   completed: "Completed",
   rejected: "Rejected",
+};
+
+/** Project status → uppercase-mono text color. */
+const projectStatusTone: Record<string, string> = {
+  onboarding: "text-muted-foreground",
+  payment_pending: "text-warning",
+  in_progress: "text-orange",
+  revision: "text-warning",
+  completed: "text-success",
+  cancelled: "text-destructive",
 };
 
 function formatBytes(bytes: number): string {
@@ -146,19 +151,45 @@ export function ProjectDetailClient({
     }
   };
 
+  const completedPhases = phases.filter((p) => p.status === "completed").length;
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <PageHeader
-        eyebrow="Project"
-        title={project.name}
-        description={project.serviceType}
-        action={
-          <Badge variant="orange" className="text-sm px-3 py-1">
-            {project.status}
-          </Badge>
-        }
-      />
+      {/* Header — back arrow, big title, uppercase mono status */}
+      <div className="relative border-b border-border pb-8">
+        <div
+          className="dot-texture pointer-events-none absolute inset-y-0 right-0 hidden w-64 sm:block"
+          style={{
+            maskImage: "linear-gradient(to left, black, transparent)",
+            WebkitMaskImage: "linear-gradient(to left, black, transparent)",
+          }}
+        />
+        <div className="relative">
+          <Link
+            href="/projects"
+            className="group inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            <span className="micro-label">Projects</span>
+          </Link>
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                {project.name}
+              </h1>
+              <p className="mt-2 text-muted-foreground">{project.serviceType}</p>
+            </div>
+            <span
+              className={cn(
+                "font-mono text-xs font-semibold uppercase tracking-[0.08em]",
+                projectStatusTone[project.status] || "text-orange"
+              )}
+            >
+              {project.status.replace(/_/g, " ")}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* NPS Survey */}
       {showSurvey && (
@@ -171,7 +202,7 @@ export function ProjectDetailClient({
 
       {/* Tabbed content */}
       <Tabs.Root defaultValue="progress">
-        <Tabs.List className="flex gap-1 border-b border-border mb-6">
+        <Tabs.List className="mb-6 inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
           {tabItems.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -179,9 +210,9 @@ export function ProjectDetailClient({
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 border-transparent cursor-pointer",
-                  "data-[state=active]:border-orange data-[state=active]:text-orange",
-                  "text-muted-foreground hover:text-foreground"
+                  "flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-3 py-1.5 text-[13px] transition-colors",
+                  "text-muted-foreground hover:text-foreground",
+                  "data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:font-medium data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -194,15 +225,25 @@ export function ProjectDetailClient({
         {/* Progress tab */}
         <Tabs.Content value="progress">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <RotateCcw className="h-5 w-5 text-orange" />
-                    Build Progress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <div className="lg:col-span-2 space-y-8">
+              {/* Build Progress */}
+              <section className="border-t border-border pt-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <BracketLabel
+                    n={completedPhases}
+                    m={phases.length}
+                    label="Build Progress"
+                  />
+                  {phases.length > 0 && (
+                    <MetricRing
+                      value={completedPhases}
+                      max={phases.length}
+                      size={48}
+                      label={`of ${phases.length} phases complete`}
+                    />
+                  )}
+                </div>
+                <div className="mt-6">
                   {phases.length > 0 ? (
                     <PhaseTracker phases={phases} />
                   ) : (
@@ -210,222 +251,204 @@ export function ProjectDetailClient({
                       Phases will appear here once your project kicks off.
                     </p>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
 
               {/* Ad Campaigns */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Megaphone className="h-5 w-5 text-orange" />
-                    Ad Campaigns
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+              <section className="border-t border-border pt-5">
+                <h3 className="micro-label">Ad Campaigns</h3>
+                <div className="mt-4">
                   <CampaignList projectId={project.id} canEdit={false} />
-                </CardContent>
-              </Card>
+                </div>
+              </section>
 
               {/* Revision Request */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-orange" />
-                    Request a Revision
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea
-                    placeholder="Describe what you'd like changed..."
-                    rows={3}
-                    value={revisionText}
-                    onChange={(e) => setRevisionText(e.target.value)}
-                  />
-                  <Button
-                    disabled={!revisionText.trim() || submittingRevision}
-                    onClick={handleSubmitRevision}
-                  >
-                    <Send className="mr-1 h-4 w-4" />
-                    {submittingRevision ? "Submitting..." : "Submit Revision Request"}
-                  </Button>
+              <section className="space-y-4 border-t border-border pt-5">
+                <h3 className="micro-label">Request a Revision</h3>
+                <Textarea
+                  placeholder="Describe what you'd like changed..."
+                  rows={3}
+                  value={revisionText}
+                  onChange={(e) => setRevisionText(e.target.value)}
+                />
+                <Button
+                  disabled={!revisionText.trim() || submittingRevision}
+                  onClick={handleSubmitRevision}
+                >
+                  <Send className="mr-1 h-4 w-4" />
+                  {submittingRevision ? "Submitting..." : "Submit Revision Request"}
+                </Button>
 
-                  {revisionError && (
-                    <p className="text-sm text-destructive">{revisionError}</p>
-                  )}
+                {revisionError && (
+                  <p className="text-sm text-destructive">{revisionError}</p>
+                )}
 
-                  {revisions.length > 0 && (
-                    <div className="space-y-3 pt-2">
-                      {revisions.map((rev) => (
-                        <div
-                          key={rev.id}
-                          className="rounded-lg border border-border p-4 space-y-2"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <p className="text-sm">{rev.description}</p>
-                            <Badge
-                              variant={revisionStatusVariant[rev.status]}
-                              className="shrink-0"
-                            >
-                              {revisionStatusLabels[rev.status]}
-                            </Badge>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(rev.createdAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
+                {revisions.length > 0 && (
+                  <div className="divide-y divide-border border-t border-border">
+                    {revisions.map((rev) => (
+                      <div key={rev.id} className="space-y-1.5 py-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-sm">{rev.description}</p>
+                          <span
+                            className={cn(
+                              "shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.08em]",
+                              revisionStatusTone[rev.status]
+                            )}
+                          >
+                            {revisionStatusLabels[rev.status]}
                           </span>
-                          {rev.adminNotes && (
-                            <p className="text-sm text-muted-foreground">
-                              Response from the team: {rev.adminNotes}
-                            </p>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          {new Date(rev.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                        {rev.adminNotes && (
+                          <p className="text-sm text-muted-foreground">
+                            Response from the team: {rev.adminNotes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
 
             {/* Right sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Files */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Upload className="h-5 w-5 text-orange" />
-                    Files
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <UploadDropzone
-                    endpoint="projectFile"
-                    input={{ projectId: project.id }}
-                    onBeforeUploadBegin={(uploadFiles) => {
-                      setUploadError(null);
-                      return uploadFiles;
-                    }}
-                    onClientUploadComplete={async (res) => {
-                      // Record each uploaded file in our DB via /api/files,
-                      // then reflect it in the list. Recording is the source of
-                      // truth; optimistic UI append keeps the view in sync.
-                      const recorded: FileItem[] = [];
-                      for (const upload of res) {
-                        try {
-                          const apiRes = await fetch("/api/files", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              projectId: project.id,
-                              name: upload.name,
-                              url: upload.ufsUrl,
-                              size: upload.size,
-                              type: upload.type || undefined,
-                            }),
+              <section className="space-y-4 border-t border-border pt-5">
+                <h3 className="micro-label">Files</h3>
+                <UploadDropzone
+                  endpoint="projectFile"
+                  input={{ projectId: project.id }}
+                  onBeforeUploadBegin={(uploadFiles) => {
+                    setUploadError(null);
+                    return uploadFiles;
+                  }}
+                  onClientUploadComplete={async (res) => {
+                    // Record each uploaded file in our DB via /api/files,
+                    // then reflect it in the list. Recording is the source of
+                    // truth; optimistic UI append keeps the view in sync.
+                    const recorded: FileItem[] = [];
+                    for (const upload of res) {
+                      try {
+                        const apiRes = await fetch("/api/files", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            projectId: project.id,
+                            name: upload.name,
+                            url: upload.ufsUrl,
+                            size: upload.size,
+                            type: upload.type || undefined,
+                          }),
+                        });
+                        if (apiRes.ok) {
+                          recorded.push({
+                            name: upload.name,
+                            url: upload.ufsUrl,
+                            size: formatBytes(upload.size),
+                            type: upload.type || "application/octet-stream",
                           });
-                          if (apiRes.ok) {
-                            recorded.push({
-                              name: upload.name,
-                              url: upload.ufsUrl,
-                              size: formatBytes(upload.size),
-                              type: upload.type || "application/octet-stream",
-                            });
-                          }
-                        } catch {
-                          // Ignore a single failed record; others still apply.
                         }
+                      } catch {
+                        // Ignore a single failed record; others still apply.
                       }
-                      if (recorded.length > 0) {
-                        setFileList((prev) => [...prev, ...recorded]);
-                      }
-                    }}
-                    onUploadError={(error) => {
-                      setUploadError(error.message);
-                    }}
-                    className="ut-button:bg-orange ut-button:text-white ut-label:text-orange ut-upload-icon:text-muted-foreground rounded-lg border-2 border-dashed border-border p-6"
-                  />
+                    }
+                    if (recorded.length > 0) {
+                      setFileList((prev) => [...prev, ...recorded]);
+                    }
+                  }}
+                  onUploadError={(error) => {
+                    setUploadError(error.message);
+                  }}
+                  className="ut-button:bg-orange ut-button:text-white ut-label:text-orange ut-upload-icon:text-muted-foreground rounded-lg border-2 border-dashed border-border p-6"
+                />
 
-                  {uploadError && (
-                    <p className="text-sm text-destructive text-center">
-                      {uploadError}
-                    </p>
-                  )}
+                {uploadError && (
+                  <p className="text-sm text-destructive text-center">
+                    {uploadError}
+                  </p>
+                )}
 
-                  {fileList.length > 0 ? (
-                    <div className="space-y-2">
-                      {fileList.map((file) => (
-                        <FilePreviewCard
-                          key={file.url}
-                          name={file.name}
-                          url={file.url}
-                          type={file.type}
-                          size={file.size}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center">
-                      No files uploaded yet.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                {fileList.length > 0 ? (
+                  <div className="space-y-2">
+                    {fileList.map((file) => (
+                      <FilePreviewCard
+                        key={file.url}
+                        name={file.name}
+                        url={file.url}
+                        type={file.type}
+                        size={file.size}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center">
+                    No files uploaded yet.
+                  </p>
+                )}
+              </section>
 
               {/* Invoice */}
               {invoice && <InvoiceCard invoice={invoice} />}
 
               {/* Project Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Project Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+              <section className="border-t border-border pt-5">
+                <h3 className="micro-label">Project Details</h3>
+                <div className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Service</span>
                     <span>{project.serviceType}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge variant="orange" className="text-xs">
-                      {project.status}
-                    </Badge>
+                    <span
+                      className={cn(
+                        "font-mono text-[11px] font-semibold uppercase tracking-[0.08em]",
+                        projectStatusTone[project.status] || "text-orange"
+                      )}
+                    >
+                      {project.status.replace(/_/g, " ")}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Created</span>
-                    <span>{project.createdAt}</span>
+                    <span className="font-mono text-xs">{project.createdAt}</span>
                   </div>
                   {invoice && (
-                    <div className="flex justify-between">
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Payment</span>
-                      <Badge
-                        variant={invoice.status === "paid" ? "success" : "warning"}
-                        className="text-xs"
+                      <span
+                        className={cn(
+                          "font-mono text-[11px] font-semibold uppercase tracking-[0.08em]",
+                          invoice.status === "paid"
+                            ? "text-success"
+                            : "text-warning"
+                        )}
                       >
                         {invoice.status === "paid" ? "Paid" : "Pending"}
-                      </Badge>
+                      </span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </div>
         </Tabs.Content>
 
         {/* Comments tab */}
         <Tabs.Content value="comments">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5 text-orange" />
-                Project Comments
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <h3 className="micro-label">Project Comments</h3>
+            <div className="mt-4">
               <ProjectComments projectId={project.id} />
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </Tabs.Content>
 
         {/* Analytics tab */}
