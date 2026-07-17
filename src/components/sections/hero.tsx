@@ -1,26 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { RainbowButton } from "@/components/ui/rainbow-button";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
+import { ArrowDown, ArrowRight, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
 
 export function HeroSection() {
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-charcoal-dark" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(249,115,22,0.08),transparent_50%)]" />
+      {/* Background */}
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(41,84,229,0.10),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(201,151,44,0.08),transparent_50%)]" />
 
       {/* Grid pattern */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            "linear-gradient(rgba(20,21,26,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(20,21,26,0.04) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
@@ -32,31 +32,28 @@ export function HeroSection() {
           transition={{ duration: 0.6 }}
           className="flex flex-col items-center gap-6"
         >
-          {/* Logo */}
-          <Image
-            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-            alt="Fortitudo Agency"
-            width={80}
-            height={80}
-            className="rounded-xl"
-            priority
-          />
+          <Logo size={72} />
+
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-orange/20 bg-orange/5 px-3 py-1 text-xs font-medium text-orange">
+            <TrendingUp className="h-3.5 w-3.5" />
+            Paid Ads &amp; Funnels for Growth Brands
+          </div>
 
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-7xl">
-            Digital Solutions{" "}
-            <span className="text-gradient-orange">Built for Growth</span>
+            Performance Marketing{" "}
+            <span className="text-gradient-orange">Built to Convert</span>
           </h1>
 
           <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Choose your service. Complete onboarding. Track every phase of your
-            build in real-time. From web apps to AI automation — we bring your
-            vision to life.
+            We plan the media buy, build the funnel, and manage the pipeline —
+            then hand you a live dashboard to track every lead, every dollar,
+            and every phase of the work in real time.
           </p>
 
           <div className="flex flex-col items-center gap-4 sm:flex-row">
             <RainbowButton className="h-14 px-10 text-base rounded-xl" asChild>
               <Link href="/services">
-                View Services
+                See Our Services
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </RainbowButton>

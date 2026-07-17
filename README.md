@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legendary Marketing
+
+Client management platform for Legendary Marketing — a performance marketing
+agency focused on paid advertising, lead-capture funnels, and CRM automation.
+
+This app is a fork/rebrand of an agency-tooling scaffold, stripped of the
+prior "AI automation agency" product line and rebuilt around two areas:
+
+- **Marketing site & funnel** — public site, service pages, and a lead-capture
+  onboarding flow (`/onboarding`) that creates a project and routes to checkout.
+- **Client portal** (`/dashboard`) — clients track project phases, message the
+  agency in real time, view files/invoices, and request revisions.
+- **Agency admin** (`/admin`) — staff (Admin / Project Manager / VA, see
+  `src/lib/permissions.ts`) manage clients, projects, a per-project Kanban task
+  board, team roles, billing, and the GoHighLevel integration.
+
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind v4
+- Clerk (auth) · Neon Postgres + Drizzle ORM (data)
+- Creem.io (client project checkout) · GoHighLevel (agency CRM/revenue sync)
+- Ably (real-time client ↔ agency messaging)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.local.example .env.local   # fill in Clerk, Neon, Creem, Ably, GHL keys
+pnpm drizzle-kit generate          # once DATABASE_URL is set
+pnpm drizzle-kit migrate
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Roles & Access
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role              | Access                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| `client`          | Their own projects, messaging, files, billing                      |
+| `va`               | Assigned tasks, project messaging (scoped)                         |
+| `project_manager` | All client projects, task board, phases, messaging                 |
+| `admin`           | Everything — billing, team roles, GoHighLevel integration settings |
 
-## Learn More
+Promote a signed-up client to staff from **Admin → Team**.
 
-To learn more about Next.js, take a look at the following resources:
+## Integrations
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **GoHighLevel** — `src/lib/ghl.ts` client, synced via `/admin/integrations`
+  and `/api/webhooks/ghl`. Revenue shown in `/admin/payments` is tagged by
+  `source` (`creem` vs `ghl`).
+- **Ably** — `src/lib/ably.ts` (server) issues scoped tokens from
+  `/api/ably/token`; `src/hooks/use-ably-channel.ts` powers live messaging.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `.env.local.example` for the full list of required environment variables.

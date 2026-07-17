@@ -82,11 +82,11 @@ export default function AdminDashboardPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {[
-                  { client: "John Doe", project: "E-commerce Platform", service: "Ecommerce Store", status: "in_progress", phase: "Development" },
-                  { client: "Jane Smith", project: "Lead Gen Funnel", service: "Funnels", status: "in_progress", phase: "Design" },
-                  { client: "Bob Wilson", project: "AI Chatbot", service: "AI Automation", status: "payment_pending", phase: "Discovery" },
-                  { client: "Sarah Lee", project: "Company Website", service: "Web Application", status: "completed", phase: "Launch" },
-                  { client: "Mike Chen", project: "Open Claw Setup", service: "Open Claw Deployment", status: "in_progress", phase: "Testing" },
+                  { client: "John Doe", project: "Meta Ads Launch", service: "Paid Advertising", status: "in_progress", phase: "Build & Launch" },
+                  { client: "Jane Smith", project: "Lead Gen Funnel", service: "High-Converting Funnels", status: "in_progress", phase: "Strategy & Setup" },
+                  { client: "Bob Wilson", project: "Google Ads Program", service: "Paid Advertising", status: "payment_pending", phase: "Discovery" },
+                  { client: "Sarah Lee", project: "Brand Website", service: "Websites & Landing Pages", status: "completed", phase: "Scale" },
+                  { client: "Mike Chen", project: "GoHighLevel Pipeline Setup", service: "CRM & Automation", status: "in_progress", phase: "Optimization" },
                 ].map((project, i) => (
                   <tr key={i} className="hover:bg-muted/50">
                     <td className="py-3">{project.client}</td>

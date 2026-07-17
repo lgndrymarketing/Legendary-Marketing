@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   /* Rainbow button colors */
   --color-1: 0 100% 63%;
@@ -13,52 +13,52 @@
   --color-4: 195 100% 63%;
   --color-5: 90 100% 63%;
 
-  /* Orange & Charcoal Palette */
+  /* Legendary Marketing — Blue & Gold Palette (light default) */
   --background: #ffffff;
-  --foreground: #1C1C1C;
+  --foreground: #14151A;
   --card: #ffffff;
-  --card-foreground: #1C1C1C;
+  --card-foreground: #14151A;
   --popover: #ffffff;
-  --popover-foreground: #1C1C1C;
-  --primary: #F97316;
+  --popover-foreground: #14151A;
+  --primary: #2954E5;
   --primary-foreground: #ffffff;
-  --secondary: #F5F5F5;
-  --secondary-foreground: #1C1C1C;
-  --muted: #F5F5F5;
-  --muted-foreground: #737373;
-  --accent: #FFF7ED;
-  --accent-foreground: #1C1C1C;
+  --secondary: #F5F6F8;
+  --secondary-foreground: #14151A;
+  --muted: #F5F6F8;
+  --muted-foreground: #6B7280;
+  --accent: #EFF3FF;
+  --accent-foreground: #14151A;
   --destructive: #DC2626;
   --destructive-foreground: #ffffff;
-  --border: #E5E5E5;
-  --input: #E5E5E5;
-  --ring: #F97316;
+  --border: #E7E8EC;
+  --input: #E7E8EC;
+  --ring: #2954E5;
   --success: #16A34A;
-  --warning: #EAB308;
+  --warning: #C9972C;
 }
 
 .dark {
-  --background: #0A0A0A;
-  --foreground: #F5F5F5;
-  --card: #141414;
-  --card-foreground: #F5F5F5;
-  --popover: #141414;
-  --popover-foreground: #F5F5F5;
-  --primary: #F97316;
+  --background: #0B0D12;
+  --foreground: #F5F6F8;
+  --card: #12141B;
+  --card-foreground: #F5F6F8;
+  --popover: #12141B;
+  --popover-foreground: #F5F6F8;
+  --primary: #3B6BFF;
   --primary-foreground: #ffffff;
-  --secondary: #1C1C1C;
-  --secondary-foreground: #F5F5F5;
-  --muted: #1C1C1C;
-  --muted-foreground: #A3A3A3;
-  --accent: #1C1C1C;
-  --accent-foreground: #F5F5F5;
+  --secondary: #1A1D26;
+  --secondary-foreground: #F5F6F8;
+  --muted: #1A1D26;
+  --muted-foreground: #9096A6;
+  --accent: #1A1D26;
+  --accent-foreground: #F5F6F8;
   --destructive: #DC2626;
   --destructive-foreground: #ffffff;
-  --border: #2A2A2A;
-  --input: #2A2A2A;
-  --ring: #F97316;
-  --success: #16A34A;
-  --warning: #EAB308;
+  --border: #262A36;
+  --input: #262A36;
+  --ring: #3B6BFF;
+  --success: #22C55E;
+  --warning: #E0B93C;
 }
 
 @theme inline {
@@ -84,15 +84,19 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
 
-  --color-charcoal: #1C1C1C;
-  --color-charcoal-light: #2A2A2A;
-  --color-charcoal-dark: #0A0A0A;
-  --color-orange: #F97316;
-  --color-orange-light: #FB923C;
-  --color-orange-dark: #EA580C;
-  --color-orange-glow: rgba(249, 115, 22, 0.4);
+  /* Token names kept as "charcoal"/"orange" for compatibility with existing
+     utility classes (bg-orange, text-orange, bg-charcoal-dark, etc.) — the
+     values below are Legendary Marketing's blue & gold brand colors. */
+  --color-charcoal: #14151A;
+  --color-charcoal-light: #F5F6F8;
+  --color-charcoal-dark: #ffffff;
+  --color-orange: #2954E5;
+  --color-orange-light: #5B82FF;
+  --color-orange-dark: #1E3FBF;
+  --color-orange-glow: rgba(41, 84, 229, 0.35);
+  --color-gold: #C9972C;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   --radius-sm: calc(var(--radius) * 0.6);

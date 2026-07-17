@@ -9,18 +9,18 @@ import { motion } from "motion/react";
 const values = [
   {
     icon: Zap,
-    title: "Speed & Quality",
-    description: "We deliver fast without cutting corners. Every project goes through rigorous testing before launch.",
+    title: "Performance First",
+    description: "We optimize toward pipeline and revenue, not vanity metrics. Every campaign is measured against ROAS and cost-per-lead.",
   },
   {
     icon: Shield,
     title: "Transparency",
-    description: "Track every phase of your build. No black boxes — you always know exactly where your project stands.",
+    description: "Track every phase of your campaign build. No black boxes — you always know exactly where your ad spend and funnel stand.",
   },
   {
     icon: Users,
     title: "Partnership",
-    description: "We're not just builders — we're partners. Direct communication, revision support, and ongoing collaboration.",
+    description: "We're not just media buyers — we're partners. Direct communication, weekly reporting, and ongoing optimization.",
   },
 ];
 
@@ -31,20 +31,20 @@ export function AboutSection() {
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-center">
           {/* Text content */}
           <div>
-            <Badge variant="orange" className="mb-4">About Fortitudo</Badge>
+            <Badge variant="orange" className="mb-4">About Legendary Marketing</Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              A digital agency that puts{" "}
+              A performance marketing partner that puts{" "}
               <span className="text-gradient-orange">you in control</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Fortitudo Agency was built on a simple belief: clients deserve to
-              see what&apos;s happening with their project at every step. No more
-              waiting in the dark for updates. No more surprises.
+              Legendary Marketing was built on a simple belief: clients deserve to
+              see exactly what&apos;s happening with their ad spend and pipeline at
+              every step. No more waiting in the dark for updates. No more surprises.
             </p>
             <p className="mt-4 text-muted-foreground">
-              From the moment you choose your service to the day we launch, you
-              have full visibility into the process — plus direct messaging and
-              revision support whenever you need it.
+              From the moment you choose your service to the day we launch your
+              campaigns, you have full visibility into the process — plus direct
+              messaging and optimization support whenever you need it.
             </p>
             <Button variant="glow" size="lg" className="mt-8" asChild>
               <Link href="#services">

@@ -5,6 +5,7 @@ import { eq, asc } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isStaff } from "@/lib/permissions";
 
 export async function GET(req: Request) {
   try {
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
       .values({
         projectId,
         senderId: user.id,
-        role: user.role === "admin" ? "admin" : "client",
+        role: isStaff(user.role) ? "admin" : "client",
         content,
       })
       .returning();

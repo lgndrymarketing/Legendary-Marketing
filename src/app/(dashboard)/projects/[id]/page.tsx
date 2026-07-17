@@ -11,14 +11,8 @@ import {
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { ProjectDetailClient } from "./client";
-
-const serviceLabels: Record<string, string> = {
-  web_application: "Web Application",
-  ecommerce_store: "E-Commerce Store",
-  funnels: "Funnels",
-  ai_automation: "AI Automation",
-  open_claw_deployment: "Open Claw Deployment",
-};
+import { isStaff } from "@/lib/permissions";
+import { serviceLabels } from "@/lib/services";
 
 const statusLabels: Record<string, string> = {
   onboarding: "Onboarding",
@@ -52,8 +46,8 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
-  // Verify ownership (unless admin)
-  if (dbUser.role !== "admin" && project.userId !== dbUser.id) notFound();
+  // Verify ownership (unless staff)
+  if (!isStaff(dbUser.role) && project.userId !== dbUser.id) notFound();
 
   // Fetch related data in parallel
   const [phases, projectFiles, projectInvoices] = await Promise.all([

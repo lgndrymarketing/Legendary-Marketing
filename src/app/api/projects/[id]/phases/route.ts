@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { projectPhases } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
+import { canManageProjects } from "@/lib/permissions";
 import { z } from "zod";
 
 export async function GET(
@@ -42,7 +43,7 @@ export async function PATCH(
   try {
     const user = await getAuthenticatedUser();
 
-    if (user.role !== "admin") {
+    if (!canManageProjects(user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

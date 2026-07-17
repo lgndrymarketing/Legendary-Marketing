@@ -13,7 +13,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-charcoal-dark p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardContent className="flex flex-col items-center gap-6 p-8">
           <AlertTriangle className="h-12 w-12 text-orange" />

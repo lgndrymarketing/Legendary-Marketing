@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { FolderKanban, ArrowRight } from "lucide-react";
 
 const demoProjects = [
-  { id: "1", client: "John Doe", name: "E-commerce Platform", service: "Ecommerce Store", status: "in_progress", phase: "Development", payment: "paid" },
-  { id: "2", client: "Jane Smith", name: "Lead Gen Funnel", service: "Funnels", status: "in_progress", phase: "Design", payment: "paid" },
-  { id: "3", client: "Bob Wilson", name: "AI Chatbot", service: "AI Automation", status: "payment_pending", phase: "Discovery", payment: "pending" },
-  { id: "4", client: "Sarah Lee", name: "Company Website", service: "Web Application", status: "completed", phase: "Launch", payment: "paid" },
-  { id: "5", client: "Mike Chen", name: "Open Claw Setup", service: "Open Claw Deployment", status: "in_progress", phase: "Testing", payment: "paid" },
+  { id: "1", client: "John Doe", name: "Meta Ads Launch", service: "Paid Advertising", status: "in_progress", phase: "Build & Launch", payment: "paid" },
+  { id: "2", client: "Jane Smith", name: "Lead Gen Funnel", service: "High-Converting Funnels", status: "in_progress", phase: "Strategy & Setup", payment: "paid" },
+  { id: "3", client: "Bob Wilson", name: "Google Ads Program", service: "Paid Advertising", status: "payment_pending", phase: "Discovery", payment: "pending" },
+  { id: "4", client: "Sarah Lee", name: "Brand Website", service: "Websites & Landing Pages", status: "completed", phase: "Scale", payment: "paid" },
+  { id: "5", client: "Mike Chen", name: "GoHighLevel Pipeline Setup", service: "CRM & Automation", status: "in_progress", phase: "Optimization", payment: "paid" },
 ];
 
 export default function AdminProjectsPage() {

@@ -2,19 +2,18 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { RainbowButton } from "@/components/ui/rainbow-button";
+import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import {
   Menu,
   X,
+  Megaphone,
+  Filter,
   Globe,
-  ShoppingCart,
-  TrendingUp,
-  Bot,
-  Server,
+  Workflow,
   ChevronDown,
   CreditCard,
   FolderKanban,
@@ -36,11 +35,10 @@ interface MegaMenuItem {
 }
 
 const servicesItems: MegaMenuItem[] = [
-  { label: "Web Applications", href: "/services#web-application", icon: Globe, description: "Custom web apps built to scale" },
-  { label: "Ecommerce Stores", href: "/services#ecommerce-store", icon: ShoppingCart, description: "High-converting online stores" },
-  { label: "Funnels", href: "/services#funnels", icon: TrendingUp, description: "Sales funnels that convert" },
-  { label: "AI Automation", href: "/services#ai-automation", icon: Bot, description: "Automate with AI workflows" },
-  { label: "Open Claw Deployment", href: "/services#open-claw-deployment", icon: Server, description: "Deploy & manage Open Claw" },
+  { label: "Paid Advertising", href: "/services#paid-advertising", icon: Megaphone, description: "Meta, Google & TikTok ad management" },
+  { label: "High-Converting Funnels", href: "/services#funnel-build", icon: Filter, description: "Funnels built to turn traffic into leads" },
+  { label: "Websites & Landing Pages", href: "/services#website-design", icon: Globe, description: "On-brand sites that convert" },
+  { label: "CRM & Automation", href: "/services#crm-automation", icon: Workflow, description: "GoHighLevel setup & management" },
 ];
 
 const companyItems: MegaMenuItem[] = [
@@ -144,15 +142,9 @@ export function Header() {
           <div className="flex h-14 items-center justify-between px-4 sm:px-5">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-                alt="Fortitudo Agency"
-                width={32}
-                height={32}
-                className="rounded-md"
-              />
-              <span className="text-base font-bold text-foreground hidden sm:inline">
-                Fortitudo
+              <Logo size={32} />
+              <span className="text-base font-semibold text-foreground hidden sm:inline">
+                Legendary Marketing
               </span>
             </Link>
 
@@ -246,14 +238,8 @@ export function Header() {
                 className="flex items-center gap-2"
                 onClick={() => setMobileOpen(false)}
               >
-                <Image
-                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-                  alt="Fortitudo"
-                  width={28}
-                  height={28}
-                  className="rounded-md"
-                />
-                <span className="font-bold">Fortitudo</span>
+                <Logo size={28} />
+                <span className="font-semibold">Legendary Marketing</span>
               </Link>
               <button
                 className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"

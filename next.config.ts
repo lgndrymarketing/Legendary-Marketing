@@ -4,16 +4,15 @@ const cspHeader = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://blogger.googleusercontent.com https://img.clerk.com https://utfs.io",
+  "img-src 'self' data: blob: https://img.clerk.com https://utfs.io",
   "font-src 'self'",
-  "connect-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev https://checkout.creem.io",
+  "connect-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev https://checkout.creem.io https://*.ably.io wss://*.ably.io https://services.leadconnectorhq.com",
   "frame-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev",
 ].join("; ");
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "blogger.googleusercontent.com" },
       { protocol: "https", hostname: "img.clerk.com" },
       { protocol: "https", hostname: "utfs.io" },
     ],

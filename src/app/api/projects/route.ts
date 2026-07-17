@@ -3,13 +3,14 @@ import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { isStaff } from "@/lib/permissions";
 
 export async function GET() {
   try {
     const user = await getAuthenticatedUser();
 
     const userProjects =
-      user.role === "admin"
+      isStaff(user.role)
         ? await db.select().from(projects).limit(100)
         : await db
             .select()

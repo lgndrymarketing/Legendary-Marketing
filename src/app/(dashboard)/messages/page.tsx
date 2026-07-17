@@ -114,7 +114,7 @@ export default function MessagesPage() {
       <div>
         <h1 className="text-2xl font-bold sm:text-3xl">Messages</h1>
         <p className="text-muted-foreground mt-1">
-          Chat with the Fortitudo team about your project.
+          Chat with the Legendary Marketing team about your project.
         </p>
       </div>
 
@@ -123,7 +123,7 @@ export default function MessagesPage() {
           <EmptyState
             icon={MessageSquare}
             title="No messages yet"
-            description="Once you have an active project, you can chat directly with the Fortitudo team here."
+            description="Once you have an active project, you can chat directly with the Legendary Marketing team here."
           />
         </Card>
       ) : (
@@ -181,7 +181,7 @@ export default function MessagesPage() {
                       {message.content}
                     </div>
                     <span className="mt-1 text-xs text-muted-foreground">
-                      {message.role === "admin" ? "Fortitudo Team" : "You"} &middot;{" "}
+                      {message.role === "admin" ? "Legendary Marketing Team" : "You"} &middot;{" "}
                       {new Date(message.createdAt).toLocaleString()}
                     </span>
                   </div>

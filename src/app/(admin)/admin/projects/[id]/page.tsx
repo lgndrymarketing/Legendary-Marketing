@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
+import { KanbanBoard } from "@/components/dashboard/kanban-board";
 import {
   ArrowLeft,
   Check,
@@ -13,6 +15,7 @@ import {
   MessageSquare,
   Send,
   SkipForward,
+  KanbanSquare,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +29,7 @@ const initialPhases: Phase[] = [
 ];
 
 export default function AdminProjectDetailPage() {
+  const params = useParams<{ id: string }>();
   const [phases, setPhases] = useState(initialPhases);
   const [message, setMessage] = useState("");
 
@@ -54,9 +58,9 @@ export default function AdminProjectDetailPage() {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">E-commerce Platform</h1>
+          <h1 className="text-2xl font-bold">Meta Ads Launch</h1>
           <p className="text-muted-foreground">
-            Client: John Doe &middot; Ecommerce Store
+            Client: John Doe &middot; Paid Advertising
           </p>
         </div>
         <Badge variant="orange" className="text-sm px-3 py-1">
@@ -77,6 +81,19 @@ export default function AdminProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <PhaseTracker phases={phases} />
+            </CardContent>
+          </Card>
+
+          {/* Task board */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KanbanSquare className="h-5 w-5 text-orange" />
+                Task Board
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <KanbanBoard projectId={params.id} />
             </CardContent>
           </Card>
 
@@ -146,7 +163,7 @@ export default function AdminProjectDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Service</span>
-                <span>Ecommerce Store</span>
+                <span>Paid Advertising</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment</span>

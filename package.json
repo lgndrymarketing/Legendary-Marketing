@@ -1,5 +1,5 @@
 {
-  "name": "fortitudov4",
+  "name": "legendary-marketing",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "ably": "^2.6.5",
     "@clerk/nextjs": "^7.0.6",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-accordion": "^1.2.12",

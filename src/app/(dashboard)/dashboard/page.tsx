@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, messages, files, users } from "@/db/schema";
 import { eq, count, and, inArray } from "drizzle-orm";
+import { isStaff } from "@/lib/permissions";
+import { serviceLabels } from "@/lib/services";
 
 const statusLabels: Record<string, string> = {
   onboarding: "Onboarding",
@@ -17,14 +19,6 @@ const statusLabels: Record<string, string> = {
   revision: "Revision",
   completed: "Completed",
   cancelled: "Cancelled",
-};
-
-const serviceLabels: Record<string, string> = {
-  web_application: "Web Application",
-  ecommerce_store: "E-Commerce Store",
-  funnels: "Funnels",
-  ai_automation: "AI Automation",
-  open_claw_deployment: "Open Claw Deployment",
 };
 
 export default async function DashboardPage() {
@@ -54,7 +48,7 @@ export default async function DashboardPage() {
 
   // Fetch user's projects
   const userProjects =
-    dbUser.role === "admin"
+    isStaff(dbUser.role)
       ? await db.select().from(projects)
       : await db.select().from(projects).where(eq(projects.userId, dbUser.id));
 

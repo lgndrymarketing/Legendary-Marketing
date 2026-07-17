@@ -1,13 +1,12 @@
 import Link from "next/link";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 
 const footerLinks = {
   services: [
-    { label: "Web Applications", href: "/services#web-application" },
-    { label: "Ecommerce Stores", href: "/services#ecommerce-store" },
-    { label: "Funnels", href: "/services#funnels" },
-    { label: "AI Automation", href: "/services#ai-automation" },
-    { label: "Open Claw Deployment", href: "/services#open-claw-deployment" },
+    { label: "Paid Advertising", href: "/services#paid-advertising" },
+    { label: "High-Converting Funnels", href: "/services#funnel-build" },
+    { label: "Websites & Landing Pages", href: "/services#website-design" },
+    { label: "CRM & Automation", href: "/services#crm-automation" },
   ],
   company: [
     { label: "About Us", href: "/about" },
@@ -32,18 +31,12 @@ export function Footer() {
             {/* Brand */}
             <div className="col-span-2 md:col-span-1 space-y-4">
               <Link href="/" className="flex items-center gap-2">
-                <Image
-                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-                  alt="Fortitudo Agency"
-                  width={32}
-                  height={32}
-                  className="rounded-md"
-                />
-                <span className="text-lg font-bold">Fortitudo</span>
+                <Logo size={32} />
+                <span className="text-lg font-semibold">Legendary Marketing</span>
               </Link>
               <p className="text-sm text-muted-foreground max-w-xs">
-                Digital solutions built for growth. Transparent process,
-                real-time tracking, and direct collaboration.
+                Paid ads, funnels, and CRM automation built for growth.
+                Transparent process, real-time tracking, direct collaboration.
               </p>
             </div>
 
@@ -103,10 +96,10 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-border/50 px-6 py-4 sm:px-8 lg:px-12 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Fortitudo Agency. All rights reserved.
+            &copy; {new Date().getFullYear()} Legendary Marketing. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
-            foritudo.agency
+            legendarymarketing.com
           </p>
         </div>
       </div>

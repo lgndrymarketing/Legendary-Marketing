@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { isStaff } from "@/lib/permissions";
 
 export type DbUser = typeof users.$inferSelect;
 
@@ -42,9 +43,32 @@ export async function verifyProjectAccess(projectId: string, userId: string, rol
     throw NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  if (role !== "admin" && project.userId !== userId) {
+  if (!isStaff(role) && project.userId !== userId) {
     throw NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   return project;
+}
+
+/**
+ * Require the authenticated user to be staff (admin/project_manager/va).
+ * Throws NextResponse on failure.
+ */
+export async function requireStaff(): Promise<DbUser> {
+  const user = await getAuthenticatedUser();
+  if (!isStaff(user.role)) {
+    throw NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return user;
+}
+
+/**
+ * Require the authenticated user to be an admin. Throws NextResponse on failure.
+ */
+export async function requireAdmin(): Promise<DbUser> {
+  const user = await getAuthenticatedUser();
+  if (user.role !== "admin") {
+    throw NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return user;
 }

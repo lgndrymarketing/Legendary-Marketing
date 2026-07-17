@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,19 +97,13 @@ function OnboardingContent() {
   const selectedService = services.find((s) => s.id === formData.serviceType);
 
   return (
-    <div className="min-h-screen bg-charcoal-dark">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <Image
-              src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-              alt="Fortitudo"
-              width={32}
-              height={32}
-              className="rounded-md"
-            />
-            <span className="font-bold">Fortitudo</span>
+            <Logo size={32} />
+            <span className="font-semibold">Legendary Marketing</span>
           </div>
           <span className="text-sm text-muted-foreground">
             Welcome, {user?.firstName || "there"}

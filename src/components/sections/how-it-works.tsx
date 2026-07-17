@@ -7,33 +7,33 @@ import { motion } from "motion/react";
 const steps = [
   {
     icon: ClipboardCheck,
-    title: "Choose & Onboard",
+    title: "Onboard & Strategize",
     description:
-      "Select your service, create your account, and fill out a quick onboarding form with your project details.",
+      "Select your service, create your account, and walk through a quick onboarding form covering your offer, audience, and goals. We build your media and funnel strategy from there.",
   },
   {
     icon: CreditCard,
-    title: "Secure Payment",
+    title: "Ad Account & Setup",
     description:
-      "Complete payment securely through our payment portal. No hidden fees — transparent pricing from the start.",
+      "We configure your ad accounts, pixels, tracking, and GoHighLevel pipeline. Transparent pricing from the start — no hidden fees.",
   },
   {
     icon: BarChart3,
-    title: "Track Your Build",
+    title: "Build & Launch Campaigns",
     description:
-      "Watch your project progress through each phase in real-time with our DoorDash-style tracker. Always know where things stand.",
+      "Watch your funnel and campaigns move through each phase in real-time with our DoorDash-style tracker. Always know where things stand.",
   },
   {
     icon: MessageSquare,
-    title: "Collaborate & Launch",
+    title: "Optimize & Scale",
     description:
-      "Upload files, request revisions, and message our team directly. We work together until your project launches.",
+      "We monitor performance daily, report weekly, and continuously test creative and targeting to lower cost-per-lead and scale what's working.",
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="relative py-24 sm:py-32 bg-charcoal-dark/50">
+    <section id="how-it-works" className="relative py-24 sm:py-32 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="orange" className="mb-4">How It Works</Badge>

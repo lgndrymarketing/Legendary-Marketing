@@ -8,12 +8,12 @@ export function CTASection() {
     <section className="py-24 sm:py-32">
       <div className="mx-auto max-w-3xl px-4 text-center">
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-          Ready to bring your{" "}
-          <span className="text-gradient-orange">vision to life?</span>
+          Ready to turn ad spend into{" "}
+          <span className="text-gradient-orange">pipeline?</span>
         </h2>
         <p className="mt-6 text-lg text-muted-foreground">
-          Choose your service, complete onboarding, and watch your project come together —
-          with full visibility every step of the way.
+          Choose your service, complete onboarding, and watch your campaigns and funnel
+          come together — with full visibility every step of the way.
         </p>
         <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <RainbowButton className="h-14 px-10 text-base rounded-xl" asChild>

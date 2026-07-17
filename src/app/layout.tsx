@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { brand } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fortitudo Agency | Digital Solutions Built for Growth",
-  description:
-    "Web applications, ecommerce stores, funnels, AI automation, and more. Choose your service and watch your project come to life.",
-  metadataBase: new URL("https://foritudo.agency"),
+  title: `${brand.name} | ${brand.tagline}`,
+  description: brand.description,
+  metadataBase: new URL(brand.url),
   openGraph: {
-    title: "Fortitudo Agency | Digital Solutions Built for Growth",
-    description:
-      "Web applications, ecommerce stores, funnels, AI automation, and more.",
-    url: "https://foritudo.agency",
-    siteName: "Fortitudo Agency",
+    title: `${brand.name} | ${brand.tagline}`,
+    description: brand.description,
+    url: brand.url,
+    siteName: brand.name,
     type: "website",
   },
 };
@@ -27,15 +27,19 @@ export default function RootLayout({
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: "#F97316",
-          colorBackground: "#141414",
-          colorText: "#F5F5F5",
-          colorInputBackground: "#1C1C1C",
-          colorInputText: "#F5F5F5",
+          colorPrimary: "#2954E5",
+          colorBackground: "#ffffff",
+          colorText: "#14151A",
+          colorInputBackground: "#ffffff",
+          colorInputText: "#14151A",
         },
       }}
     >
-      <html lang="en" className="dark h-full antialiased" suppressHydrationWarning>
+      <html
+        lang="en"
+        className={`${GeistSans.variable} h-full antialiased`}
+        suppressHydrationWarning
+      >
         <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
           <ThemeProvider>{children}</ThemeProvider>
         </body>

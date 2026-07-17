@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const conversations = [
   { id: "1", client: "John Doe", project: "E-commerce Platform", unread: 2, lastMessage: "I uploaded the brand guide..." },
   { id: "2", client: "Jane Smith", project: "Lead Gen Funnel", unread: 0, lastMessage: "Looks great! Let me know..." },
-  { id: "3", client: "Mike Chen", project: "Open Claw Setup", unread: 1, lastMessage: "When will testing begin?" },
+  { id: "3", client: "Mike Chen", project: "GoHighLevel Pipeline Setup", unread: 1, lastMessage: "When will testing begin?" },
 ];
 
 const demoMessages = [

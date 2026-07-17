@@ -3,11 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard } from "lucide-react";
 
 const demoPayments = [
-  { client: "John Doe", project: "E-commerce Platform", amount: "$2,500", status: "paid", date: "Mar 1, 2026" },
+  { client: "John Doe", project: "Meta Ads Launch", amount: "$2,500", status: "paid", date: "Mar 1, 2026" },
   { client: "Jane Smith", project: "Lead Gen Funnel", amount: "$1,200", status: "paid", date: "Feb 28, 2026" },
-  { client: "Bob Wilson", project: "AI Chatbot", amount: "$3,000", status: "pending", date: "Mar 10, 2026" },
-  { client: "Sarah Lee", project: "Company Website", amount: "$2,500", status: "paid", date: "Jan 20, 2026" },
-  { client: "Mike Chen", project: "Open Claw Setup", amount: "$2,000", status: "paid", date: "Mar 8, 2026" },
+  { client: "Bob Wilson", project: "Google Ads Program", amount: "$3,000", status: "pending", date: "Mar 10, 2026" },
+  { client: "Sarah Lee", project: "Brand Website", amount: "$2,500", status: "paid", date: "Jan 20, 2026" },
+  { client: "Mike Chen", project: "GoHighLevel Pipeline Setup", amount: "$2,000", status: "paid", date: "Mar 8, 2026" },
 ];
 
 export default function AdminPaymentsPage() {

@@ -6,25 +6,25 @@ import { motion } from "motion/react";
 
 const testimonials = [
   {
-    quote: "Fortitudo delivered our ecommerce platform in 3 weeks and our conversion rate tripled. The real-time tracker was a game-changer — I always knew exactly where my project stood.",
+    quote: "Legendary Marketing took over our Meta and Google campaigns and our cost-per-lead dropped 42% in the first six weeks. The real-time reporting was a game-changer — I always knew exactly where our ad spend stood.",
     name: "Sarah Mitchell",
     role: "Founder, Maison Noir",
     rating: 5,
   },
   {
-    quote: "Best agency experience I've ever had. No back-and-forth emails, no mystery timelines. Everything was right there in the dashboard. Our SaaS app launched on time and on budget.",
+    quote: "Best agency experience I've ever had. No back-and-forth emails, no mystery reports. Everything was right there in the dashboard. Our pipeline doubled within the first quarter.",
     name: "David Chen",
     role: "CTO, DataPulse",
     rating: 5,
   },
   {
-    quote: "The AI automation system they built saves us 20+ hours per week. Their team really understood our workflow and built exactly what we needed.",
+    quote: "The GoHighLevel automation they set up saves our sales team 20+ hours per week and no lead falls through the cracks anymore. Their team really understood our workflow and built exactly what we needed.",
     name: "Maria Gonzalez",
     role: "Operations Lead, HelpStream",
     rating: 5,
   },
   {
-    quote: "We needed a sales funnel fast and Fortitudo delivered. The 450% ROI on our ad spend speaks for itself. Already planning our next project with them.",
+    quote: "We needed a lead funnel fast and Legendary Marketing delivered. We hit a 4.5x ROAS within the first month. Already planning our next campaign with them.",
     name: "James Okafor",
     role: "CEO, GrowthForge",
     rating: 5,
@@ -33,7 +33,7 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section className="py-24 sm:py-32 bg-charcoal-dark/30">
+    <section className="py-24 sm:py-32 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="orange" className="mb-4">Testimonials</Badge>

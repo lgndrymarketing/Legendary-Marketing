@@ -3,8 +3,8 @@
 import { motion } from "motion/react";
 
 const stats = [
-  { value: "50+", label: "Projects Delivered" },
-  { value: "98%", label: "Client Satisfaction" },
+  { value: "$10M+", label: "Ad Spend Managed" },
+  { value: "50K+", label: "Leads Generated" },
   { value: "35+", label: "Happy Clients" },
   { value: "<24h", label: "Response Time" },
 ];

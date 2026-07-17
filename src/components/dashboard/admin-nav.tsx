@@ -9,22 +9,28 @@ import {
   FolderKanban,
   CreditCard,
   MessageSquare,
+  UserCog,
+  Plug,
 } from "lucide-react";
+import { canManageAgency } from "@/lib/permissions";
 
 const navItems = [
-  { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Clients", href: "/admin/clients", icon: Users },
-  { label: "Projects", href: "/admin/projects", icon: FolderKanban },
-  { label: "Payments", href: "/admin/payments", icon: CreditCard },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
+  { label: "Overview", href: "/admin", icon: LayoutDashboard, adminOnly: false },
+  { label: "Clients", href: "/admin/clients", icon: Users, adminOnly: false },
+  { label: "Projects", href: "/admin/projects", icon: FolderKanban, adminOnly: false },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: false },
+  { label: "Payments", href: "/admin/payments", icon: CreditCard, adminOnly: true },
+  { label: "Team", href: "/admin/team", icon: UserCog, adminOnly: true },
+  { label: "Integrations", href: "/admin/integrations", icon: Plug, adminOnly: true },
 ];
 
-export function AdminNav() {
+export function AdminNav({ role }: { role: string }) {
   const pathname = usePathname();
+  const items = navItems.filter((item) => !item.adminOnly || canManageAgency(role));
 
   return (
     <nav className="flex items-center gap-1">
-      {navItems.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         const isActive =
           item.href === "/admin"

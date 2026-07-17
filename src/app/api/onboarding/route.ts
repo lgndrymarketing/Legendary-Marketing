@@ -18,11 +18,10 @@ const onboardingSchema = z.object({
   brandColors: z.string().max(500).optional(),
   features: z.array(z.string().max(255)).max(50).optional(),
   serviceType: z.enum([
-    "web_application",
-    "ecommerce_store",
-    "funnels",
-    "ai_automation",
-    "open_claw_deployment",
+    "paid_advertising",
+    "funnel_build",
+    "website_design",
+    "crm_automation",
   ]),
 });
 

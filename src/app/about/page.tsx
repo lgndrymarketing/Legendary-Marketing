@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/ui/logo";
 import { ArrowRight, Zap, Shield, Users, Eye, Target, Heart } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -13,39 +13,39 @@ const values = [
   {
     icon: Eye,
     title: "Transparency",
-    description: "You see every step of the build process. No black boxes, no mystery timelines. Real-time visibility from day one.",
+    description: "You see every step of the campaign build process. No black boxes, no mystery reports. Real-time visibility into your spend and pipeline from day one.",
   },
   {
     icon: Zap,
     title: "Speed Without Shortcuts",
-    description: "We deliver fast because we have battle-tested processes — not because we cut corners. Quality is non-negotiable.",
+    description: "We launch fast because we have battle-tested processes — not because we cut corners. Tracking and creative QA are non-negotiable.",
   },
   {
     icon: Target,
     title: "Results-Driven",
-    description: "Every decision we make is geared toward your business outcomes. Beautiful design means nothing without conversions.",
+    description: "Every decision we make is geared toward your ROAS and cost-per-lead. Beautiful creative means nothing without conversions.",
   },
   {
     icon: Shield,
     title: "Reliability",
-    description: "We stand behind our work with post-launch support and a structured revision process. We're here for the long haul.",
+    description: "We stand behind our work with ongoing optimization and a structured reporting cadence. We're here for the long haul, not a one-off launch.",
   },
   {
     icon: Heart,
     title: "Partnership",
-    description: "We're not just vendors — we're invested in your success. Direct communication, honest feedback, and genuine care.",
+    description: "We're not just media buyers — we're invested in your growth. Direct communication, honest feedback, and genuine care.",
   },
   {
     icon: Users,
     title: "Client-First",
-    description: "Your needs drive every project. We listen carefully, ask the right questions, and build exactly what you envision.",
+    description: "Your goals drive every campaign. We listen carefully, ask the right questions, and build the media plan and funnel you actually need.",
   },
 ];
 
 const timeline = [
-  { year: "Founded", event: "Started with a mission to make professional digital services accessible to businesses of all sizes." },
-  { year: "Growing", event: "Expanded our team and service offerings to cover web apps, ecommerce, funnels, AI, and infrastructure." },
-  { year: "Today", event: "Serving clients worldwide with a transparent, phase-based approach that puts you in control." },
+  { year: "Founded", event: "Started with a mission to make performance marketing — paid ads, funnels, and CRM automation — accessible to businesses of all sizes." },
+  { year: "Growing", event: "Expanded our team and service offerings to cover Meta, Google, and TikTok advertising, high-converting funnels, websites, and GoHighLevel automation." },
+  { year: "Today", event: "Serving clients worldwide with a transparent, phase-based approach that puts you in control of your ad spend and pipeline." },
 ];
 
 export default function AboutPage() {
@@ -55,18 +55,18 @@ export default function AboutPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">About Us</Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Building digital solutions{" "}
+              Performance marketing{" "}
               <span className="text-gradient-orange">with purpose</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Fortitudo Agency exists to bridge the gap between ambitious businesses
-              and the digital tools they need to grow. We believe every client
-              deserves transparency, quality, and speed.
+              Legendary Marketing exists to bridge the gap between ambitious businesses
+              and the paid media, funnels, and CRM systems they need to grow. We believe
+              every client deserves transparency, performance, and speed.
             </p>
           </div>
         </section>
@@ -78,34 +78,28 @@ export default function AboutPage() {
               <div>
                 <h2 className="text-3xl font-bold sm:text-4xl">Our Mission</h2>
                 <p className="mt-4 text-lg text-muted-foreground">
-                  We created Fortitudo because we saw too many businesses getting burned by
-                  opaque agencies — missed deadlines, unclear pricing, and zero visibility
-                  into what was actually happening with their project.
+                  We started Legendary Marketing because we saw too many businesses getting
+                  burned by opaque agencies — vague reporting, unclear pricing, and zero
+                  visibility into where their ad spend was actually going.
                 </p>
                 <p className="mt-4 text-muted-foreground">
                   Our platform changes that. From the moment you select a service to the
-                  day we launch, you have a real-time dashboard showing exactly where your
-                  project stands. You can upload files, request revisions, and message our
-                  team directly — all in one place.
+                  day your campaigns launch, you have a real-time dashboard showing exactly
+                  where your project stands. You can upload assets, request revisions, and
+                  message our team directly — all in one place.
                 </p>
                 <p className="mt-4 text-muted-foreground">
                   We believe the best client relationships are built on trust, and trust
-                  starts with transparency.
+                  starts with transparency into performance.
                 </p>
               </div>
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="rounded-2xl border border-border bg-card p-8 max-w-sm">
-                    <Image
-                      src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-                      alt="Fortitudo Agency"
-                      width={120}
-                      height={120}
-                      className="rounded-xl mx-auto"
-                    />
-                    <h3 className="text-xl font-bold text-center mt-6">Fortitudo Agency</h3>
+                    <Logo size={64} className="mx-auto" />
+                    <h3 className="text-xl font-bold text-center mt-6">Legendary Marketing</h3>
                     <p className="text-sm text-muted-foreground text-center mt-2">
-                      Strength through clarity. Excellence through transparency.
+                      Strength through clarity. Growth through performance.
                     </p>
                   </div>
                   <div className="absolute -inset-4 rounded-3xl bg-orange/5 -z-10" />
@@ -116,7 +110,7 @@ export default function AboutPage() {
         </section>
 
         {/* Values */}
-        <section className="py-20 sm:py-28 bg-charcoal-dark/30">
+        <section className="py-20 sm:py-28 bg-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <Badge variant="orange" className="mb-4">Our Values</Badge>
@@ -179,7 +173,7 @@ export default function AboutPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-24 sm:py-32 bg-charcoal-dark/30">
+        <section className="py-24 sm:py-32 bg-background">
           <div className="mx-auto max-w-3xl px-4 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
               Let&apos;s build something great together

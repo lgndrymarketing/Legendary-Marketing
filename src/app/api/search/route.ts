@@ -4,6 +4,7 @@ import { projects, messages, files } from "@/db/schema";
 import { eq, ilike, and, inArray } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isStaff } from "@/lib/permissions";
 
 export async function GET(req: Request) {
   try {
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
       .select({ id: projects.id })
       .from(projects)
       .where(
-        user.role === "admin" ? undefined : eq(projects.userId, user.id)
+        isStaff(user.role) ? undefined : eq(projects.userId, user.id)
       );
     const accessibleProjectIds = accessibleProjects.map((p) => p.id);
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
       .select()
       .from(projects)
       .where(
-        user.role === "admin"
+        isStaff(user.role)
           ? ilike(projects.name, pattern)
           : and(
               eq(projects.userId, user.id),

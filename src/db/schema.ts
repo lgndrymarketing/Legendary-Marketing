@@ -12,12 +12,16 @@ import {
 } from "drizzle-orm/pg-core";
 
 // Enums
+
+// Staff roles (tiered access): admin > project_manager > va. Clients use "client".
+export const userRoles = ["client", "admin", "project_manager", "va"] as const;
+export type UserRole = (typeof userRoles)[number];
+
 export const serviceTypeEnum = pgEnum("service_type", [
-  "web_application",
-  "ecommerce_store",
-  "funnels",
-  "ai_automation",
-  "open_claw_deployment",
+  "paid_advertising",
+  "funnel_build",
+  "website_design",
+  "crm_automation",
 ]);
 
 export const projectStatusEnum = pgEnum("project_status", [
@@ -52,7 +56,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   imageUrl: text("image_url"),
+  // "client" | "admin" | "project_manager" | "va" — see lib/permissions.ts
   role: varchar("role", { length: 50 }).notNull().default("client"),
+  // GoHighLevel contact sync (client-side users only)
+  ghlContactId: varchar("ghl_contact_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -67,6 +74,8 @@ export const projects = pgTable("projects", {
   serviceType: serviceTypeEnum("service_type").notNull(),
   status: projectStatusEnum("status").notNull().default("onboarding"),
   currentPhase: integer("current_phase").notNull().default(0),
+  // GoHighLevel opportunity sync (pipeline/revenue tracking)
+  ghlOpportunityId: varchar("ghl_opportunity_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -124,6 +133,10 @@ export const payments = pgTable("payments", {
   amount: integer("amount").notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default("usd"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+  // Where this payment record originated — the project checkout flow (Creem)
+  // or synced in from the agency's GoHighLevel invoicing/CRM.
+  source: varchar("source", { length: 20 }).notNull().default("creem"),
+  ghlPaymentId: varchar("ghl_payment_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -283,6 +296,42 @@ export const analyticsEvents = pgTable("analytics_events", {
   index("idx_analytics_project_id").on(table.projectId),
 ]);
 
+// Task board (kanban) — internal team task management per project
+export const taskStatusEnum = pgEnum("task_status", [
+  "todo",
+  "in_progress",
+  "in_review",
+  "done",
+]);
+
+export const taskPriorityEnum = pgEnum("task_priority", [
+  "low",
+  "medium",
+  "high",
+]);
+
+export const tasks = pgTable("tasks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
+    .references(() => projects.id, { onDelete: "cascade" })
+    .notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").notNull().default("todo"),
+  priority: taskPriorityEnum("priority").notNull().default("medium"),
+  assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  order: integer("order").notNull().default(0),
+  dueDate: timestamp("due_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_tasks_project_id").on(table.projectId),
+  index("idx_tasks_assignee_id").on(table.assigneeId),
+]);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -298,4 +347,6 @@ export type Notification = typeof notifications.$inferSelect;
 export type ProjectComment = typeof projectComments.$inferSelect;
 export type SatisfactionSurvey = typeof satisfactionSurveys.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;

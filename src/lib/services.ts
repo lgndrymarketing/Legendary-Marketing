@@ -1,18 +1,16 @@
 import {
+  Megaphone,
+  Filter,
   Globe,
-  ShoppingCart,
-  TrendingUp,
-  Bot,
-  Server,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
 export type ServiceType =
-  | "web_application"
-  | "ecommerce_store"
-  | "funnels"
-  | "ai_automation"
-  | "open_claw_deployment";
+  | "paid_advertising"
+  | "funnel_build"
+  | "website_design"
+  | "crm_automation";
 
 export interface Service {
   id: ServiceType;
@@ -25,87 +23,76 @@ export interface Service {
 
 export const services: Service[] = [
   {
-    id: "web_application",
-    name: "Web Application",
+    id: "paid_advertising",
+    name: "Paid Advertising",
     description:
-      "Custom web applications built to scale. From SaaS platforms to internal tools, we bring your vision to life.",
-    icon: Globe,
+      "Full-funnel media buying across Meta, Google, and TikTok — built to drive qualified leads and sales, not just clicks.",
+    icon: Megaphone,
     features: [
-      "Custom UI/UX design",
-      "Responsive & mobile-first",
-      "Database & API integration",
-      "User authentication",
-      "Deployment & hosting",
+      "Meta, Google & TikTok Ads management",
+      "Creative strategy & ad copy",
+      "Audience research & targeting",
+      "Weekly performance reporting",
+      "Conversion tracking & pixel setup",
     ],
-    startingPrice: "Starting at $2,500",
+    startingPrice: "Starting at $1,500/mo",
   },
   {
-    id: "ecommerce_store",
-    name: "Ecommerce Store",
+    id: "funnel_build",
+    name: "High-Converting Funnels",
     description:
-      "High-converting online stores with seamless checkout, inventory management, and analytics.",
-    icon: ShoppingCart,
-    features: [
-      "Product catalog setup",
-      "Payment processing",
-      "Inventory management",
-      "Order tracking",
-      "SEO optimization",
-    ],
-    startingPrice: "Starting at $1,800",
-  },
-  {
-    id: "funnels",
-    name: "Funnels",
-    description:
-      "High-performance sales funnels designed to convert visitors into customers at every stage.",
-    icon: TrendingUp,
+      "A dedicated funnel to turn ad traffic into booked calls and paying customers — built, tested, and optimized for conversion.",
+    icon: Filter,
     features: [
       "Landing page design",
+      "Multi-step lead capture",
       "A/B testing ready",
-      "Email capture & sequences",
-      "Analytics & tracking",
-      "CRM integration",
+      "Email & SMS follow-up sequences",
+      "Analytics & conversion tracking",
     ],
     startingPrice: "Starting at $1,200",
   },
   {
-    id: "ai_automation",
-    name: "AI Automation",
+    id: "website_design",
+    name: "Websites & Landing Pages",
     description:
-      "Leverage AI to automate workflows, generate content, and streamline your business operations.",
-    icon: Bot,
+      "A fast, on-brand site that supports your ad campaigns and converts visitors — from a single landing page to a full site rebuild.",
+    icon: Globe,
     features: [
-      "Custom AI workflows",
-      "Chatbot integration",
-      "Content generation",
-      "Data processing pipelines",
-      "API integrations",
-    ],
-    startingPrice: "Starting at $3,000",
-  },
-  {
-    id: "open_claw_deployment",
-    name: "Open Claw Deployment",
-    description:
-      "Deploy and manage Open Claw instances with full configuration, monitoring, and support.",
-    icon: Server,
-    features: [
-      "Instance setup & config",
-      "Custom deployment pipeline",
-      "Monitoring & alerts",
-      "Scaling infrastructure",
-      "Ongoing support",
+      "Custom UI/UX design",
+      "Mobile-first & fast-loading",
+      "SEO fundamentals",
+      "CMS for easy updates",
+      "Hosting & deployment",
     ],
     startingPrice: "Starting at $2,000",
   },
+  {
+    id: "crm_automation",
+    name: "CRM & Automation",
+    description:
+      "We set up and manage your GoHighLevel pipeline — lead routing, follow-up automation, and reporting so no lead falls through the cracks.",
+    icon: Workflow,
+    features: [
+      "GoHighLevel setup & configuration",
+      "Pipeline & opportunity tracking",
+      "Automated follow-up sequences",
+      "Appointment booking automation",
+      "Revenue & ROI reporting",
+    ],
+    startingPrice: "Starting at $1,000/mo",
+  },
 ];
+
+export const serviceLabels: Record<string, string> = Object.fromEntries(
+  services.map((s) => [s.id, s.name])
+);
 
 export const projectPhaseNames = [
   "Discovery",
-  "Design",
-  "Development",
-  "Testing",
+  "Strategy & Setup",
+  "Build & Launch",
+  "Optimization",
   "Review",
-  "Launch",
+  "Scale",
 ];
