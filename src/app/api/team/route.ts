@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, userRoles } from "@/db/schema";
-import { eq, ne } from "drizzle-orm";
+import { eq, ne, count } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth-utils";
 
@@ -46,6 +46,27 @@ export async function PATCH(req: Request) {
         { error: "You can't demote yourself" },
         { status: 400 }
       );
+    }
+
+    // Guard against locking the agency out: if this change demotes an admin,
+    // make sure at least one admin remains afterward.
+    if (role !== "admin") {
+      const [target] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (target?.role === "admin") {
+        const [{ value: adminCount }] = await db
+          .select({ value: count() })
+          .from(users)
+          .where(eq(users.role, "admin"));
+        if (adminCount <= 1) {
+          return NextResponse.json(
+            { error: "There must be at least one admin." },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const [updated] = await db

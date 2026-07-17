@@ -4,6 +4,7 @@ import { analyticsEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
+import { canManageProjects } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const createAnalyticsEventSchema = z.object({
@@ -56,6 +57,13 @@ export async function POST(req: Request) {
     }
 
     const { projectId, event, value, metadata } = parsed.data;
+
+    // Analytics are agency-reported metrics — only staff may write them, so a
+    // client can't fabricate their own campaign numbers. Reads stay open to
+    // the project owner (GET above).
+    if (!canManageProjects(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     await verifyProjectAccess(projectId, user.id, user.role);
 

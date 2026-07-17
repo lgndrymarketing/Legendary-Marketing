@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
 import { KanbanBoard } from "@/components/dashboard/kanban-board";
 import { CampaignList } from "@/components/dashboard/campaign-list";
+import { RevisionManager } from "./revision-manager";
 import {
   ArrowLeft,
   MessageSquare,
@@ -16,6 +17,7 @@ import {
   SkipForward,
   KanbanSquare,
   Megaphone,
+  RefreshCw,
 } from "lucide-react";
 
 const statusVariant: Record<string, "success" | "warning" | "orange" | "secondary"> = {
@@ -276,6 +278,19 @@ export function ManageClient({
             </CardHeader>
             <CardContent>
               <CampaignList projectId={projectId} canEdit />
+            </CardContent>
+          </Card>
+
+          {/* Revision requests */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-orange" />
+                Revision Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RevisionManager projectId={projectId} />
             </CardContent>
           </Card>
 
