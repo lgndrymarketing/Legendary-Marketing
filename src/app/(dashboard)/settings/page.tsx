@@ -1,9 +1,22 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { ROLE_LABELS } from "@/lib/permissions";
+import type { UserRole } from "@/db/schema";
 
 export default async function SettingsPage() {
   const user = await currentUser();
+
+  const [dbUser] = user
+    ? await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.clerkId, user.id))
+    : [];
+  const role = (dbUser?.role ?? "client") as UserRole;
 
   return (
     <div className="space-y-8">
@@ -31,7 +44,7 @@ export default async function SettingsPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Role</span>
-              <Badge variant="secondary">Client</Badge>
+              <Badge variant="secondary">{ROLE_LABELS[role]}</Badge>
             </div>
           </CardContent>
         </Card>

@@ -9,7 +9,7 @@ export default function SignInPage() {
         <Logo size={36} />
         <span className="text-lg font-semibold">Legendary Marketing</span>
       </Link>
-      <SignIn />
+      <SignIn forceRedirectUrl="/post-login" signUpUrl="/sign-up" />
     </div>
   );
 }
