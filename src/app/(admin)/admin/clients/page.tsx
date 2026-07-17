@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Users } from "lucide-react";
 import { db } from "@/db";
 import { users, projects } from "@/db/schema";
@@ -24,10 +25,7 @@ export default async function AdminClientsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Clients</h1>
-        <p className="text-muted-foreground mt-1">Manage all registered clients.</p>
-      </div>
+      <PageHeader title="Clients" description="Manage all registered clients." />
 
       <Card>
         <CardHeader>
@@ -56,8 +54,8 @@ export default async function AdminClientsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {clients.map((client) => (
-                    <tr key={client.id} className="hover:bg-muted/50">
-                      <td className="py-3 font-medium">
+                    <tr key={client.id} className="group hover:bg-muted/50">
+                      <td className="py-3 font-medium transition-colors group-hover:text-orange">
                         {[client.firstName, client.lastName]
                           .filter(Boolean)
                           .join(" ") || "—"}

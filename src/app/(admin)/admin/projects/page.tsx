@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { FolderKanban, ArrowRight } from "lucide-react";
 import { db } from "@/db";
 import { projects, users, projectPhases } from "@/db/schema";
@@ -77,12 +78,10 @@ export default async function AdminProjectsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage all client projects and update phases.
-        </p>
-      </div>
+      <PageHeader
+        title="Projects"
+        description="Manage all client projects and update phases."
+      />
 
       <Card>
         <CardHeader>
@@ -120,8 +119,10 @@ export default async function AdminProjectsPage() {
                       project.clientEmail ||
                       "—";
                     return (
-                      <tr key={project.id} className="hover:bg-muted/50">
-                        <td className="py-3 font-medium">{project.name}</td>
+                      <tr key={project.id} className="group hover:bg-muted/50">
+                        <td className="py-3 font-medium transition-colors group-hover:text-orange">
+                          {project.name}
+                        </td>
                         <td className="py-3 text-muted-foreground">{clientName}</td>
                         <td className="py-3 text-muted-foreground">
                           {serviceLabels[project.serviceType] || project.serviceType}

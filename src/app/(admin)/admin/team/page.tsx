@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { UserCog, ShieldCheck } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { UserRole } from "@/db/schema";
@@ -77,13 +79,10 @@ export default function AdminTeamPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Team</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage staff access. Admins have full control, project managers run client
-          work day-to-day, and VAs have scoped, task-level access.
-        </p>
-      </div>
+      <PageHeader
+        title="Team"
+        description="Manage staff access. Admins have full control, project managers run client work day-to-day, and VAs have scoped, task-level access."
+      />
 
       <Card>
         <CardHeader>
@@ -139,7 +138,7 @@ export default function AdminTeamPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <EmptyState icon={UserCog} title="Loading team..." description="" />
+            <TableSkeleton rows={4} />
           ) : staff.length === 0 ? (
             <EmptyState
               icon={UserCog}
@@ -159,8 +158,8 @@ export default function AdminTeamPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {staff.map((member) => (
-                    <tr key={member.id} className="hover:bg-muted/50">
-                      <td className="py-3 font-medium">
+                    <tr key={member.id} className="group hover:bg-muted/50">
+                      <td className="py-3 font-medium transition-colors group-hover:text-orange">
                         {[member.firstName, member.lastName].filter(Boolean).join(" ") || "—"}
                       </td>
                       <td className="py-3 text-muted-foreground">{member.email}</td>

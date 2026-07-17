@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { Plus, ArrowRight, FolderKanban } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -53,20 +54,18 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and track all your projects.
-          </p>
-        </div>
-        <Button variant="glow" asChild>
-          <Link href="/onboarding">
-            <Plus className="mr-1 h-4 w-4" />
-            New Project
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title="Projects"
+        description="Manage and track all your projects."
+        action={
+          <Button variant="glow" asChild>
+            <Link href="/onboarding">
+              <Plus className="mr-1 h-4 w-4" />
+              New Project
+            </Link>
+          </Button>
+        }
+      />
 
       {userProjects.length === 0 ? (
         <Card>
@@ -98,7 +97,7 @@ export default async function ProjectsPage() {
               })) satisfies Phase[];
 
             return (
-              <Card key={project.id} className="hover:border-orange/30 transition-colors">
+              <Card key={project.id} className="transition-all hover:shadow-md hover:border-orange/30">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>{project.name}</CardTitle>

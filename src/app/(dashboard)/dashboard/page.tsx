@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { FolderKanban, MessageSquare, Upload, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -34,14 +36,11 @@ export default async function DashboardPage() {
   if (!dbUser) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">
-            Welcome, {user.firstName || "there"}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Your account is being set up. Please refresh in a moment.
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Dashboard"
+          title={`Welcome, ${user.firstName || "there"}`}
+          description="Your account is being set up. Please refresh in a moment."
+        />
       </div>
     );
   }
@@ -92,58 +91,25 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">
-            Welcome back, {user.firstName || "there"}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Here&apos;s an overview of your projects.
-          </p>
-        </div>
-        <Button variant="glow" asChild>
-          <Link href="/onboarding">
-            <Plus className="mr-1 h-4 w-4" />
-            New Project
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Dashboard"
+        title={`Welcome back, ${user.firstName || "there"}`}
+        description="Here's an overview of your projects."
+        action={
+          <Button variant="glow" asChild>
+            <Link href="/onboarding">
+              <Plus className="mr-1 h-4 w-4" />
+              New Project
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <FolderKanban className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{activeProjects.length}</p>
-              <p className="text-sm text-muted-foreground">Active Projects</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <MessageSquare className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{messageCount}</p>
-              <p className="text-sm text-muted-foreground">Messages</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <Upload className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{fileCount}</p>
-              <p className="text-sm text-muted-foreground">Files Uploaded</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard label="Active Projects" value={activeProjects.length} icon={FolderKanban} />
+        <StatCard label="Messages" value={messageCount} icon={MessageSquare} />
+        <StatCard label="Files Uploaded" value={fileCount} icon={Upload} />
       </div>
 
       {/* Active Projects */}
@@ -176,7 +142,7 @@ export default async function DashboardPage() {
             })) satisfies Phase[];
 
           return (
-            <Card key={project.id}>
+            <Card key={project.id} className="transition-shadow hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-xl">{project.name}</CardTitle>

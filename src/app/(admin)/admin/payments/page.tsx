@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { CreditCard } from "lucide-react";
 
 interface PaymentRow {
@@ -67,33 +69,32 @@ export default function AdminPaymentsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Payments</h1>
-        <p className="text-muted-foreground mt-1">Track all payments and revenue.</p>
-      </div>
+      <PageHeader title="Payments" description="Track all payments and revenue." />
 
       {/* Revenue summary */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
+        <Card className="transition-shadow hover:shadow-md">
           <CardContent className="p-6">
+            <p className="text-2xl font-bold tracking-tight">
+              {formatCents(summary.total)}
+            </p>
             <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-3xl font-bold mt-1">{formatCents(summary.total)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-shadow hover:shadow-md">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Paid</p>
-            <p className="text-3xl font-bold text-success mt-1">
+            <p className="text-2xl font-bold tracking-tight text-success">
               {formatCents(summary.paid)}
             </p>
+            <p className="text-sm text-muted-foreground">Paid</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-shadow hover:shadow-md">
           <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="text-3xl font-bold text-warning mt-1">
+            <p className="text-2xl font-bold tracking-tight text-warning">
               {formatCents(summary.pending)}
             </p>
+            <p className="text-sm text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
       </div>
@@ -107,7 +108,7 @@ export default function AdminPaymentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <EmptyState icon={CreditCard} title="Loading payments..." description="" />
+            <TableSkeleton rows={6} />
           ) : payments.length === 0 ? (
             <EmptyState
               icon={CreditCard}

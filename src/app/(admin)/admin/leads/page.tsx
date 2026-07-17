@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Inbox, Sparkles, BadgeCheck, Trophy } from "lucide-react";
 import { serviceLabels } from "@/lib/services";
@@ -90,32 +93,21 @@ export default function AdminLeadsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Leads</h1>
-        <p className="text-muted-foreground mt-1">
-          Leads captured from the website — contact form and get-started funnel — synced
-          into GoHighLevel.
-        </p>
-      </div>
+      <PageHeader
+        title="Leads"
+        description="Leads captured from the website — contact form and get-started funnel — synced into GoHighLevel."
+      />
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label}>
-              <CardContent className="flex items-center gap-4 p-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-                  <Icon className="h-6 w-6 text-orange" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {stats.map((stat) => (
+          <StatCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            icon={stat.icon}
+          />
+        ))}
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -147,7 +139,7 @@ export default function AdminLeadsPage() {
           </div>
 
           {loading ? (
-            <EmptyState icon={Inbox} title="Loading leads..." description="" />
+            <TableSkeleton rows={6} />
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={Inbox}

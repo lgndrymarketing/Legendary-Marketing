@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { Plug, Radio } from "lucide-react";
 import { isGhlConfigured } from "@/lib/ghl";
 import { GhlSyncButton } from "./ghl-sync-button";
@@ -10,15 +11,13 @@ export default function AdminIntegrationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Integrations</h1>
-        <p className="text-muted-foreground mt-1">
-          Connect Legendary Marketing to the tools that power revenue tracking and
-          real-time client communication.
-        </p>
-      </div>
+      <PageHeader
+        title="Integrations"
+        description="Connect Legendary Marketing to the tools that power revenue tracking and real-time client communication."
+      />
 
-      <Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">

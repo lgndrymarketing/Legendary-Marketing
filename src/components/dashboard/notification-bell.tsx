@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, MessageSquare, CreditCard, FolderKanban, Upload, FileText } from "lucide-react";
+import {
+  Bell,
+  MessageSquare,
+  CreditCard,
+  FolderKanban,
+  Upload,
+  FileText,
+  RefreshCw,
+  CheckCircle,
+  Star,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -21,6 +31,9 @@ const typeIcons: Record<string, React.ElementType> = {
   payment_confirmed: CreditCard,
   file_uploaded: Upload,
   comment_added: FileText,
+  revision_response: RefreshCw,
+  project_completed: CheckCircle,
+  survey_request: Star,
 };
 
 function formatRelativeTime(dateStr: string): string {
