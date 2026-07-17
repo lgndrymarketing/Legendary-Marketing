@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as Ably from "ably";
 
 const MESSAGE_EVENT = "message";

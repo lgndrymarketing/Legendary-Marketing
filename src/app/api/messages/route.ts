@@ -76,6 +76,23 @@ export async function POST(req: Request) {
       })
       .returning();
 
+    // In-app notification (best-effort, outside the critical path). If the
+    // sender is staff, notify the project's owner (the client). If the sender
+    // is the client, we intentionally do NOT notify staff: there is no single
+    // staff assignee on a project, and staff work from the admin surface —
+    // so a client→staff in-app notification has no correct recipient. We skip
+    // it rather than mis-address it to the project owner.
+    if (isStaff(user.role) && project.userId !== user.id) {
+      await createNotification({
+        userId: project.userId,
+        projectId,
+        type: "message_received",
+        title: "New message from your team",
+        body: content.slice(0, 140),
+        actionUrl: "/messages",
+      });
+    }
+
     // Real-time notification layer — the DB row above is the source of
     // truth. An Ably outage or missing config must never break sending.
     if (isAblyConfigured()) {

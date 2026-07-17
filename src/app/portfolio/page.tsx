@@ -6,18 +6,18 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ArrowUpRight, Globe, TrendingUp, Megaphone, Workflow } from "lucide-react";
+import { ArrowRight, ArrowUpRight, TrendingUp, Megaphone, Workflow } from "lucide-react";
 import { motion } from "motion/react";
 
 const caseStudies = [
   {
-    title: "Luxury Fashion Storefront",
+    title: "Luxury Fashion Launch Funnel",
     client: "Maison Noir",
-    service: "Websites & Landing Pages",
-    icon: Globe,
-    result: "3x conversion rate increase",
-    description: "Built a high-end storefront with custom product showcases, seamless checkout, and fast load times to support paid campaigns for a luxury fashion brand.",
-    tags: ["Website Design", "Ecommerce", "Custom Design"],
+    service: "High-Converting Funnels",
+    icon: TrendingUp,
+    result: "3.1x ROAS on launch",
+    description: "Built a paid social funnel with waitlist landing pages and automated email/SMS nurture that drove a sold-out seasonal launch for a luxury fashion brand.",
+    tags: ["Funnel", "Paid Social", "Email/SMS"],
   },
   {
     title: "SaaS Demo Pipeline",
@@ -56,13 +56,13 @@ const caseStudies = [
     tags: ["Paid Ads", "Meta", "Google"],
   },
   {
-    title: "Multi-Location Ordering Site",
+    title: "Multi-Location Lead Engine",
     client: "TasteHub",
-    service: "Websites & Landing Pages",
-    icon: Globe,
-    result: "200+ restaurants onboarded",
-    description: "Multi-tenant ordering website with location pages, real-time order tracking, and payment processing for a restaurant network.",
-    tags: ["Website Design", "Payments", "Multi-tenant"],
+    service: "CRM & Automation",
+    icon: Workflow,
+    result: "$18 cost-per-lead across 200+ locations",
+    description: "Ran geo-targeted lead campaigns feeding a GoHighLevel pipeline with automated follow-up and call tracking across a 200-location restaurant network.",
+    tags: ["GoHighLevel", "Automation", "Local Ads"],
   },
 ];
 

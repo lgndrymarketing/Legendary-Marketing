@@ -71,6 +71,15 @@ export async function POST(req: Request) {
       })
       .returning();
 
+    // No in-app notification is produced here on purpose. A revision is
+    // *created* by the client (the project owner), and there is no single
+    // staff assignee to route a "new revision" alert to — staff triage
+    // revisions from the admin surface. The client is the actor, so notifying
+    // them of their own request would be noise, and the enum has no
+    // "revision received" type (only "revision_response", for the staff reply
+    // handled elsewhere). The client-facing "revision_response" notification is
+    // produced when staff respond, not on this create path.
+
     return NextResponse.json(revision);
   } catch (error) {
     if (error instanceof NextResponse) return error;

@@ -155,7 +155,7 @@ function OnboardingContent() {
               <CardHeader>
                 <CardTitle className="text-2xl">Choose Your Service</CardTitle>
                 <CardDescription>
-                  What would you like us to build for you?
+                  Which service can we help you with?
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -201,7 +201,7 @@ function OnboardingContent() {
               <CardHeader>
                 <CardTitle className="text-2xl">Business Details</CardTitle>
                 <CardDescription>
-                  Tell us about your business so we can tailor the build.
+                  Tell us about your business so we can tailor the strategy.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -288,18 +288,18 @@ function OnboardingContent() {
           {currentStep === 2 && (
             <>
               <CardHeader>
-                <CardTitle className="text-2xl">Project Scope</CardTitle>
+                <CardTitle className="text-2xl">Goals &amp; Scope</CardTitle>
                 <CardDescription>
-                  Help us understand what you&apos;re looking for.
+                  Tell us about your goals so we know what success looks like.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">
-                    Project Description <span className="text-destructive">*</span>
+                    Goals &amp; Description <span className="text-destructive">*</span>
                   </label>
                   <Textarea
-                    placeholder="Describe what you want built, key features, and any specific requirements..."
+                    placeholder="Tell us about your offer, your goals, and what a great outcome looks like..."
                     rows={4}
                     value={formData.description}
                     onChange={(e) => updateField("description", e.target.value)}

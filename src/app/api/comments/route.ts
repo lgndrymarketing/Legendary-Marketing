@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(req: Request) {
   try {
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
 
     const { projectId, content, parentId } = parsed.data;
 
-    await verifyProjectAccess(projectId, user.id, user.role);
+    const project = await verifyProjectAccess(projectId, user.id, user.role);
     const rateLimit = checkRateLimit(user.id + ":comments", 20);
     if (!rateLimit.success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -68,6 +69,19 @@ export async function POST(req: Request) {
         parentId: parentId || null,
       })
       .returning();
+
+    // Notify the project's owner when someone else comments (best-effort,
+    // outside the critical path — a failed notification never fails the post).
+    if (project.userId !== user.id) {
+      await createNotification({
+        userId: project.userId,
+        projectId,
+        type: "comment_added",
+        title: "New comment on your project",
+        body: content.slice(0, 140),
+        actionUrl: `/projects/${projectId}`,
+      });
+    }
 
     return NextResponse.json(comment);
   } catch (error) {

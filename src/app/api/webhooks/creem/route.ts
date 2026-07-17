@@ -106,17 +106,70 @@ export async function POST(req: Request) {
         }
       }
 
-      // Update payment and project in a transaction-like pattern
       try {
-        await db
-          .update(payments)
-          .set({
-            status: "completed",
-            creemPaymentId: creemPaymentId,
-            updatedAt: new Date(),
+        // We need the project both to flip its status and, defensively, to
+        // recover the userId + service if no pending payment row exists.
+        const [project] = await db
+          .select({
+            id: projects.id,
+            userId: projects.userId,
+            serviceType: projects.serviceType,
           })
-          .where(eq(payments.projectId, projectId));
+          .from(projects)
+          .where(eq(projects.id, projectId))
+          .limit(1);
 
+        if (!project) {
+          return NextResponse.json({
+            received: true,
+            skipped: "unknown project",
+          });
+        }
+
+        const pricing = getPricing(project.serviceType);
+
+        // Find the pending payment row created at checkout time.
+        const [pending] = await db
+          .select({ id: payments.id, amount: payments.amount })
+          .from(payments)
+          .where(eq(payments.projectId, projectId))
+          .limit(1);
+
+        let paymentId: string;
+        let paymentAmount: number;
+
+        if (pending) {
+          // Complete the row the checkout flow created.
+          await db
+            .update(payments)
+            .set({
+              status: "completed",
+              creemPaymentId: creemPaymentId,
+              updatedAt: new Date(),
+            })
+            .where(eq(payments.id, pending.id));
+          paymentId = pending.id;
+          paymentAmount = pending.amount;
+        } else {
+          // Defensive: no checkout row exists (e.g. payment created out-of-band).
+          // Insert a completed payment so revenue isn't lost.
+          paymentAmount = pricing?.amountCents ?? 0;
+          const [inserted] = await db
+            .insert(payments)
+            .values({
+              projectId,
+              userId: project.userId,
+              creemPaymentId: creemPaymentId,
+              amount: paymentAmount,
+              currency: "usd",
+              status: "completed",
+              source: "creem",
+            })
+            .returning({ id: payments.id });
+          paymentId = inserted.id;
+        }
+
+        // Advance the project now that it's paid.
         await db
           .update(projects)
           .set({
@@ -124,9 +177,41 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(projects.id, projectId));
+
+        // Generate an invoice — idempotently (one per payment).
+        const [existingInvoice] = await db
+          .select({ id: invoices.id })
+          .from(invoices)
+          .where(eq(invoices.paymentId, paymentId))
+          .limit(1);
+
+        if (!existingInvoice) {
+          const items = (pricing?.lineItems ?? [
+            { name: "Project services", amountCents: paymentAmount },
+          ]).map((li) => ({
+            description: li.name,
+            amount: formatUsd(li.amountCents),
+          }));
+
+          const invoiceNumber = `LM-${new Date().getFullYear()}-${randomBytes(3)
+            .toString("hex")
+            .toUpperCase()}`;
+
+          await db.insert(invoices).values({
+            paymentId,
+            projectId,
+            userId: project.userId,
+            invoiceNumber,
+            items,
+            subtotal: paymentAmount,
+            tax: 0,
+            total: paymentAmount,
+            status: "paid",
+          });
+        }
       } catch (dbError) {
         console.error(
-          "Creem webhook: failed to update payment/project",
+          "Creem webhook: failed to record payment/invoice",
           {
             projectId,
             creemPaymentId,

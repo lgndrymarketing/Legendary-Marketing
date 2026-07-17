@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { projectPhases } from "@/db/schema";
+import { projectPhases, projects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { canManageProjects } from "@/lib/permissions";
+import { createNotification } from "@/lib/notifications";
 import { z } from "zod";
 
 export async function GET(
@@ -71,6 +72,25 @@ export async function PATCH(
         )
       )
       .returning();
+
+    // Notify the project's client (owner) that a phase moved (best-effort,
+    // never fails the update). Only fires when a phase actually matched.
+    if (updated) {
+      const [project] = await db
+        .select({ userId: projects.userId })
+        .from(projects)
+        .where(eq(projects.id, id));
+      if (project) {
+        await createNotification({
+          userId: project.userId,
+          projectId: id,
+          type: "phase_update",
+          title: "Project phase updated",
+          body: `"${updated.name}" is now ${updated.status.replace("_", " ")}.`,
+          actionUrl: `/projects/${id}`,
+        });
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
