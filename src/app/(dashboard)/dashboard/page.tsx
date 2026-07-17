@@ -11,7 +11,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, messages, files, users } from "@/db/schema";
 import { eq, count, inArray } from "drizzle-orm";
-import { isStaff } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
 
 const statusLabels: Record<string, string> = {
@@ -45,11 +44,13 @@ export default async function DashboardPage() {
     );
   }
 
-  // Fetch user's projects
-  const userProjects =
-    isStaff(dbUser.role)
-      ? await db.select().from(projects)
-      : await db.select().from(projects).where(eq(projects.userId, dbUser.id));
+  // The client portal is a personal surface: only the signed-in user's own
+  // projects, regardless of role. Staff manage all client work in /admin
+  // (properly scoped there) — this never exposes other clients' projects.
+  const userProjects = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.userId, dbUser.id));
 
   const activeProjects = userProjects.filter(
     (p) => p.status !== "completed" && p.status !== "cancelled"

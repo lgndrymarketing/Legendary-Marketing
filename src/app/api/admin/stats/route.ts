@@ -2,15 +2,21 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, projects, messages, leads, payments } from "@/db/schema";
 import { count, eq, notInArray, sum } from "drizzle-orm";
-import { requireStaff } from "@/lib/auth-utils";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { canViewAllProjects } from "@/lib/permissions";
 
 /**
- * GET /api/admin/stats — real aggregate counts for the agency Overview.
- * Staff-only. Defensive against an empty DB (every value falls back to 0).
+ * GET /api/admin/stats — agency-wide aggregates (revenue, client/lead counts)
+ * for the Overview command center. Admin + project-manager only: VAs are
+ * execution-level and must not see agency revenue or lead totals.
+ * Defensive against an empty DB (every value falls back to 0).
  */
 export async function GET() {
   try {
-    await requireStaff();
+    const staff = await getAuthenticatedUser();
+    if (!canViewAllProjects(staff.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const [
       [clientsRow],

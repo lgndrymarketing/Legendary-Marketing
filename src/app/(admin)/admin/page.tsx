@@ -60,12 +60,21 @@ const quickLinks = [
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
+  // Agency-wide stats are admin/PM only — a VA gets 403 and sees a scoped
+  // overview (their assigned projects) without the revenue/pipeline tiles.
+  const [statsDenied, setStatsDenied] = useState(false);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/admin/stats").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/admin/stats").then((res) => {
+        if (res.status === 403) {
+          setStatsDenied(true);
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      }),
       fetch("/api/projects").then((res) => (res.ok ? res.json() : [])),
     ])
       .then(([statsData, projectsData]) => {
@@ -117,19 +126,21 @@ export default function AdminDashboardPage() {
         description="Your pulse across clients, projects, pipeline, and revenue."
       />
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loading || !stats
-          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : statCards.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-                icon={stat.icon}
-              />
-            ))}
-      </div>
+      {/* Stats grid — hidden entirely for VAs (agency-wide numbers are admin/PM only) */}
+      {!statsDenied && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {loading || !stats
+            ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+            : statCards.map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  label={stat.label}
+                  value={stat.value}
+                  icon={stat.icon}
+                />
+              ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent projects */}
@@ -195,6 +206,7 @@ export default function AdminDashboardPage() {
 
         {/* Pipeline snapshot + quick actions */}
         <div className="space-y-6">
+          {!statsDenied && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -225,13 +237,17 @@ export default function AdminDashboardPage() {
               </Link>
             </CardContent>
           </Card>
+          )}
 
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Quick actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
-              {quickLinks.map((link) => {
+              {(statsDenied
+                ? quickLinks.filter((l) => l.href === "/admin/projects")
+                : quickLinks
+              ).map((link) => {
                 const Icon = link.icon;
                 return (
                   <Link

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { projects, onboardingSubmissions, projectPhases, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { projectPhaseNames } from "@/lib/services";
+import { currentUser } from "@clerk/nextjs/server";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -31,9 +32,43 @@ const onboardingSchema = z.object({
   ]),
 });
 
+/**
+ * Get the DB user, self-healing the signup race: a brand-new account can land
+ * here before the Clerk user.created webhook has inserted their row. In that
+ * case, create the row from the live Clerk session instead of failing.
+ */
+async function getOrCreateDbUser() {
+  try {
+    return await getAuthenticatedUser();
+  } catch (error) {
+    if (!(error instanceof NextResponse) || error.status !== 404) throw error;
+
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      throw NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const [created] = await db
+      .insert(users)
+      .values({
+        clerkId: clerkUser.id,
+        email: clerkUser.emailAddresses[0]?.emailAddress ?? "",
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+        imageUrl: clerkUser.imageUrl,
+        role: "client",
+      })
+      .onConflictDoNothing({ target: users.clerkId })
+      .returning();
+
+    // onConflictDoNothing returns nothing if the webhook won the race — fetch.
+    return created ?? (await getAuthenticatedUser());
+  }
+}
+
 export async function POST(req: Request) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await getOrCreateDbUser();
 
     const rateLimit = checkRateLimit(user.id + ":onboarding", 5);
     if (!rateLimit.success) {

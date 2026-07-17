@@ -37,7 +37,7 @@ export async function GET() {
       .orderBy(desc(payments.createdAt))
       .limit(200);
 
-    const [[paidRow], [pendingRow], [totalRow]] = await Promise.all([
+    const [[paidRow], [pendingRow]] = await Promise.all([
       db
         .select({ value: sum(payments.amount) })
         .from(payments)
@@ -46,16 +46,20 @@ export async function GET() {
         .select({ value: sum(payments.amount) })
         .from(payments)
         .where(eq(payments.status, "pending")),
-      db.select({ value: sum(payments.amount) }).from(payments),
     ]);
+
+    // sum() returns a numeric string or null — coerce to cents integers.
+    // Total = paid + pending only; cancelled/failed/refunded rows are excluded
+    // so the headline never exceeds real money in play.
+    const paid = Number(paidRow?.value ?? 0);
+    const pending = Number(pendingRow?.value ?? 0);
 
     return NextResponse.json({
       payments: rows,
       summary: {
-        // sum() returns a numeric string or null — coerce to cents integers.
-        total: Number(totalRow?.value ?? 0),
-        paid: Number(paidRow?.value ?? 0),
-        pending: Number(pendingRow?.value ?? 0),
+        total: paid + pending,
+        paid,
+        pending,
       },
     });
   } catch (error) {

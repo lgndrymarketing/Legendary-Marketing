@@ -10,7 +10,6 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { ProjectDetailClient } from "./client";
-import { isStaff } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
 
 const statusLabels: Record<string, string> = {
@@ -45,8 +44,9 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound();
 
-  // Verify ownership (unless staff)
-  if (!isStaff(dbUser.role) && project.userId !== dbUser.id) notFound();
+  // Personal client surface — you may only open your OWN project here. Staff
+  // manage client projects through /admin/projects/[id] (scoped by role).
+  if (project.userId !== dbUser.id) notFound();
 
   // Fetch related data in parallel
   const [phases, projectFiles, projectInvoices] = await Promise.all([

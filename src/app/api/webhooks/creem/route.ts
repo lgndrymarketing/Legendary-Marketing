@@ -5,6 +5,7 @@ import { payments, projects, invoices } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getPricing, formatUsd } from "@/lib/pricing";
+import { createNotification } from "@/lib/notifications";
 
 function getSignatureHeader(req: Request): string | null {
   return (
@@ -209,6 +210,16 @@ export async function POST(req: Request) {
             status: "paid",
           });
         }
+
+        // Tell the client their payment landed and work is starting.
+        await createNotification({
+          userId: project.userId,
+          projectId,
+          type: "payment_confirmed",
+          title: "Payment confirmed",
+          body: "Thanks — your payment went through and your project is now in progress.",
+          actionUrl: `/projects/${projectId}`,
+        });
       } catch (dbError) {
         console.error(
           "Creem webhook: failed to record payment/invoice",

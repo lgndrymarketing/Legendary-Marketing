@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { satisfactionSurveys } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -31,6 +32,28 @@ export async function POST(req: Request) {
     const rateLimit = checkRateLimit(user.id + ":surveys", 5);
     if (!rateLimit.success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // One survey per user per project — repeat submissions update the
+    // original instead of stacking duplicate scores.
+    const [existing] = await db
+      .select({ id: satisfactionSurveys.id })
+      .from(satisfactionSurveys)
+      .where(
+        and(
+          eq(satisfactionSurveys.projectId, projectId),
+          eq(satisfactionSurveys.userId, user.id)
+        )
+      )
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await db
+        .update(satisfactionSurveys)
+        .set({ score, feedback })
+        .where(eq(satisfactionSurveys.id, existing.id))
+        .returning();
+      return NextResponse.json(updated);
     }
 
     const [survey] = await db

@@ -6,7 +6,15 @@ import { payments, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
-  return NextResponse.json({ configured: isGhlConfigured() });
+  try {
+    // Config state is admin-only — don't leak integration posture to
+    // unauthenticated callers or non-admin staff.
+    await requireAdmin();
+    return NextResponse.json({ configured: isGhlConfigured() });
+  } catch (error) {
+    if (error instanceof NextResponse) return error;
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
 }
 
 export async function POST() {

@@ -1,11 +1,20 @@
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Plug, Radio } from "lucide-react";
 import { isGhlConfigured } from "@/lib/ghl";
 import { GhlSyncButton } from "./ghl-sync-button";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { canManageAgency } from "@/lib/permissions";
 
-export default function AdminIntegrationsPage() {
+export default async function AdminIntegrationsPage() {
+  // Integration config is admin-only (the layout only checks isStaff).
+  const staff = await getAuthenticatedUser();
+  if (!canManageAgency(staff.role)) {
+    redirect("/admin/projects");
+  }
+
   const ghlConfigured = isGhlConfigured();
   const ablyConfigured = Boolean(process.env.ABLY_API_KEY);
 

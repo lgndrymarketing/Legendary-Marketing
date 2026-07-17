@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -6,8 +7,17 @@ import { Users } from "lucide-react";
 import { db } from "@/db";
 import { users, projects } from "@/db/schema";
 import { eq, count } from "drizzle-orm";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { canViewAllProjects } from "@/lib/permissions";
 
 export default async function AdminClientsPage() {
+  // This RSC reads all client PII directly — guard it here (the shared admin
+  // layout only checks isStaff, which includes scoped VAs).
+  const staff = await getAuthenticatedUser();
+  if (!canViewAllProjects(staff.role)) {
+    redirect("/admin/projects");
+  }
+
   const clients = await db
     .select({
       id: users.id,

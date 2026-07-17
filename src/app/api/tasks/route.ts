@@ -4,12 +4,19 @@ import { tasks } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
-import { canManageProjects } from "@/lib/permissions";
+import { canManageProjects, isStaff } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   try {
     const user = await getAuthenticatedUser();
+
+    // The task board is an internal, staff-only surface — clients must not be
+    // able to read it even for their own project. (VAs are further scoped to
+    // assigned projects by verifyProjectAccess below.)
+    if (!isStaff(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");

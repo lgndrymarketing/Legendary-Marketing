@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, users } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { isStaff } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
 
 const statusLabels: Record<string, string> = {
@@ -36,12 +35,22 @@ export default async function ProjectsPage() {
     .from(users)
     .where(eq(users.clerkId, userId));
 
-  if (!dbUser) return null;
+  if (!dbUser) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          title="Projects"
+          description="Your account is being set up. Please refresh in a moment."
+        />
+      </div>
+    );
+  }
 
-  const userProjects =
-    isStaff(dbUser.role)
-      ? await db.select().from(projects)
-      : await db.select().from(projects).where(eq(projects.userId, dbUser.id));
+  // Personal client surface — only the user's own projects (see dashboard).
+  const userProjects = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.userId, dbUser.id));
 
   const projectIds = userProjects.map((p) => p.id);
   const allPhases =
