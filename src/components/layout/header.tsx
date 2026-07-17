@@ -190,7 +190,7 @@ export function Header() {
                       <Link href="/sign-in">Sign In</Link>
                     </Button>
                     <RainbowButton className="h-9 px-5 text-sm rounded-lg" asChild>
-                      <Link href="/sign-up">
+                      <Link href="/get-started">
                         Get Started
                       </Link>
                     </RainbowButton>
@@ -314,7 +314,7 @@ export function Header() {
                     onClick={() => setMobileOpen(false)}
                     asChild
                   >
-                    <Link href="/sign-up">
+                    <Link href="/get-started">
                       Get Started
                       <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>

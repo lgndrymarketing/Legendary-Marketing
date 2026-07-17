@@ -14,6 +14,7 @@ import { Send, Mail, MapPin, Clock, Loader2, CheckCircle } from "lucide-react";
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -25,10 +26,27 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate submission
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSubmitted(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          company: form.company || undefined,
+          serviceInterest: form.service || undefined,
+          message: form.message,
+          source: "contact_form",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to submit");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -144,6 +162,9 @@ export default function ContactPage() {
                             onChange={(e) => setForm({ ...form, message: e.target.value })}
                           />
                         </div>
+                        {error && (
+                          <p className="text-sm text-destructive text-center">{error}</p>
+                        )}
                         <Button
                           type="submit"
                           variant="glow"

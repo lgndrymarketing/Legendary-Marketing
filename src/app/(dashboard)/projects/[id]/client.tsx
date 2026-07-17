@@ -11,6 +11,7 @@ import { ProjectComments } from "@/components/dashboard/project-comments";
 import { NPSSurvey } from "@/components/dashboard/nps-survey";
 import { InvoiceCard } from "@/components/dashboard/invoice-card";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
+import { CampaignList } from "@/components/dashboard/campaign-list";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
   Upload,
@@ -19,6 +20,7 @@ import {
   RotateCcw,
   BarChart3,
   MessageCircle,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -148,6 +150,19 @@ export function ProjectDetailClient({
                       Phases will appear here once your project kicks off.
                     </p>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Ad Campaigns */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-orange" />
+                    Ad Campaigns
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CampaignList projectId={project.id} canEdit={false} />
                 </CardContent>
               </Card>
 

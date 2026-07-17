@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { projects, onboardingSubmissions, projectPhases } from "@/db/schema";
+import { projects, onboardingSubmissions, projectPhases, users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { projectPhaseNames } from "@/lib/services";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  isGhlConfigured,
+  syncContactToGhl,
+  createGhlOpportunity,
+} from "@/lib/ghl";
 import { z } from "zod";
 
 const onboardingSchema = z.object({
@@ -86,6 +92,43 @@ export async function POST(req: Request) {
         status: "pending" as const,
       }))
     );
+
+    // GHL is the agency's pipeline of record — mirror the new project as an
+    // opportunity on the client's GHL contact. Best-effort: never fail the
+    // onboarding submission over a CRM hiccup.
+    if (isGhlConfigured()) {
+      try {
+        let ghlContactId = user.ghlContactId;
+        if (!ghlContactId) {
+          ghlContactId = await syncContactToGhl({
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            companyName: businessName,
+            tags: ["client-portal"],
+            source: "client_portal_onboarding",
+          });
+          await db
+            .update(users)
+            .set({ ghlContactId, updatedAt: new Date() })
+            .where(eq(users.id, user.id));
+        }
+
+        const ghlOpportunityId = await createGhlOpportunity({
+          name: `${businessName} — ${serviceType.replace(/_/g, " ")}`,
+          contactId: ghlContactId,
+        });
+        await db
+          .update(projects)
+          .set({ ghlOpportunityId, updatedAt: new Date() })
+          .where(eq(projects.id, project.id));
+      } catch (ghlError) {
+        console.error(
+          "GHL opportunity sync failed (project still created):",
+          ghlError
+        );
+      }
+    }
 
     return NextResponse.json({ projectId: project.id });
   } catch (error) {

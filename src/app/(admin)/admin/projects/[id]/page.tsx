@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
 import { KanbanBoard } from "@/components/dashboard/kanban-board";
+import { CampaignList } from "@/components/dashboard/campaign-list";
 import {
   ArrowLeft,
   Check,
@@ -16,6 +17,7 @@ import {
   Send,
   SkipForward,
   KanbanSquare,
+  Megaphone,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -94,6 +96,19 @@ export default function AdminProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <KanbanBoard projectId={params.id} />
+            </CardContent>
+          </Card>
+
+          {/* Ad campaigns */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-orange" />
+                Ad Campaigns
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CampaignList projectId={params.id} canEdit />
             </CardContent>
           </Card>
 

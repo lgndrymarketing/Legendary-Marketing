@@ -296,6 +296,74 @@ export const analyticsEvents = pgTable("analytics_events", {
   index("idx_analytics_project_id").on(table.projectId),
 ]);
 
+// Leads — captured from the public site (contact form, get-started funnel)
+// and synced into GoHighLevel, which is the agency's CRM of record.
+export const leadStatusEnum = pgEnum("lead_status", [
+  "new",
+  "contacted",
+  "qualified",
+  "converted",
+  "lost",
+]);
+
+export const leads = pgTable("leads", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  company: varchar("company", { length: 255 }),
+  serviceInterest: varchar("service_interest", { length: 100 }),
+  monthlyBudget: varchar("monthly_budget", { length: 100 }),
+  message: text("message"),
+  // Where the lead came from: "contact_form" | "get_started_funnel" | ...
+  source: varchar("source", { length: 100 }).notNull().default("contact_form"),
+  status: leadStatusEnum("status").notNull().default("new"),
+  ghlContactId: varchar("ghl_contact_id", { length: 255 }),
+  ghlSyncedAt: timestamp("ghl_synced_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_leads_email").on(table.email),
+  index("idx_leads_status").on(table.status),
+]);
+
+// Ad campaigns — the campaigns the agency runs for a client project.
+// Metrics are agency-entered for now; ghlCampaignId reserves the link for
+// pulling attribution/reporting out of GoHighLevel later.
+export const campaignPlatformEnum = pgEnum("campaign_platform", [
+  "meta",
+  "google",
+  "tiktok",
+  "other",
+]);
+
+export const campaignStatusEnum = pgEnum("campaign_status", [
+  "draft",
+  "active",
+  "paused",
+  "completed",
+]);
+
+export const adCampaigns = pgTable("ad_campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
+    .references(() => projects.id, { onDelete: "cascade" })
+    .notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  platform: campaignPlatformEnum("platform").notNull(),
+  status: campaignStatusEnum("status").notNull().default("draft"),
+  // Money in cents
+  monthlyBudget: integer("monthly_budget"),
+  totalSpend: integer("total_spend").notNull().default(0),
+  leadsGenerated: integer("leads_generated").notNull().default(0),
+  notes: text("notes"),
+  ghlCampaignId: varchar("ghl_campaign_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_campaigns_project_id").on(table.projectId),
+]);
+
 // Task board (kanban) — internal team task management per project
 export const taskStatusEnum = pgEnum("task_status", [
   "todo",
@@ -349,4 +417,8 @@ export type SatisfactionSurvey = typeof satisfactionSurveys.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
+export type Lead = typeof leads.$inferSelect;
+export type NewLead = typeof leads.$inferInsert;
+export type AdCampaign = typeof adCampaigns.$inferSelect;
+export type NewAdCampaign = typeof adCampaigns.$inferInsert;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;

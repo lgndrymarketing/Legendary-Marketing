@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isGhlConfigured, syncContactToGhl } from "@/lib/ghl";
 
 export async function POST(req: Request) {
   try {
@@ -63,17 +64,45 @@ export async function POST(req: Request) {
     const { type, data } = payload;
 
     if (type === "user.created") {
-      await db.insert(users).values({
-        clerkId: data.id as string,
-        email:
-          (
-            data.email_addresses as Array<{ email_address: string }>
-          )?.[0]?.email_address ?? "",
-        firstName: data.first_name as string | undefined,
-        lastName: data.last_name as string | undefined,
-        imageUrl: data.image_url as string | undefined,
-        role: "client",
-      });
+      const email =
+        (
+          data.email_addresses as Array<{ email_address: string }>
+        )?.[0]?.email_address ?? "";
+      const firstName = data.first_name as string | undefined;
+      const lastName = data.last_name as string | undefined;
+
+      const [created] = await db
+        .insert(users)
+        .values({
+          clerkId: data.id as string,
+          email,
+          firstName,
+          lastName,
+          imageUrl: data.image_url as string | undefined,
+          role: "client",
+        })
+        .returning();
+
+      // GHL is the agency's CRM of record — mirror every new portal signup
+      // as a GHL contact. Best-effort: a GHL failure must never fail the
+      // webhook (the user row above is already committed).
+      if (isGhlConfigured() && email) {
+        try {
+          const ghlContactId = await syncContactToGhl({
+            email,
+            firstName,
+            lastName,
+            tags: ["client-portal"],
+            source: "client_portal_signup",
+          });
+          await db
+            .update(users)
+            .set({ ghlContactId, updatedAt: new Date() })
+            .where(eq(users.id, created.id));
+        } catch (ghlError) {
+          console.error("GHL contact sync failed (user still created):", ghlError);
+        }
+      }
     }
 
     if (type === "user.updated") {

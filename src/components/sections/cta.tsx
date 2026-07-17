@@ -17,8 +17,8 @@ export function CTASection() {
         </p>
         <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <RainbowButton className="h-14 px-10 text-base rounded-xl" asChild>
-            <Link href="/services">
-              View Services
+            <Link href="/get-started">
+              Get Your Free Growth Plan
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </RainbowButton>

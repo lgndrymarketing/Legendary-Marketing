@@ -11,12 +11,14 @@ import {
   MessageSquare,
   UserCog,
   Plug,
+  Inbox,
 } from "lucide-react";
 import { canManageAgency } from "@/lib/permissions";
 
 const navItems = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard, adminOnly: false },
   { label: "Clients", href: "/admin/clients", icon: Users, adminOnly: false },
+  { label: "Leads", href: "/admin/leads", icon: Inbox, adminOnly: false },
   { label: "Projects", href: "/admin/projects", icon: FolderKanban, adminOnly: false },
   { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: false },
   { label: "Payments", href: "/admin/payments", icon: CreditCard, adminOnly: true },

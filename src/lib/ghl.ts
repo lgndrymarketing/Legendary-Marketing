@@ -83,6 +83,13 @@ export interface SyncContactInput {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
+  phone?: string | null;
+  companyName?: string | null;
+  /** GHL tags, e.g. ["website-lead", "get-started-funnel"] — drive GHL
+   * workflows/automations off these. */
+  tags?: string[];
+  /** Attribution source recorded on the GHL contact. */
+  source?: string;
 }
 
 export interface CreateOpportunityInput {
@@ -107,6 +114,10 @@ export async function syncContactToGhl(
         email: user.email,
         firstName: user.firstName ?? undefined,
         lastName: user.lastName ?? undefined,
+        phone: user.phone ?? undefined,
+        companyName: user.companyName ?? undefined,
+        tags: user.tags?.length ? user.tags : undefined,
+        source: user.source ?? undefined,
       }),
     }
   );
@@ -150,4 +161,60 @@ export async function fetchGhlOpportunities(): Promise<GhlOpportunity[]> {
   );
 
   return result.opportunities ?? [];
+}
+
+export interface GhlTransaction {
+  _id?: string;
+  id?: string;
+  amount?: number;
+  currency?: string;
+  status?: string;
+  contactId?: string;
+  createdAt?: string;
+}
+
+/**
+ * List payment transactions recorded in GHL — the agency invoices through
+ * GoHighLevel, so this is the revenue feed for the admin billing view.
+ */
+export async function fetchGhlTransactions(): Promise<GhlTransaction[]> {
+  const result = await ghlFetch<{ data: GhlTransaction[] }>(
+    `/payments/transactions?altId=${encodeURIComponent(
+      process.env.GHL_LOCATION_ID ?? ""
+    )}&altType=location`
+  );
+
+  return result.data ?? [];
+}
+
+export interface GhlAppointment {
+  id: string;
+  title?: string;
+  contactId?: string;
+  calendarId?: string;
+  status?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+/**
+ * List booked appointments for a GHL calendar — surfaces sales calls booked
+ * through GHL funnels/calendars inside the agency dashboard.
+ */
+export async function fetchGhlAppointments(
+  calendarId: string,
+  startTime: string,
+  endTime: string
+): Promise<GhlAppointment[]> {
+  const params = new URLSearchParams({
+    locationId: process.env.GHL_LOCATION_ID ?? "",
+    calendarId,
+    startTime,
+    endTime,
+  });
+  const result = await ghlFetch<{ events: GhlAppointment[] }>(
+    `/calendars/events?${params.toString()}`
+  );
+
+  return result.events ?? [];
 }
