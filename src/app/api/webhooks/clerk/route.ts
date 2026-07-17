@@ -71,6 +71,8 @@ export async function POST(req: Request) {
       const firstName = data.first_name as string | undefined;
       const lastName = data.last_name as string | undefined;
 
+      // Idempotent: svix retries the same event, so upsert on the unique
+      // clerkId instead of a bare insert (which would 500 and retry-loop).
       const [created] = await db
         .insert(users)
         .values({
@@ -81,12 +83,23 @@ export async function POST(req: Request) {
           imageUrl: data.image_url as string | undefined,
           role: "client",
         })
+        .onConflictDoUpdate({
+          target: users.clerkId,
+          set: {
+            email,
+            firstName,
+            lastName,
+            imageUrl: data.image_url as string | undefined,
+            updatedAt: new Date(),
+          },
+        })
         .returning();
 
       // GHL is the agency's CRM of record — mirror every new portal signup
       // as a GHL contact. Best-effort: a GHL failure must never fail the
-      // webhook (the user row above is already committed).
-      if (isGhlConfigured() && email) {
+      // webhook (the user row above is already committed). Skip if this
+      // upsert was a retry of an already-synced contact.
+      if (isGhlConfigured() && email && !created.ghlContactId) {
         try {
           const ghlContactId = await syncContactToGhl({
             email,

@@ -22,7 +22,7 @@ import {
 const steps = [
   { id: "service", title: "Select Service" },
   { id: "business", title: "Business Details" },
-  { id: "project", title: "Project Scope" },
+  { id: "project", title: "Goals & Scope" },
   { id: "review", title: "Review & Submit" },
 ];
 

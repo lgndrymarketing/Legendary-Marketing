@@ -1,25 +1,87 @@
-"use client";
-
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FolderKanban, ArrowRight } from "lucide-react";
+import { db } from "@/db";
+import { projects, users, projectPhases } from "@/db/schema";
+import { eq, inArray, desc, and } from "drizzle-orm";
+import { getAuthenticatedUser, getAccessibleProjectIds } from "@/lib/auth-utils";
+import { serviceLabels } from "@/lib/services";
 
-const demoProjects = [
-  { id: "1", client: "John Doe", name: "Meta Ads Launch", service: "Paid Advertising", status: "in_progress", phase: "Build & Launch", payment: "paid" },
-  { id: "2", client: "Jane Smith", name: "Lead Gen Funnel", service: "High-Converting Funnels", status: "in_progress", phase: "Strategy & Setup", payment: "paid" },
-  { id: "3", client: "Bob Wilson", name: "Google Ads Program", service: "Paid Advertising", status: "payment_pending", phase: "Discovery", payment: "pending" },
-  { id: "4", client: "Sarah Lee", name: "Brand Website", service: "Websites & Landing Pages", status: "completed", phase: "Scale", payment: "paid" },
-  { id: "5", client: "Mike Chen", name: "GoHighLevel Pipeline Setup", service: "CRM & Automation", status: "in_progress", phase: "Optimization", payment: "paid" },
-];
+const statusLabels: Record<string, string> = {
+  onboarding: "Onboarding",
+  payment_pending: "Payment Pending",
+  in_progress: "In Progress",
+  revision: "Revision",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
 
-export default function AdminProjectsPage() {
+const statusVariant: Record<string, "success" | "warning" | "orange" | "secondary"> = {
+  onboarding: "secondary",
+  payment_pending: "warning",
+  in_progress: "orange",
+  revision: "warning",
+  completed: "success",
+  cancelled: "secondary",
+};
+
+export default async function AdminProjectsPage() {
+  const user = await getAuthenticatedUser();
+  const accessible = await getAccessibleProjectIds(user.id, user.role);
+
+  // VAs with no assigned projects get an empty array — nothing to show.
+  const hasScope = accessible === "all" || accessible.length > 0;
+
+  const rows = hasScope
+    ? await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          serviceType: projects.serviceType,
+          status: projects.status,
+          clientFirstName: users.firstName,
+          clientLastName: users.lastName,
+          clientEmail: users.email,
+        })
+        .from(projects)
+        .leftJoin(users, eq(projects.userId, users.id))
+        .where(
+          accessible === "all" ? undefined : inArray(projects.id, accessible)
+        )
+        .orderBy(desc(projects.createdAt))
+    : [];
+
+  // Fetch the in-progress phase for each listed project (one query, then map).
+  const phaseMap = new Map<string, string>();
+  if (rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+    const activePhases = await db
+      .select({
+        projectId: projectPhases.projectId,
+        name: projectPhases.name,
+      })
+      .from(projectPhases)
+      .where(
+        and(
+          inArray(projectPhases.projectId, ids),
+          eq(projectPhases.status, "in_progress")
+        )
+      );
+    for (const p of activePhases) {
+      if (!phaseMap.has(p.projectId)) phaseMap.set(p.projectId, p.name);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
-        <p className="text-muted-foreground mt-1">Manage all client projects and update phases.</p>
+        <p className="text-muted-foreground mt-1">
+          Manage all client projects and update phases.
+        </p>
       </div>
 
       <Card>
@@ -30,55 +92,66 @@ export default function AdminProjectsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Project</th>
-                  <th className="pb-3 font-medium">Client</th>
-                  <th className="pb-3 font-medium">Service</th>
-                  <th className="pb-3 font-medium">Phase</th>
-                  <th className="pb-3 font-medium">Payment</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {demoProjects.map((project) => (
-                  <tr key={project.id} className="hover:bg-muted/50">
-                    <td className="py-3 font-medium">{project.name}</td>
-                    <td className="py-3 text-muted-foreground">{project.client}</td>
-                    <td className="py-3 text-muted-foreground">{project.service}</td>
-                    <td className="py-3">
-                      <Badge variant="secondary">{project.phase}</Badge>
-                    </td>
-                    <td className="py-3">
-                      <Badge variant={project.payment === "paid" ? "success" : "warning"}>
-                        {project.payment}
-                      </Badge>
-                    </td>
-                    <td className="py-3">
-                      <Badge
-                        variant={
-                          project.status === "completed" ? "success" :
-                          project.status === "payment_pending" ? "warning" : "orange"
-                        }
-                      >
-                        {project.status.replace("_", " ")}
-                      </Badge>
-                    </td>
-                    <td className="py-3">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/admin/projects/${project.id}`}>
-                          Manage <ArrowRight className="ml-1 h-3 w-3" />
-                        </Link>
-                      </Button>
-                    </td>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="No projects yet"
+              description="Client projects will appear here once they're created."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="pb-3 font-medium">Project</th>
+                    <th className="pb-3 font-medium">Client</th>
+                    <th className="pb-3 font-medium">Service</th>
+                    <th className="pb-3 font-medium">Phase</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {rows.map((project) => {
+                    const clientName =
+                      [project.clientFirstName, project.clientLastName]
+                        .filter(Boolean)
+                        .join(" ") ||
+                      project.clientEmail ||
+                      "—";
+                    return (
+                      <tr key={project.id} className="hover:bg-muted/50">
+                        <td className="py-3 font-medium">{project.name}</td>
+                        <td className="py-3 text-muted-foreground">{clientName}</td>
+                        <td className="py-3 text-muted-foreground">
+                          {serviceLabels[project.serviceType] || project.serviceType}
+                        </td>
+                        <td className="py-3">
+                          {phaseMap.has(project.id) ? (
+                            <Badge variant="secondary">{phaseMap.get(project.id)}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-3">
+                          <Badge variant={statusVariant[project.status] ?? "secondary"}>
+                            {statusLabels[project.status] || project.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/admin/projects/${project.id}`}>
+                              Manage <ArrowRight className="ml-1 h-3 w-3" />
+                            </Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

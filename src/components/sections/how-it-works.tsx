@@ -21,7 +21,7 @@ const steps = [
     icon: BarChart3,
     title: "Build & Launch Campaigns",
     description:
-      "Watch your funnel and campaigns move through each phase in real-time with our DoorDash-style tracker. Always know where things stand.",
+      "Watch your funnel and campaigns move through each phase in real-time with our live progress tracker. Always know where things stand.",
   },
   {
     icon: MessageSquare,
@@ -38,8 +38,8 @@ export function HowItWorksSection() {
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="orange" className="mb-4">How It Works</Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            From idea to{" "}
-            <span className="text-gradient-orange">launch</span>
+            From strategy to{" "}
+            <span className="text-gradient-orange">scale</span>
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             A simple, transparent process that keeps you in the loop every step of the way.

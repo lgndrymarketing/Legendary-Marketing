@@ -6,7 +6,7 @@ const cspHeader = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://img.clerk.com https://utfs.io",
   "font-src 'self'",
-  "connect-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev https://checkout.creem.io https://*.ably.io wss://*.ably.io https://services.leadconnectorhq.com",
+  "connect-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev https://checkout.creem.io https://*.ably.io wss://*.ably.io https://services.leadconnectorhq.com https://uploadthing.com https://*.uploadthing.com https://*.ingest.uploadthing.com https://utfs.io",
   "frame-src 'self' https://*.clerk.dev https://*.clerk.accounts.dev",
 ].join("; ");
 

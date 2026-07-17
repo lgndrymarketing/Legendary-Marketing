@@ -145,8 +145,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(249, 115, 22, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(41, 84, 229, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(41, 84, 229, 0.6); }
 }
 
 @keyframes rainbow {
@@ -162,7 +162,7 @@ body {
 
 /* Utility classes */
 .text-gradient-orange {
-  background: linear-gradient(135deg, #F97316, #FB923C, #FDBA74);
+  background: linear-gradient(135deg, #2954E5, #5B82FF, #C9972C);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -170,13 +170,13 @@ body {
 
 .glow-button {
   position: relative;
-  background: linear-gradient(135deg, #F97316, #EA580C);
-  box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+  background: linear-gradient(135deg, #2954E5, #1E3FBF);
+  box-shadow: 0 0 20px rgba(41, 84, 229, 0.4);
   transition: all 0.3s ease;
 }
 
 .glow-button:hover {
-  box-shadow: 0 0 30px rgba(249, 115, 22, 0.6);
+  box-shadow: 0 0 30px rgba(41, 84, 229, 0.6);
   transform: translateY(-1px);
 }
 
@@ -196,7 +196,7 @@ body {
 }
 
 .phase-connector.completed::after {
-  background: linear-gradient(90deg, #F97316, #FB923C);
+  background: linear-gradient(90deg, #2954E5, #5B82FF);
 }
 
 @media (prefers-reduced-motion: reduce) {

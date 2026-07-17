@@ -81,7 +81,7 @@ export default function PortfolioPage() {
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
           <div className="absolute inset-0 bg-background" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(41,84,229,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Portfolio</Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">

@@ -1,16 +1,70 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CreditCard } from "lucide-react";
 
-const demoPayments = [
-  { client: "John Doe", project: "Meta Ads Launch", amount: "$2,500", status: "paid", date: "Mar 1, 2026", source: "creem" as const },
-  { client: "Jane Smith", project: "Lead Gen Funnel", amount: "$1,200", status: "paid", date: "Feb 28, 2026", source: "creem" as const },
-  { client: "Bob Wilson", project: "Google Ads Program", amount: "$3,000", status: "pending", date: "Mar 10, 2026", source: "creem" as const },
-  { client: "Sarah Lee", project: "Brand Website", amount: "$2,500", status: "paid", date: "Jan 20, 2026", source: "creem" as const },
-  { client: "Mike Chen", project: "GoHighLevel Pipeline Setup", amount: "$2,000", status: "paid", date: "Mar 8, 2026", source: "ghl" as const },
-];
+interface PaymentRow {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  source: string;
+  createdAt: string;
+  projectId: string | null;
+  projectName: string | null;
+  clientFirstName: string | null;
+  clientLastName: string | null;
+  clientEmail: string | null;
+}
+
+interface PaymentsResponse {
+  payments: PaymentRow[];
+  summary: { total: number; paid: number; pending: number };
+}
+
+// Amounts are stored in cents — format as whole dollars ("$X,XXX"), matching
+// the Overview page.
+function formatCents(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+const statusVariant = (status: string): "success" | "warning" | "destructive" | "secondary" =>
+  status === "completed"
+    ? "success"
+    : status === "pending"
+    ? "warning"
+    : status === "failed" || status === "refunded"
+    ? "destructive"
+    : "secondary";
 
 export default function AdminPaymentsPage() {
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [summary, setSummary] = useState({ total: 0, paid: 0, pending: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/payments")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: PaymentsResponse | null) => {
+        if (data && Array.isArray(data.payments)) {
+          setPayments(data.payments);
+          if (data.summary) setSummary(data.summary);
+        }
+      })
+      .catch(() => {
+        /* leave empty state in place */
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const clientName = (p: PaymentRow) => {
+    const name = [p.clientFirstName, p.clientLastName].filter(Boolean).join(" ");
+    return name || p.clientEmail || "—";
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -23,19 +77,23 @@ export default function AdminPaymentsPage() {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-3xl font-bold mt-1">$11,200</p>
+            <p className="text-3xl font-bold mt-1">{formatCents(summary.total)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Paid</p>
-            <p className="text-3xl font-bold text-success mt-1">$8,200</p>
+            <p className="text-3xl font-bold text-success mt-1">
+              {formatCents(summary.paid)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="text-3xl font-bold text-warning mt-1">$3,000</p>
+            <p className="text-3xl font-bold text-warning mt-1">
+              {formatCents(summary.pending)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -48,40 +106,62 @@ export default function AdminPaymentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Client</th>
-                  <th className="pb-3 font-medium">Project</th>
-                  <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Source</th>
-                  <th className="pb-3 font-medium">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {demoPayments.map((payment, i) => (
-                  <tr key={i} className="hover:bg-muted/50">
-                    <td className="py-3 font-medium">{payment.client}</td>
-                    <td className="py-3 text-muted-foreground">{payment.project}</td>
-                    <td className="py-3 font-semibold">{payment.amount}</td>
-                    <td className="py-3">
-                      <Badge variant={payment.status === "paid" ? "success" : "warning"}>
-                        {payment.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3">
-                      <Badge variant={payment.source === "ghl" ? "orange" : "secondary"}>
-                        {payment.source === "ghl" ? "GoHighLevel" : "Creem"}
-                      </Badge>
-                    </td>
-                    <td className="py-3 text-muted-foreground">{payment.date}</td>
+          {loading ? (
+            <EmptyState icon={CreditCard} title="Loading payments..." description="" />
+          ) : payments.length === 0 ? (
+            <EmptyState
+              icon={CreditCard}
+              title="No payments yet"
+              description="Payments will appear here as clients check out via Creem or as invoices sync in from GoHighLevel."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="pb-3 font-medium">Client</th>
+                    <th className="pb-3 font-medium">Project</th>
+                    <th className="pb-3 font-medium">Amount</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Source</th>
+                    <th className="pb-3 font-medium">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-muted/50">
+                      <td className="py-3 font-medium">{clientName(payment)}</td>
+                      <td className="py-3 text-muted-foreground">
+                        {payment.projectName ?? "—"}
+                      </td>
+                      <td className="py-3 font-semibold">
+                        {formatCents(payment.amount)}
+                      </td>
+                      <td className="py-3">
+                        <Badge variant={statusVariant(payment.status)}>
+                          {payment.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3">
+                        <Badge
+                          variant={payment.source === "ghl" ? "orange" : "secondary"}
+                        >
+                          {payment.source === "ghl" ? "GoHighLevel" : "Creem"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-muted-foreground whitespace-nowrap">
+                        {new Date(payment.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -19,15 +19,19 @@ export function Logo({ size = 32, className }: LogoProps) {
       aria-label="Legendary Marketing"
     >
       <rect width="32" height="32" rx="8" className="fill-orange" />
-      <path
-        d="M9 8.5V21.5H15.5V19.2H11.6V8.5H9Z"
+      <text
+        x="16"
+        y="16"
         fill="white"
-      />
-      <path
-        d="M17.5 8.5L20.3 15.2L23.1 8.5H25.5V21.5H23.1V13L20.9 18.3H19.6L17.5 13V21.5H15.1V8.5H17.5Z"
-        fill="white"
-        fillOpacity="0.85"
-      />
+        fontFamily="var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        fontSize="14"
+        fontWeight="700"
+        letterSpacing="0.5"
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
+        LM
+      </text>
     </svg>
   );
 }

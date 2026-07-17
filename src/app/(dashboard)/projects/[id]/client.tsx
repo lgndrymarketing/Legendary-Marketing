@@ -12,6 +12,7 @@ import { NPSSurvey } from "@/components/dashboard/nps-survey";
 import { InvoiceCard } from "@/components/dashboard/invoice-card";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { CampaignList } from "@/components/dashboard/campaign-list";
+import { UploadDropzone } from "@/lib/uploadthing";
 import * as Tabs from "@radix-ui/react-tabs";
 import {
   Upload,
@@ -56,6 +57,14 @@ const tabItems = [
   { value: "analytics", label: "Analytics", icon: BarChart3 },
 ];
 
+type FileItem = { name: string; url: string; size: string; type: string };
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function ProjectDetailClient({
   project,
   phases,
@@ -66,6 +75,9 @@ export function ProjectDetailClient({
   const [revisionText, setRevisionText] = useState("");
   const [submittingRevision, setSubmittingRevision] = useState(false);
   const [showSurvey, setShowSurvey] = useState(initialShowSurvey);
+  // Files start from the server-rendered prop and grow as uploads complete.
+  const [fileList, setFileList] = useState<FileItem[]>(files);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleSubmitRevision = async () => {
     if (!revisionText.trim()) return;
@@ -203,21 +215,64 @@ export function ProjectDetailClient({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="rounded-lg border-2 border-dashed border-border p-6 text-center">
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Drag & drop or click to upload
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-3">
-                      Choose Files
-                    </Button>
-                  </div>
+                  <UploadDropzone
+                    endpoint="projectFile"
+                    input={{ projectId: project.id }}
+                    onBeforeUploadBegin={(uploadFiles) => {
+                      setUploadError(null);
+                      return uploadFiles;
+                    }}
+                    onClientUploadComplete={async (res) => {
+                      // Record each uploaded file in our DB via /api/files,
+                      // then reflect it in the list. Recording is the source of
+                      // truth; optimistic UI append keeps the view in sync.
+                      const recorded: FileItem[] = [];
+                      for (const upload of res) {
+                        try {
+                          const apiRes = await fetch("/api/files", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              projectId: project.id,
+                              name: upload.name,
+                              url: upload.ufsUrl,
+                              size: upload.size,
+                              type: upload.type || undefined,
+                            }),
+                          });
+                          if (apiRes.ok) {
+                            recorded.push({
+                              name: upload.name,
+                              url: upload.ufsUrl,
+                              size: formatBytes(upload.size),
+                              type: upload.type || "application/octet-stream",
+                            });
+                          }
+                        } catch {
+                          // Ignore a single failed record; others still apply.
+                        }
+                      }
+                      if (recorded.length > 0) {
+                        setFileList((prev) => [...prev, ...recorded]);
+                      }
+                    }}
+                    onUploadError={(error) => {
+                      setUploadError(error.message);
+                    }}
+                    className="ut-button:bg-orange ut-button:text-white ut-label:text-orange ut-upload-icon:text-muted-foreground rounded-lg border-2 border-dashed border-border p-6"
+                  />
 
-                  {files.length > 0 ? (
+                  {uploadError && (
+                    <p className="text-sm text-destructive text-center">
+                      {uploadError}
+                    </p>
+                  )}
+
+                  {fileList.length > 0 ? (
                     <div className="space-y-2">
-                      {files.map((file) => (
+                      {fileList.map((file) => (
                         <FilePreviewCard
-                          key={file.name}
+                          key={file.url}
                           name={file.name}
                           url={file.url}
                           type={file.type}

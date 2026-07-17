@@ -7,6 +7,7 @@ import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isStaff } from "@/lib/permissions";
 import { publishToChannel, isAblyConfigured } from "@/lib/ably";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(req: Request) {
   try {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
     const { projectId, content } = parsed.data;
 
-    await verifyProjectAccess(projectId, user.id, user.role);
+    const project = await verifyProjectAccess(projectId, user.id, user.role);
     const rateLimit = checkRateLimit(user.id + ":messages", 30);
     if (!rateLimit.success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });

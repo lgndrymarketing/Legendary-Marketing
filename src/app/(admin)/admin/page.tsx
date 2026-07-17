@@ -1,8 +1,103 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FolderKanban, CreditCard, MessageSquare, TrendingUp } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Users,
+  FolderKanban,
+  CreditCard,
+  MessageSquare,
+  TrendingUp,
+} from "lucide-react";
+import { serviceLabels } from "@/lib/services";
+
+interface AdminStats {
+  totalClients: number;
+  activeProjects: number;
+  totalMessages: number;
+  unreadMessages: number;
+  totalLeads: number;
+  newLeads: number;
+  totalRevenue: number;
+}
+
+interface ProjectRow {
+  id: string;
+  name: string;
+  serviceType: string;
+  status: string;
+  currentPhase: number;
+  createdAt: string;
+}
+
+// Revenue is stored in cents — format as whole dollars ("$X,XXX"), matching
+// the Payments page.
+function formatCents(cents: number): string {
+  return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+const statusBadgeVariant = (status: string): "success" | "warning" | "orange" =>
+  status === "completed"
+    ? "success"
+    : status === "payment_pending" || status === "cancelled"
+    ? "warning"
+    : "orange";
 
 export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/admin/stats").then((res) => (res.ok ? res.json() : null)),
+      fetch("/api/projects").then((res) => (res.ok ? res.json() : [])),
+    ])
+      .then(([statsData, projectsData]) => {
+        if (statsData && typeof statsData === "object" && !statsData.error) {
+          setStats(statsData);
+        }
+        if (Array.isArray(projectsData)) setProjects(projectsData);
+      })
+      .catch(() => {
+        /* leave loading/empty states in place */
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statCards = [
+    {
+      label: "Total Clients",
+      value: stats ? stats.totalClients.toLocaleString("en-US") : "—",
+      icon: Users,
+    },
+    {
+      label: "Active Projects",
+      value: stats ? stats.activeProjects.toLocaleString("en-US") : "—",
+      icon: FolderKanban,
+    },
+    {
+      label: "Revenue",
+      value: stats ? formatCents(stats.totalRevenue) : "—",
+      icon: CreditCard,
+    },
+    {
+      label: "Unread Messages",
+      value: stats ? stats.unreadMessages.toLocaleString("en-US") : "—",
+      icon: MessageSquare,
+    },
+  ];
+
+  const recentProjects = [...projects]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    .slice(0, 5);
+
   return (
     <div className="space-y-8">
       <div>
@@ -14,50 +109,22 @@ export default function AdminDashboardPage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <Users className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">12</p>
-              <p className="text-sm text-muted-foreground">Total Clients</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <FolderKanban className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">8</p>
-              <p className="text-sm text-muted-foreground">Active Projects</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <CreditCard className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">$24,500</p>
-              <p className="text-sm text-muted-foreground">Revenue</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
-              <MessageSquare className="h-6 w-6 text-orange" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">5</p>
-              <p className="text-sm text-muted-foreground">Unread Messages</p>
-            </div>
-          </CardContent>
-        </Card>
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label}>
+              <CardContent className="flex items-center gap-4 p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange/10">
+                  <Icon className="h-6 w-6 text-orange" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Recent projects */}
@@ -69,48 +136,58 @@ export default function AdminDashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Client</th>
-                  <th className="pb-3 font-medium">Project</th>
-                  <th className="pb-3 font-medium">Service</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Phase</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {[
-                  { client: "John Doe", project: "Meta Ads Launch", service: "Paid Advertising", status: "in_progress", phase: "Build & Launch" },
-                  { client: "Jane Smith", project: "Lead Gen Funnel", service: "High-Converting Funnels", status: "in_progress", phase: "Strategy & Setup" },
-                  { client: "Bob Wilson", project: "Google Ads Program", service: "Paid Advertising", status: "payment_pending", phase: "Discovery" },
-                  { client: "Sarah Lee", project: "Brand Website", service: "Websites & Landing Pages", status: "completed", phase: "Scale" },
-                  { client: "Mike Chen", project: "GoHighLevel Pipeline Setup", service: "CRM & Automation", status: "in_progress", phase: "Optimization" },
-                ].map((project, i) => (
-                  <tr key={i} className="hover:bg-muted/50">
-                    <td className="py-3">{project.client}</td>
-                    <td className="py-3 font-medium">{project.project}</td>
-                    <td className="py-3 text-muted-foreground">{project.service}</td>
-                    <td className="py-3">
-                      <Badge
-                        variant={
-                          project.status === "completed"
-                            ? "success"
-                            : project.status === "payment_pending"
-                            ? "warning"
-                            : "orange"
-                        }
-                      >
-                        {project.status.replace("_", " ")}
-                      </Badge>
-                    </td>
-                    <td className="py-3 text-muted-foreground">{project.phase}</td>
+          {loading ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="Loading projects..."
+              description=""
+            />
+          ) : recentProjects.length === 0 ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="No projects yet"
+              description="Client projects will appear here once they're created."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="pb-3 font-medium">Project</th>
+                    <th className="pb-3 font-medium">Service</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Phase</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {recentProjects.map((project) => (
+                    <tr key={project.id} className="hover:bg-muted/50">
+                      <td className="py-3 font-medium">
+                        <Link
+                          href={`/admin/projects/${project.id}`}
+                          className="hover:text-orange transition-colors"
+                        >
+                          {project.name}
+                        </Link>
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {serviceLabels[project.serviceType] ??
+                          project.serviceType}
+                      </td>
+                      <td className="py-3">
+                        <Badge variant={statusBadgeVariant(project.status)}>
+                          {project.status.replace(/_/g, " ")}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {project.currentPhase + 1}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

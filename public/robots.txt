@@ -8,4 +8,4 @@ Disallow: /analytics
 Disallow: /settings
 Disallow: /admin
 Disallow: /api/
-Sitemap: https://foritudo.agency/sitemap.xml
+Sitemap: https://legendarymarketing.com/sitemap.xml

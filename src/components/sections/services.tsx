@@ -16,12 +16,12 @@ export function ServicesSection() {
         <div className="mx-auto max-w-2xl text-center mb-16">
           <Badge variant="orange" className="mb-4">Our Services</Badge>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            What do you need{" "}
-            <span className="text-gradient-orange">built?</span>
+            What can we{" "}
+            <span className="text-gradient-orange">grow for you?</span>
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Select a service to get started. You&apos;ll go through a quick
-            onboarding process, then track every step of your build.
+            onboarding process, then track every step of your campaign.
           </p>
         </div>
 

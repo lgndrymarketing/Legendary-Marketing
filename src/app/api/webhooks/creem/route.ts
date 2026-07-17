@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, randomBytes } from "crypto";
 import { db } from "@/db";
-import { payments, projects } from "@/db/schema";
+import { payments, projects, invoices } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getPricing, formatUsd } from "@/lib/pricing";
 
 function getSignatureHeader(req: Request): string | null {
   return (
