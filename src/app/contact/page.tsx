@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export default function ContactPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Contact</Badge>
@@ -123,11 +124,10 @@ export default function ContactPage() {
                               onChange={(e) => setForm({ ...form, service: e.target.value })}
                             >
                               <option value="">Select a service</option>
-                              <option value="web_application">Web Application</option>
-                              <option value="ecommerce_store">Ecommerce Store</option>
-                              <option value="funnels">Funnels</option>
-                              <option value="ai_automation">AI Automation</option>
-                              <option value="open_claw_deployment">Open Claw Deployment</option>
+                              <option value="paid_advertising">Paid Advertising</option>
+                              <option value="funnel_build">High-Converting Funnels</option>
+                              <option value="website_design">Websites & Landing Pages</option>
+                              <option value="crm_automation">CRM & Automation</option>
                               <option value="not_sure">Not sure yet</option>
                             </select>
                           </div>
@@ -176,7 +176,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold">Email</h3>
-                      <p className="text-sm text-muted-foreground mt-1">hello@foritudo.agency</p>
+                      <p className="text-sm text-muted-foreground mt-1">hello@legendarymarketing.com</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -215,7 +215,7 @@ export default function ContactPage() {
                     Skip the form and start your project directly through our platform.
                   </p>
                   <Button variant="outline" className="w-full" asChild>
-                    <a href="/sign-up">Create Account & Start</a>
+                    <Link href="/sign-up">Create Account & Start</Link>
                   </Button>
                 </div>
               </div>

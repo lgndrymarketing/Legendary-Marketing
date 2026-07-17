@@ -16,19 +16,19 @@ const faqCategories = [
     questions: [
       {
         q: "How does the process work?",
-        a: "It's simple: choose a service, create your account, complete a quick onboarding form with your project details, and submit payment. Once confirmed, you'll get access to your project dashboard where you can track every phase of the build in real-time.",
+        a: "It's simple: choose a service, create your account, complete a quick onboarding form covering your business, audience, and goals, and submit payment. Once confirmed, you'll get access to your project dashboard where you can track every phase — from ad account setup to launch — in real-time.",
       },
       {
-        q: "How long does a typical project take?",
-        a: "Timelines vary by service and complexity. Funnels and landing pages typically take 2-3 weeks. Web applications and ecommerce stores range from 3-6 weeks. Custom enterprise projects are scoped individually. You'll see your specific timeline during onboarding.",
+        q: "How long does it take to launch?",
+        a: "Timelines vary by service. Funnels and landing pages typically take 1-2 weeks to build. Paid advertising accounts are usually live within 5-7 business days of onboarding, with the first optimization cycle 2-3 weeks after launch. CRM/GoHighLevel setups typically take 1-2 weeks. Custom or multi-service engagements are scoped individually.",
       },
       {
         q: "What information do I need to provide?",
-        a: "During onboarding, we'll ask about your business, target audience, desired features, brand guidelines, and any specific requirements. The more detail you provide, the better we can tailor the build to your needs.",
+        a: "During onboarding, we'll ask about your business, offer, target audience, past ad performance (if any), brand guidelines, and access to your ad accounts and CRM. The more detail you provide, the faster we can launch and the better we can target.",
       },
       {
-        q: "Can I start a project without knowing exactly what I need?",
-        a: "Absolutely. Our discovery phase is designed to help clarify your requirements. You can also book a free consultation through our contact page and we'll help you figure out the best approach.",
+        q: "Can I start without knowing exactly what I need?",
+        a: "Absolutely. Our discovery phase is designed to help clarify your goals and the right mix of services. You can also book a free consultation through our contact page and we'll help you figure out the best approach.",
       },
     ],
   },
@@ -36,62 +36,58 @@ const faqCategories = [
     category: "Pricing & Payment",
     questions: [
       {
+        q: "Is ad spend included in your fees?",
+        a: "No. Our fees cover strategy, setup, creative, and ongoing management of your campaigns. Ad spend (what you pay Meta, Google, or TikTok directly) is separate and billed directly by the ad platforms so you always have full visibility and control over your budget.",
+      },
+      {
         q: "What payment methods do you accept?",
         a: "We process payments securely through Creem.io, which supports all major credit cards, debit cards, and select digital payment methods.",
       },
       {
         q: "Are there any hidden fees?",
-        a: "No hidden fees. The price you see during onboarding is the price you pay. If your project scope changes significantly, we'll discuss any adjustments transparently before proceeding.",
+        a: "No hidden fees. The price you see during onboarding is the price you pay. Paid advertising and CRM automation are monthly retainers; funnels and websites are one-time project fees. If scope changes significantly, we'll discuss adjustments transparently before proceeding.",
       },
       {
         q: "Do you offer refunds?",
-        a: "We offer a satisfaction guarantee through our revision process. If you're not happy with a deliverable, we'll work with you to make it right. Refund policies are outlined in our terms of service.",
-      },
-      {
-        q: "Can I pay in installments?",
-        a: "For enterprise projects, we offer milestone-based payment plans. Contact us to discuss payment options for your specific project.",
+        a: "We offer a satisfaction guarantee through our revision process for project-based work. Monthly retainers (paid advertising, CRM automation) can be paused or canceled with notice. Refund policies are outlined in our terms of service.",
       },
     ],
   },
   {
-    category: "Project Management",
+    category: "Paid Advertising & Platforms",
     questions: [
       {
-        q: "How do I track my project's progress?",
-        a: "Your dashboard includes a real-time phase tracker (similar to DoorDash order tracking) that shows exactly where your project stands. Each phase — Discovery, Design, Development, Testing, Review, and Launch — updates as work progresses.",
+        q: "What ad platforms do you run campaigns on?",
+        a: "We manage campaigns on Meta (Facebook & Instagram), Google Ads (Search, Display, YouTube), and TikTok Ads. We'll recommend the right platform mix based on your audience and goals during onboarding.",
       },
       {
-        q: "How many revisions are included?",
-        a: "Revision rounds depend on your plan: Starter includes 1 round, Professional includes 3 rounds, and Enterprise includes unlimited revisions. You can request revisions directly through your project dashboard.",
+        q: "Do I need an existing ad account?",
+        a: "No. If you don't have ad accounts set up, we'll create and configure them for you, including pixel installation, conversion tracking, and audience setup.",
+      },
+      {
+        q: "How do you report on performance?",
+        a: "You get weekly performance reports covering spend, ROAS, cost-per-lead, and pipeline impact, plus a real-time dashboard so you're never waiting on an email to know how campaigns are performing.",
+      },
+    ],
+  },
+  {
+    category: "CRM & Automation",
+    questions: [
+      {
+        q: "Do I need my own GoHighLevel account?",
+        a: "Either works. We can set up and manage a GoHighLevel account for you, or connect into an existing one your team already uses. You retain full access and ownership of your account and data at all times.",
+      },
+      {
+        q: "What does CRM automation include?",
+        a: "Pipeline and opportunity tracking, automated lead follow-up sequences (email/SMS), appointment booking automation, and revenue/ROI reporting so no lead falls through the cracks.",
       },
       {
         q: "Can I upload files and assets?",
-        a: "Yes! Your project page has a built-in file upload section where you can share brand assets, content documents, images, and any other files relevant to your project.",
+        a: "Yes. Your project page has a built-in file upload section where you can share brand assets, creative, copy documents, and any other files relevant to your campaigns and funnel.",
       },
       {
         q: "How do I communicate with the team?",
         a: "Every project includes a direct messaging feature. You can chat with our team in real-time through your dashboard — no need for external email threads or Slack channels.",
-      },
-    ],
-  },
-  {
-    category: "Technical",
-    questions: [
-      {
-        q: "What technologies do you use?",
-        a: "We use modern, industry-standard technologies including Next.js, React, TypeScript, Tailwind CSS, and various backend services depending on your project's needs. All projects are built for performance, scalability, and maintainability.",
-      },
-      {
-        q: "Will I own the code?",
-        a: "Yes. Once your project is complete and payment is finalized, you have full ownership of all code, designs, and assets created for your project.",
-      },
-      {
-        q: "Do you provide hosting?",
-        a: "We can deploy to your preferred hosting provider (Vercel, AWS, etc.) or recommend the best option for your project. Hosting costs are separate from our development fees.",
-      },
-      {
-        q: "What about ongoing maintenance?",
-        a: "All plans include post-launch support (7-90 days depending on your plan). For ongoing maintenance, we offer separate support agreements — contact us for details.",
       },
     ],
   },
@@ -104,7 +100,7 @@ export default function FAQPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">FAQ</Badge>
@@ -113,7 +109,7 @@ export default function FAQPage() {
               <span className="text-gradient-orange">questions</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to know about working with Fortitudo Agency.
+              Everything you need to know about working with Legendary Marketing.
               Can&apos;t find what you&apos;re looking for? Reach out to us directly.
             </p>
           </div>
@@ -152,7 +148,7 @@ export default function FAQPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-16 sm:py-20 bg-charcoal-dark/30">
+        <section className="py-16 sm:py-20 bg-background">
           <div className="mx-auto max-w-3xl px-4 text-center">
             <h2 className="text-2xl font-bold">Still have questions?</h2>
             <p className="mt-3 text-muted-foreground">

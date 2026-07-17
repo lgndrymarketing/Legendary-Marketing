@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       <Header />
       <main className="flex-1 pt-16">
         <section className="relative py-24 sm:py-28 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Legal</Badge>
@@ -47,12 +47,12 @@ export default function PrivacyPage() {
 
               <div>
                 <h2 className="text-lg font-semibold text-foreground">6. Your Rights</h2>
-                <p>You have the right to access, correct, or delete your personal data. You may also request a copy of your data or opt out of non-essential communications. Contact us at hello@foritudo.agency for any privacy-related requests.</p>
+                <p>You have the right to access, correct, or delete your personal data. You may also request a copy of your data or opt out of non-essential communications. Contact us at hello@legendarymarketing.com for any privacy-related requests.</p>
               </div>
 
               <div>
                 <h2 className="text-lg font-semibold text-foreground">7. Contact</h2>
-                <p>For questions about this privacy policy, contact us at hello@foritudo.agency.</p>
+                <p>For questions about this privacy policy, contact us at hello@legendarymarketing.com.</p>
               </div>
             </div>
           </div>

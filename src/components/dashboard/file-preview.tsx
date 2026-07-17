@@ -55,6 +55,7 @@ export function FilePreviewCard({ name, url, type, size }: FilePreviewProps) {
           </div>
         ) : (
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-orange/10">
+            {/* eslint-disable-next-line react-hooks/static-components -- Icon is a stable, module-level lucide-react component, not created during render */}
             <Icon className="h-5 w-5 text-orange" />
           </div>
         )}

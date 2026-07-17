@@ -5,9 +5,16 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { services } from "@/lib/services";
+import { services, projectPhaseNames } from "@/lib/services";
 import { ArrowRight, Check, Star } from "lucide-react";
 import { motion } from "motion/react";
+
+const anchorSlugs: Record<string, string> = {
+  paid_advertising: "paid-advertising",
+  funnel_build: "funnel-build",
+  website_design: "website-design",
+  crm_automation: "crm-automation",
+};
 
 export default function ServicesPage() {
   return (
@@ -16,7 +23,7 @@ export default function ServicesPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Our Services</Badge>
@@ -25,7 +32,8 @@ export default function ServicesPage() {
               <span className="text-gradient-orange">launch & grow</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              From concept to deployment, we build digital solutions that drive results.
+              From ad account setup to funnel and CRM automation, we run the full
+              performance marketing stack that turns ad spend into pipeline.
               Pick the service that fits your needs — we handle the rest.
             </p>
           </div>
@@ -38,8 +46,8 @@ export default function ServicesPage() {
           return (
             <section
               key={service.id}
-              id={service.id}
-              className={`py-20 sm:py-28 ${!isEven ? "bg-charcoal-dark/30" : ""}`}
+              id={anchorSlugs[service.id] ?? service.id}
+              className={`py-20 sm:py-28 ${!isEven ? "bg-background" : ""}`}
             >
               <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div
@@ -89,14 +97,7 @@ export default function ServicesPage() {
                         <span className="text-sm font-medium">What&apos;s included</span>
                       </div>
                       <div className="space-y-4">
-                        {[
-                          "Project discovery & requirements",
-                          "Custom UI/UX design",
-                          "Full development & integration",
-                          "Quality assurance & testing",
-                          "Deployment & launch support",
-                          "30-day post-launch support",
-                        ].map((item) => (
+                        {projectPhaseNames.map((item) => (
                           <div key={item} className="flex items-center gap-3 text-sm">
                             <Check className="h-4 w-4 text-success shrink-0" />
                             <span>{item}</span>

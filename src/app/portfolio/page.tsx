@@ -6,63 +6,63 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ArrowUpRight, Globe, ShoppingCart, TrendingUp, Bot, Server } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Globe, TrendingUp, Megaphone, Workflow } from "lucide-react";
 import { motion } from "motion/react";
 
 const caseStudies = [
   {
-    title: "Luxury Fashion Store",
+    title: "Luxury Fashion Storefront",
     client: "Maison Noir",
-    service: "Ecommerce Store",
-    icon: ShoppingCart,
-    result: "3x conversion rate increase",
-    description: "Built a high-end ecommerce platform with custom product visualization, seamless checkout, and inventory management for a luxury fashion brand.",
-    tags: ["Ecommerce", "Shopify", "Custom Design"],
-  },
-  {
-    title: "SaaS Analytics Platform",
-    client: "DataPulse",
-    service: "Web Application",
+    service: "Websites & Landing Pages",
     icon: Globe,
-    result: "10K+ users in 3 months",
-    description: "Full-stack SaaS application with real-time analytics dashboards, user management, billing integration, and API access for enterprise clients.",
-    tags: ["SaaS", "Dashboard", "API"],
+    result: "3x conversion rate increase",
+    description: "Built a high-end storefront with custom product showcases, seamless checkout, and fast load times to support paid campaigns for a luxury fashion brand.",
+    tags: ["Website Design", "Ecommerce", "Custom Design"],
   },
   {
-    title: "Lead Generation System",
+    title: "SaaS Demo Pipeline",
+    client: "DataPulse",
+    service: "Paid Advertising",
+    icon: Megaphone,
+    result: "3.4x ROAS in 90 days",
+    description: "Launched and scaled Meta and Google Ads campaigns for a B2B SaaS analytics platform, driving qualified demo signups and lowering cost-per-lead.",
+    tags: ["Paid Ads", "Google", "Meta"],
+  },
+  {
+    title: "Lead Generation Funnel",
     client: "GrowthForge",
-    service: "Funnels",
+    service: "High-Converting Funnels",
     icon: TrendingUp,
-    result: "450% ROI on ad spend",
-    description: "Multi-step sales funnel with A/B testing, email sequences, CRM integration, and detailed conversion tracking for a B2B marketing agency.",
+    result: "4.5x ROAS in the first month",
+    description: "Multi-step lead funnel with A/B tested landing pages, email/SMS follow-up, and CRM integration for a B2B marketing agency.",
     tags: ["Funnel", "CRM", "Email"],
   },
   {
-    title: "Customer Support AI",
+    title: "Automated Lead Follow-Up",
     client: "HelpStream",
-    service: "AI Automation",
-    icon: Bot,
-    result: "70% ticket deflection",
-    description: "AI-powered chatbot and workflow automation system that handles customer inquiries, routes complex issues, and generates support documentation.",
-    tags: ["AI", "Chatbot", "Automation"],
+    service: "CRM & Automation",
+    icon: Workflow,
+    result: "20+ hours saved per week",
+    description: "Set up GoHighLevel pipelines, automated follow-up sequences, and appointment booking so no inbound lead falls through the cracks.",
+    tags: ["GoHighLevel", "Automation", "CRM"],
   },
   {
-    title: "Infrastructure Deployment",
+    title: "Ecommerce Ad Scaling",
     client: "CloudScale Labs",
-    service: "Open Claw Deployment",
-    icon: Server,
-    result: "99.9% uptime achieved",
-    description: "Full Open Claw deployment with custom configuration, monitoring dashboards, auto-scaling infrastructure, and 24/7 alert systems.",
-    tags: ["DevOps", "Monitoring", "Infrastructure"],
+    service: "Paid Advertising",
+    icon: Megaphone,
+    result: "3.2x ROAS in 60 days",
+    description: "Rebuilt campaign structure and creative testing cadence across Meta and Google, scaling monthly ad spend while improving return on ad spend.",
+    tags: ["Paid Ads", "Meta", "Google"],
   },
   {
-    title: "Restaurant Ordering Platform",
+    title: "Multi-Location Ordering Site",
     client: "TasteHub",
-    service: "Web Application",
+    service: "Websites & Landing Pages",
     icon: Globe,
     result: "200+ restaurants onboarded",
-    description: "Multi-tenant ordering platform with restaurant dashboards, real-time order tracking, payment processing, and delivery management.",
-    tags: ["Marketplace", "Real-time", "Payments"],
+    description: "Multi-tenant ordering website with location pages, real-time order tracking, and payment processing for a restaurant network.",
+    tags: ["Website Design", "Payments", "Multi-tenant"],
   },
 ];
 
@@ -80,17 +80,17 @@ export default function PortfolioPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative py-24 sm:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Portfolio</Badge>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Work that speaks{" "}
-              <span className="text-gradient-orange">for itself</span>
+              Results that speak{" "}
+              <span className="text-gradient-orange">for themselves</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              See how we&apos;ve helped businesses like yours launch, grow, and succeed
-              with custom digital solutions.
+              See how we&apos;ve helped businesses like yours generate leads, grow
+              pipeline, and scale ad spend profitably.
             </p>
           </div>
         </section>
@@ -166,7 +166,7 @@ export default function PortfolioPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-24 sm:py-32 bg-charcoal-dark/30">
+        <section className="py-24 sm:py-32 bg-background">
           <div className="mx-auto max-w-3xl px-4 text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
               Ready to be our next success story?

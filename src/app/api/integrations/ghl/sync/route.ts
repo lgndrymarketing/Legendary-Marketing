@@ -48,23 +48,44 @@ export async function POST() {
       try {
         if (!opp.id) continue;
 
+        // Match the opportunity back to a project via projects.ghlOpportunityId.
+        // Opportunities with no matching project (not yet linked from our
+        // side) are skipped rather than guessed at.
+        const [project] = await db
+          .select({ id: projects.id, userId: projects.userId })
+          .from(projects)
+          .where(eq(projects.ghlOpportunityId, opp.id))
+          .limit(1);
+
+        if (!project) {
+          continue;
+        }
+
         const existing = await db
           .select({ id: payments.id })
           .from(payments)
           .where(eq(payments.ghlPaymentId, opp.id))
           .limit(1);
 
+        const status = opp.status === "won" ? "completed" : "pending";
+        const amount = Math.round(opp.monetaryValue ?? 0);
+
         if (existing.length > 0) {
-          // Already synced — nothing more to do in this scaffold pass.
-          synced++;
-          continue;
+          await db
+            .update(payments)
+            .set({ status, amount, updatedAt: new Date() })
+            .where(eq(payments.ghlPaymentId, opp.id));
+        } else {
+          await db.insert(payments).values({
+            projectId: project.id,
+            userId: project.userId,
+            amount,
+            status,
+            source: "ghl",
+            ghlPaymentId: opp.id,
+          });
         }
 
-        // Note: without a projectId/userId mapping from the GHL opportunity
-        // (e.g. via custom fields tying it back to a project), we can't
-        // safely insert a new payments row here — that mapping is left as
-        // a follow-up once real GHL data/field conventions are known.
-        // We still count opportunities we successfully inspected.
         synced++;
       } catch (itemError) {
         console.error("GHL sync: failed to process opportunity", opp?.id, itemError);

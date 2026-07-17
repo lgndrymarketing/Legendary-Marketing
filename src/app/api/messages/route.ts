@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isStaff } from "@/lib/permissions";
+import { publishToChannel, isAblyConfigured } from "@/lib/ably";
 
 export async function GET(req: Request) {
   try {
@@ -70,6 +71,16 @@ export async function POST(req: Request) {
         content,
       })
       .returning();
+
+    // Real-time notification layer — the DB row above is the source of
+    // truth. An Ably outage or missing config must never break sending.
+    if (isAblyConfigured()) {
+      try {
+        await publishToChannel(`project:${projectId}:messages`, "message", message);
+      } catch (ablyError) {
+        console.error("Ably publish failed (message still saved):", ablyError);
+      }
+    }
 
     return NextResponse.json(message);
   } catch (error) {

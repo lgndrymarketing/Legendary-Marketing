@@ -8,7 +8,7 @@ export default function TermsPage() {
       <Header />
       <main className="flex-1 pt-16">
         <section className="relative py-24 sm:py-28 overflow-hidden">
-          <div className="absolute inset-0 bg-charcoal-dark" />
+          <div className="absolute inset-0 bg-background" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
           <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
             <Badge variant="orange" className="mb-4">Legal</Badge>
@@ -22,7 +22,7 @@ export default function TermsPage() {
             <div className="space-y-8 text-muted-foreground text-sm leading-relaxed">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">1. Services</h2>
-                <p>Fortitudo Agency provides digital development services including web applications, ecommerce stores, sales funnels, AI automation, and Open Claw deployment. Services are defined during the onboarding process and confirmed upon payment.</p>
+                <p>Legendary Marketing provides performance marketing services including paid advertising management (Meta, Google, and TikTok), high-converting funnel builds, websites and landing pages, and CRM/automation setup and management (including GoHighLevel). Services are defined during the onboarding process and confirmed upon payment.</p>
               </div>
 
               <div>
@@ -57,7 +57,7 @@ export default function TermsPage() {
 
               <div>
                 <h2 className="text-lg font-semibold text-foreground">8. Limitation of Liability</h2>
-                <p>Fortitudo Agency&apos;s liability is limited to the amount paid for the specific service. We are not liable for indirect, incidental, or consequential damages arising from the use of our services or deliverables.</p>
+                <p>Legendary Marketing&apos;s liability is limited to the amount paid for the specific service. We are not liable for indirect, incidental, or consequential damages arising from the use of our services or deliverables, including fluctuations in advertising platform performance or third-party platform policy changes.</p>
               </div>
 
               <div>
@@ -67,7 +67,7 @@ export default function TermsPage() {
 
               <div>
                 <h2 className="text-lg font-semibold text-foreground">10. Contact</h2>
-                <p>For questions about these terms, contact us at hello@foritudo.agency.</p>
+                <p>For questions about these terms, contact us at hello@legendarymarketing.com.</p>
               </div>
             </div>
           </div>

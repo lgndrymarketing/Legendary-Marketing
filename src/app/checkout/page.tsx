@@ -2,9 +2,9 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 import { Shield, CreditCard, ArrowRight } from "lucide-react";
 
 export default function CheckoutPage() {
@@ -32,7 +32,7 @@ function CheckoutContent() {
 
   if (!isValidProjectId) {
     return (
-      <div className="min-h-screen bg-charcoal-dark flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center space-y-2">
             <p className="text-destructive font-semibold">Invalid or missing project ID.</p>
@@ -45,7 +45,7 @@ function CheckoutContent() {
 
   if (!creemCheckoutUrl) {
     return (
-      <div className="min-h-screen bg-charcoal-dark flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center space-y-2">
             <p className="text-destructive font-semibold">Payment is not configured.</p>
@@ -57,16 +57,10 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-charcoal-dark flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <Image
-            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGFyH-zcjRU7dd9BCXlkr1NYW1kpfyk6MNqM2rtCfSzimgb7leI0M3q-2DmYwthY3Bkpae0RBGILsjuX8cRT1_MKqU0pR1UWGWNoMWesQQfcvBGkfWLky2n5bv8Pt_okFaZcFeHFLXb5jZzwjMpLS5TJohoHx-R8j-WyXCcm1TK5YQpWLHvYoUFP-BOpGL/s320/Age%20(4).png"
-            alt="Fortitudo"
-            width={48}
-            height={48}
-            className="rounded-lg mx-auto mb-4"
-          />
+          <Logo size={48} className="mx-auto mb-4" />
           <CardTitle className="text-2xl">Complete Your Payment</CardTitle>
           <CardDescription>
             Secure payment processed through Creem.io

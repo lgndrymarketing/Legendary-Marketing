@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Send, MessageSquare } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import { useAblyChannel } from "@/hooks/use-ably-channel";
 
 interface Message {
   id: string;
@@ -64,6 +65,22 @@ export default function MessagesPage() {
         setMessages([]);
       });
   }, [selectedProjectId]);
+
+  // Real-time updates layered on top of the REST API above — the DB stays
+  // the source of truth, this just pushes new messages in as they arrive.
+  const { messages: realtimeMessages } = useAblyChannel<Message>(
+    selectedProjectId ? `project:${selectedProjectId}:messages` : null
+  );
+
+  useEffect(() => {
+    if (realtimeMessages.length === 0) return;
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const incoming = realtimeMessages.filter((m) => !existingIds.has(m.id));
+      if (incoming.length === 0) return prev;
+      return [...prev, ...incoming];
+    });
+  }, [realtimeMessages]);
 
   // Auto-scroll to bottom
   useEffect(() => {
