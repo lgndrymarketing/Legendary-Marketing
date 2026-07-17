@@ -12,6 +12,8 @@ import {
   CreditCard,
   Upload,
   FileText,
+  RefreshCw,
+  CheckCircle,
   Star,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -35,6 +37,8 @@ const typeIcons: Record<string, React.ElementType> = {
   payment_confirmed: CreditCard,
   file_uploaded: Upload,
   comment_added: FileText,
+  revision_response: RefreshCw,
+  project_completed: CheckCircle,
   survey_request: Star,
 };
 

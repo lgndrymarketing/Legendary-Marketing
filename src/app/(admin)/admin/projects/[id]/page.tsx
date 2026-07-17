@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { projectPhases, onboardingSubmissions, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
+import { canManageProjects } from "@/lib/permissions";
 import { serviceLabels } from "@/lib/services";
 import { ManageClient } from "./manage-client";
 
@@ -62,6 +63,7 @@ export default async function AdminProjectDetailPage({
 
   return (
     <ManageClient
+      canManage={canManageProjects(user.role)}
       projectId={project.id}
       projectName={project.name}
       status={project.status}

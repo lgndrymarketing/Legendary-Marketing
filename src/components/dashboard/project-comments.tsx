@@ -13,6 +13,8 @@ interface CommentData {
   parentId: string | null;
   content: string;
   createdAt: string;
+  authorName?: string;
+  authorRole?: "client" | "admin";
 }
 
 interface CommentTree {
@@ -36,8 +38,8 @@ function buildTree(comments: CommentData[]): CommentTree[] {
   for (const c of comments) {
     map.set(c.id, {
       id: c.id,
-      userName: "User", // We don't have user names from API, will show role
-      role: "client",
+      userName: c.authorName || "User",
+      role: c.authorRole === "admin" ? "admin" : "client",
       content: c.content,
       createdAt: new Date(c.createdAt).toLocaleString(),
       replies: [],

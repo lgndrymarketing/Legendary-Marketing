@@ -30,7 +30,14 @@ const statusLabels: Record<RevisionStatus, string> = {
   rejected: "Rejected",
 };
 
-export function RevisionManager({ projectId }: { projectId: string }) {
+export function RevisionManager({
+  projectId,
+  readOnly = false,
+}: {
+  projectId: string;
+  /** VAs can view revision requests but not triage them. */
+  readOnly?: boolean;
+}) {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -97,18 +104,20 @@ export function RevisionManager({ projectId }: { projectId: string }) {
                 year: "numeric",
               })}
             </span>
-            <select
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-              value={rev.status}
-              disabled={updating === rev.id}
-              onChange={(e) => updateStatus(rev.id, e.target.value as RevisionStatus)}
-            >
-              {statusOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {statusLabels[opt]}
-                </option>
-              ))}
-            </select>
+            {!readOnly && (
+              <select
+                className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                value={rev.status}
+                disabled={updating === rev.id}
+                onChange={(e) => updateStatus(rev.id, e.target.value as RevisionStatus)}
+              >
+                {statusOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {statusLabels[opt]}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       ))}

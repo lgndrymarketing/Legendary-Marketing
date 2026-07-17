@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,33 @@ const tabItems = [
 
 type FileItem = { name: string; url: string; size: string; type: string };
 
+type RevisionStatus = "pending" | "in_progress" | "completed" | "rejected";
+
+interface Revision {
+  id: string;
+  description: string;
+  status: RevisionStatus;
+  adminNotes: string | null;
+  createdAt: string;
+}
+
+const revisionStatusVariant: Record<
+  RevisionStatus,
+  "warning" | "orange" | "success" | "destructive"
+> = {
+  pending: "warning",
+  in_progress: "orange",
+  completed: "success",
+  rejected: "destructive",
+};
+
+const revisionStatusLabels: Record<RevisionStatus, string> = {
+  pending: "Pending",
+  in_progress: "In Progress",
+  completed: "Completed",
+  rejected: "Rejected",
+};
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -75,14 +102,28 @@ export function ProjectDetailClient({
 }: ProjectDetailClientProps) {
   const [revisionText, setRevisionText] = useState("");
   const [submittingRevision, setSubmittingRevision] = useState(false);
+  const [revisionError, setRevisionError] = useState<string | null>(null);
+  const [revisions, setRevisions] = useState<Revision[]>([]);
   const [showSurvey, setShowSurvey] = useState(initialShowSurvey);
   // Files start from the server-rendered prop and grow as uploads complete.
   const [fileList, setFileList] = useState<FileItem[]>(files);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  const fetchRevisions = useCallback(() => {
+    fetch(`/api/revisions?projectId=${project.id}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => Array.isArray(data) && setRevisions(data))
+      .catch(() => setRevisions([]));
+  }, [project.id]);
+
+  useEffect(() => {
+    fetchRevisions();
+  }, [fetchRevisions]);
+
   const handleSubmitRevision = async () => {
     if (!revisionText.trim()) return;
     setSubmittingRevision(true);
+    setRevisionError(null);
     try {
       const res = await fetch("/api/revisions", {
         method: "POST",
@@ -94,7 +135,12 @@ export function ProjectDetailClient({
       });
       if (res.ok) {
         setRevisionText("");
+        fetchRevisions();
+      } else {
+        setRevisionError("Couldn't submit your request. Please try again.");
       }
+    } catch {
+      setRevisionError("Couldn't submit your request. Please try again.");
     } finally {
       setSubmittingRevision(false);
     }
@@ -202,6 +248,43 @@ export function ProjectDetailClient({
                     <Send className="mr-1 h-4 w-4" />
                     {submittingRevision ? "Submitting..." : "Submit Revision Request"}
                   </Button>
+
+                  {revisionError && (
+                    <p className="text-sm text-destructive">{revisionError}</p>
+                  )}
+
+                  {revisions.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      {revisions.map((rev) => (
+                        <div
+                          key={rev.id}
+                          className="rounded-lg border border-border p-4 space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm">{rev.description}</p>
+                            <Badge
+                              variant={revisionStatusVariant[rev.status]}
+                              className="shrink-0"
+                            >
+                              {revisionStatusLabels[rev.status]}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(rev.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                          {rev.adminNotes && (
+                            <p className="text-sm text-muted-foreground">
+                              Response from the team: {rev.adminNotes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

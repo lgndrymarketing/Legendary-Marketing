@@ -50,6 +50,8 @@ interface OnboardingData {
 }
 
 interface ManageClientProps {
+  /** admin/PM: full management controls. VA: read + own-task updates only. */
+  canManage: boolean;
   projectId: string;
   projectName: string;
   status: string;
@@ -62,6 +64,7 @@ interface ManageClientProps {
 }
 
 export function ManageClient({
+  canManage,
   projectId,
   projectName,
   status,
@@ -198,15 +201,17 @@ export function ManageClient({
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Phase Management</CardTitle>
-              <Button
-                onClick={advancePhase}
-                disabled={advancing || allDone || phases.length === 0}
-                size="sm"
-              >
-                <SkipForward className="mr-1 h-4 w-4" />
-                {advancing ? "Advancing..." : "Advance Phase"}
-              </Button>
+              <CardTitle>{canManage ? "Phase Management" : "Phases"}</CardTitle>
+              {canManage && (
+                <Button
+                  onClick={advancePhase}
+                  disabled={advancing || allDone || phases.length === 0}
+                  size="sm"
+                >
+                  <SkipForward className="mr-1 h-4 w-4" />
+                  {advancing ? "Advancing..." : "Advance Phase"}
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               {phaseError && (
@@ -219,6 +224,7 @@ export function ManageClient({
               ) : (
                 <>
                   <PhaseTracker phases={phases} />
+                  {canManage && (
                   <div className="space-y-2 border-t border-border pt-4">
                     <p className="text-xs font-medium text-muted-foreground">
                       Set phase status
@@ -250,6 +256,7 @@ export function ManageClient({
                         </div>
                       ))}
                   </div>
+                  )}
                 </>
               )}
             </CardContent>
@@ -277,7 +284,7 @@ export function ManageClient({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CampaignList projectId={projectId} canEdit />
+              <CampaignList projectId={projectId} canEdit={canManage} />
             </CardContent>
           </Card>
 
@@ -290,7 +297,7 @@ export function ManageClient({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <RevisionManager projectId={projectId} />
+              <RevisionManager projectId={projectId} readOnly={!canManage} />
             </CardContent>
           </Card>
 

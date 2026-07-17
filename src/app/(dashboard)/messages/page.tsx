@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAblyChannel } from "@/hooks/use-ably-channel";
+import { usePolling } from "@/hooks/use-polling";
 
 interface Message {
   id: string;
@@ -70,7 +71,7 @@ export default function MessagesPage() {
 
   // Real-time updates layered on top of the REST API above — the DB stays
   // the source of truth, this just pushes new messages in as they arrive.
-  const { messages: realtimeMessages } = useAblyChannel<Message>(
+  const { messages: realtimeMessages, connectionState } = useAblyChannel<Message>(
     selectedProjectId ? `project:${selectedProjectId}:messages` : null
   );
 
@@ -83,6 +84,24 @@ export default function MessagesPage() {
       return [...prev, ...incoming];
     });
   }, [realtimeMessages]);
+
+  // Polling fallback — when Ably isn't connected (not configured, or the
+  // connection failed), refresh from the REST API so replies still arrive
+  // without a reload. Same merge-by-id dedup as the realtime path above.
+  usePolling<Message[]>({
+    url: `/api/messages?projectId=${selectedProjectId}`,
+    interval: 15000,
+    enabled: !!selectedProjectId && connectionState !== "connected",
+    onUpdate: (data) => {
+      if (!Array.isArray(data)) return;
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const incoming = data.filter((m) => !existingIds.has(m.id));
+        if (incoming.length === 0) return prev;
+        return [...prev, ...incoming];
+      });
+    },
+  });
 
   // Auto-scroll to bottom
   useEffect(() => {

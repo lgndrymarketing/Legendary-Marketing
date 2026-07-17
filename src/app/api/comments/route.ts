@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { projectComments } from "@/db/schema";
+import { projectComments, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getAuthenticatedUser, verifyProjectAccess } from "@/lib/auth-utils";
+import { isStaff } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 
@@ -19,11 +20,29 @@ export async function GET(req: Request) {
 
     await verifyProjectAccess(projectId, user.id, user.role);
 
-    const comments = await db
-      .select()
+    const rows = await db
+      .select({
+        comment: projectComments,
+        authorFirstName: users.firstName,
+        authorLastName: users.lastName,
+        authorEmail: users.email,
+        authorDbRole: users.role,
+      })
       .from(projectComments)
+      .leftJoin(users, eq(projectComments.userId, users.id))
       .where(eq(projectComments.projectId, projectId))
       .limit(200);
+
+    const comments = rows.map((row) => {
+      const fullName = [row.authorFirstName, row.authorLastName]
+        .filter(Boolean)
+        .join(" ");
+      const authorName =
+        fullName || row.authorEmail?.split("@")[0] || "User";
+      const authorRole =
+        row.authorDbRole && isStaff(row.authorDbRole) ? "admin" : "client";
+      return { ...row.comment, authorName, authorRole };
+    });
 
     return NextResponse.json(comments);
   } catch (error) {
