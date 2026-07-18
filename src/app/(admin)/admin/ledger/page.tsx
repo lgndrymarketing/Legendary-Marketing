@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { HandCoins, CheckCircle2, Pencil, X } from "lucide-react";
+import { HandCoins, CheckCircle2, Pencil, X, Plus } from "lucide-react";
+import { ClientPaymentModal } from "@/components/admin/client-payment-modal";
 
 interface Partner {
   id: string;
@@ -71,6 +72,7 @@ export default function AdminLedgerPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const load = useCallback(() => {
     fetch("/api/admin/ledger")
@@ -148,6 +150,18 @@ export default function AdminLedgerPage() {
             ? `Payments between ${partners[0].name} and ${partners[1].name}, tracked automatically from recorded client payments.`
             : "Partner splits, tracked automatically from recorded client payments."
         }
+        action={
+          <Button size="sm" onClick={() => setRecordOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Record Payment
+          </Button>
+        }
+      />
+
+      <ClientPaymentModal
+        open={recordOpen}
+        onClose={() => setRecordOpen(false)}
+        onSaved={load}
       />
 
       {/* Balance band — hairline-divided 3-up */}

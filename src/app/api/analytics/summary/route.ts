@@ -45,6 +45,11 @@ export async function GET() {
         .limit(5000),
       db
         .select({
+          id: adCampaigns.id,
+          name: adCampaigns.name,
+          platform: adCampaigns.platform,
+          status: adCampaigns.status,
+          monthlyBudget: adCampaigns.monthlyBudget,
           totalSpend: adCampaigns.totalSpend,
           leadsGenerated: adCampaigns.leadsGenerated,
         })
@@ -142,7 +147,22 @@ export async function GET() {
         leads: leadsSeries,
         cpl: cplSeries,
         roas: roasSeries,
+        spend: spendSeries,
+        revenue: revenueSeries,
       },
+      campaigns: campaigns.map((c) => ({
+        id: c.id,
+        name: c.name,
+        platform: c.platform,
+        status: c.status,
+        monthlyBudget: c.monthlyBudget,
+        totalSpend: c.totalSpend,
+        leadsGenerated: c.leadsGenerated,
+        cpl:
+          c.leadsGenerated > 0
+            ? Math.round(c.totalSpend / c.leadsGenerated)
+            : 0,
+      })),
       hasData: totalLeads > 0 || totalSpend > 0 || totalRevenue > 0,
     });
   } catch (error) {
