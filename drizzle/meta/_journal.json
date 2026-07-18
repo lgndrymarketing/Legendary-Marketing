@@ -36,6 +36,13 @@
       "when": 1784392930328,
       "tag": "0004_ordinary_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784393209868,
+      "tag": "0005_amusing_vampiro",
+      "breakpoints": true
     }
   ]
 }

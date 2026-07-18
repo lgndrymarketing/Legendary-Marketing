@@ -409,8 +409,10 @@ export const tasks = pgTable("tasks", {
 // be linked to a portal user once they do.
 export const clientPackageEnum = pgEnum("client_package", [
   "bronze",
+  "silver",
   "gold",
   "diamond",
+  "custom",
 ]);
 
 export const clientStatusEnum = pgEnum("client_status", [
