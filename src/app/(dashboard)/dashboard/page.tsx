@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { PerformanceOverview } from "@/components/dashboard/performance-overview";
+import { LaunchPipeline } from "@/components/dashboard/launch-pipeline";
 import { NewCampaignButton } from "@/components/dashboard/new-campaign-modal";
 import { FolderKanban, MessageSquare, Upload } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -111,8 +112,11 @@ export default async function DashboardPage() {
         description={`Welcome back, ${
           user.firstName || "there"
         } — track your campaign performance and ROI.`}
-        action={<NewCampaignButton />}
       />
+
+      {/* Launch pipeline — the client's onboarding progress (transparency
+          mirror of the admin Client CRM). Hidden until they have a record. */}
+      <LaunchPipeline />
 
       {/* Performance Dashboard — campaign results and ROI */}
       <PerformanceOverview />

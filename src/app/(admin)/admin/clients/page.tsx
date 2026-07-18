@@ -199,13 +199,11 @@ export default function ClientCrmPage() {
                     setDragId(null);
                   }
                 }}
-                className="flex w-72 shrink-0 flex-col rounded-2xl bg-muted/40 p-3"
+                className="flex w-72 shrink-0 flex-col rounded-xl border border-border/60 bg-muted/20 p-3"
               >
                 <div className="flex items-center justify-between px-1 pb-3">
-                  <h3 className="text-[15px] font-bold">
-                    {STAGE_LABELS[stage]}
-                  </h3>
-                  <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-background px-1.5 text-xs font-semibold text-muted-foreground">
+                  <h3 className="micro-label">{STAGE_LABELS[stage]}</h3>
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-semibold text-muted-foreground">
                     {inStage.length}
                   </span>
                 </div>
@@ -216,7 +214,7 @@ export default function ClientCrmPage() {
                       draggable
                       onDragStart={() => setDragId(c.id)}
                       onDragEnd={() => setDragId(null)}
-                      className="cursor-grab rounded-xl border border-border/70 bg-background p-4 shadow-sm active:cursor-grabbing"
+                      className="cursor-grab rounded-lg border border-border bg-background p-4 transition-colors hover:border-orange/40 active:cursor-grabbing"
                     >
                       <p className="font-bold">{c.companyName}</p>
                       <p className="text-sm text-muted-foreground">
@@ -276,30 +274,30 @@ export default function ClientCrmPage() {
         </div>
       ) : (
         /* ---- List view ---- */
-        <div className="overflow-x-auto rounded-2xl border border-border/70">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left align-top">
-                <th className="micro-label px-5 py-4">Business / Client</th>
-                <th className="micro-label px-3 py-4">Stage</th>
-                <th className="micro-label px-3 py-4">Status</th>
-                <th className="micro-label px-3 py-4">Industry</th>
-                <th className="micro-label px-3 py-4">Package</th>
-                <th className="micro-label px-3 py-4">Date Started</th>
-                <th className="micro-label px-5 py-4 text-right">Actions</th>
+                <th className="micro-label py-3 pr-4">Business / Client</th>
+                <th className="micro-label py-3 pr-3">Stage</th>
+                <th className="micro-label py-3 pr-3">Status</th>
+                <th className="micro-label py-3 pr-3">Industry</th>
+                <th className="micro-label py-3 pr-3">Package</th>
+                <th className="micro-label py-3 pr-3">Date Started</th>
+                <th className="micro-label py-3 text-right">Actions</th>
               </tr>
             </thead>
             <motion.tbody className="divide-y divide-border">
               {clients.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-muted/40">
-                  <td className="px-5 py-4">
+                  <td className="py-4 pr-4">
                     <p className="font-bold">{c.companyName}</p>
                     <p className="text-xs text-muted-foreground">
                       {c.contactName}
                       {c.portalEmail ? ` - ${c.portalEmail}` : ""}
                     </p>
                   </td>
-                  <td className="px-3 py-4">
+                  <td className="py-4 pr-3">
                     <select
                       className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm outline-none transition-colors focus:border-orange"
                       value={c.stage}
@@ -314,7 +312,7 @@ export default function ClientCrmPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-4">
+                  <td className="py-4 pr-3">
                     <select
                       className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm outline-none transition-colors focus:border-orange"
                       value={c.status}
@@ -329,16 +327,16 @@ export default function ClientCrmPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-4 text-muted-foreground">
+                  <td className="py-4 pr-3 text-muted-foreground">
                     {c.industry || "—"}
                   </td>
-                  <td className="px-3 py-4 text-muted-foreground">
+                  <td className="py-4 pr-3 text-muted-foreground">
                     {packageLabel(c) === c.package ? "—" : packageLabel(c)}
                   </td>
-                  <td className="px-3 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                  <td className="py-4 pr-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                     {dateStarted(c.startDate)}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setEditId(c.id)}

@@ -26,25 +26,9 @@ interface Dashboard {
   }[];
 }
 
-/** Card shell — floating white surface with the house shadow. */
-function Card({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_12px_32px_-16px_rgba(15,16,16,0.18)]",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-}
+/** Hairline-divided 3-up grid cell borders. */
+const statCell = (i: number) =>
+  cn("px-5 py-6", i > 0 && "border-t border-border sm:border-t-0 sm:border-l");
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -105,43 +89,43 @@ export default function AdminDashboardPage() {
         />
       ) : (
         <>
-          {/* Stat cards */}
+          {/* Stats — hairline-divided 3-up */}
           <motion.section
             variants={cascade}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 gap-6 sm:grid-cols-3"
+            className="grid grid-cols-1 border-b border-border sm:grid-cols-3"
           >
-            {stats.map((s) => {
+            {stats.map((s, i) => {
               const Icon = s.icon;
               return (
-                <motion.div key={s.label} variants={cascadeItem}>
-                  <Card>
-                    <div className="flex items-start justify-between">
-                      <p className="text-[15px] font-medium text-muted-foreground">
-                        {s.label}
-                      </p>
-                      <Icon className={cn("h-5 w-5", s.accent)} />
-                    </div>
-                    <p className="mt-3 text-4xl font-bold tracking-tight">
-                      {loading ? (
-                        <Skeleton className="h-10 w-14" />
-                      ) : (
-                        <CountUp value={s.value} />
-                      )}
-                    </p>
-                  </Card>
+                <motion.div
+                  key={s.label}
+                  variants={cascadeItem}
+                  className={statCell(i)}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="micro-label">{s.label}</p>
+                    <Icon className={cn("h-4 w-4", s.accent)} />
+                  </div>
+                  <p className="mt-2 text-4xl font-bold tracking-tight">
+                    {loading ? (
+                      <Skeleton className="h-10 w-14" />
+                    ) : (
+                      <CountUp value={s.value} />
+                    )}
+                  </p>
                 </motion.div>
               );
             })}
           </motion.section>
 
           {/* New clients chart + high priority tasks */}
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-orange" />
-                <h2 className="text-xl font-bold tracking-tight">
+          <section className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2 border-b border-border pb-3">
+                <TrendingUp className="h-4 w-4 text-orange" />
+                <h2 className="text-[15px] font-semibold">
                   New Clients (Last 6 Months)
                 </h2>
               </div>
@@ -156,18 +140,21 @@ export default function AdminDashboardPage() {
                   format={(v) => Math.round(v).toLocaleString("en-US")}
                 />
               )}
-            </Card>
+            </div>
 
-            <Card>
-              <h2 className="text-xl font-bold tracking-tight">
-                High Priority Tasks
-              </h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Action required
-              </p>
+            <div>
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-orange" />
+                  <h2 className="text-[15px] font-semibold">
+                    High Priority Tasks
+                  </h2>
+                </div>
+                <span className="micro-label">Action required</span>
+              </div>
 
               {loading ? (
-                <div className="mt-6 space-y-4">
+                <div className="mt-4 space-y-3">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
@@ -177,21 +164,21 @@ export default function AdminDashboardPage() {
                   No high-priority tasks right now.
                 </p>
               ) : (
-                <ul className="mt-5 divide-y divide-border">
+                <ul className="divide-y divide-border">
                   {data.highPriorityTasks.map((t) => (
                     <li
                       key={t.id}
                       className="flex items-start justify-between gap-3 py-3.5"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-[15px] font-semibold">
+                        <p className="truncate text-sm font-semibold">
                           {t.title}
                         </p>
-                        <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                        <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
                           {t.projectName} · {t.assigneeName}
                         </p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-destructive/10 px-2.5 py-0.5 text-[11px] font-semibold text-destructive">
+                      <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wide text-destructive">
                         High
                       </span>
                     </li>
@@ -206,7 +193,7 @@ export default function AdminDashboardPage() {
                 View all campaigns
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
-            </Card>
+            </div>
           </section>
         </>
       )}

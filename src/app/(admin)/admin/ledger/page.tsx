@@ -63,26 +63,6 @@ const usd = (cents: number) =>
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
-/** Floating white card in the house style. */
-function Card({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_12px_32px_-16px_rgba(15,16,16,0.18)]",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
 /** Start-of-range for the date filter, or null for "all". */
 function rangeStart(range: string): Date | null {
   const now = new Date();
@@ -194,56 +174,51 @@ export default function AdminLedgerPage() {
         }
       />
 
-      {/* Balance + earnings cards */}
+      {/* Balance + earnings — hairline-divided 3-up */}
       <motion.section
         variants={cascade}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
       >
-        <motion.div variants={cascadeItem}>
-          <Card>
-            <div className="flex items-start justify-between">
-              <p className="text-[15px] font-medium text-muted-foreground">
-                Net Balance
+        <motion.div variants={cascadeItem} className="px-5 py-6">
+          <div className="flex items-center justify-between">
+            <p className="micro-label">Net Balance</p>
+            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {data?.netBalance ? (
+            <>
+              <p className="mt-2 text-2xl font-bold tracking-tight text-orange">
+                {data.netBalance.from} owes {data.netBalance.to}{" "}
+                {usd(data.netBalance.amount)}
               </p>
-              <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-            {data?.netBalance ? (
-              <>
-                <p className="mt-3 text-3xl font-bold tracking-tight text-orange">
-                  {data.netBalance.from} owes {data.netBalance.to}{" "}
-                  {usd(data.netBalance.amount)}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Based on unsettled transactions
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mt-3 text-3xl font-bold tracking-tight">
-                  All settled up!
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Based on unsettled transactions
-                </p>
-              </>
-            )}
-          </Card>
+              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                Based on unsettled transactions
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-2xl font-bold tracking-tight">
+                All settled up!
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                Based on unsettled transactions
+              </p>
+            </>
+          )}
         </motion.div>
         {partners.slice(0, 2).map((p) => (
-          <motion.div key={p.id} variants={cascadeItem}>
-            <Card>
-              <div className="flex items-start justify-between">
-                <p className="text-[15px] font-medium text-muted-foreground">
-                  {p.name} Total Earned
-                </p>
-                <HandCoins className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <p className="mt-3 text-3xl font-bold tracking-tight">
-                {usd(p.earned)}
-              </p>
-            </Card>
+          <motion.div key={p.id} variants={cascadeItem} className="px-5 py-6">
+            <div className="flex items-center justify-between">
+              <p className="micro-label">{p.name} Total Earned</p>
+              <HandCoins className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-2xl font-bold tracking-tight">
+              {usd(p.earned)}
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+              Half of all net collections
+            </p>
           </motion.div>
         ))}
       </motion.section>
@@ -253,7 +228,7 @@ export default function AdminLedgerPage() {
         <div className="relative sm:w-72">
           <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <select
-            className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none transition-colors focus:border-orange"
+            className="h-9 w-full rounded-full border border-border bg-background pl-9 pr-3 text-sm outline-none transition-colors focus:border-orange"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
           >
@@ -264,7 +239,7 @@ export default function AdminLedgerPage() {
           </select>
         </div>
         <select
-          className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange sm:w-56"
+          className="h-9 rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange sm:w-56"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
@@ -275,8 +250,11 @@ export default function AdminLedgerPage() {
       </div>
 
       {/* History */}
-      <Card>
-        <h2 className="text-xl font-bold tracking-tight">Transaction History</h2>
+      <section>
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <HandCoins className="h-4 w-4 text-orange" />
+          <h2 className="text-[15px] font-semibold">Transaction History</h2>
+        </div>
         {loading ? (
           <div className="pt-4">
             <TableSkeleton rows={5} />
@@ -377,7 +355,7 @@ export default function AdminLedgerPage() {
             </table>
           </div>
         )}
-      </Card>
+      </section>
 
       {/* Edit payment modal */}
       <AnimatePresence>
