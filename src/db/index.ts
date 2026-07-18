@@ -1,18 +1,21 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
 let _db: ReturnType<typeof createDb> | null = null;
 
 function createDb() {
-  const databaseUrl = process.env.DATABASE_URL;
+  // Supabase's Vercel integration injects POSTGRES_URL automatically;
+  // DATABASE_URL remains as a manual fallback (local dev, other hosts).
+  const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error(
-      "DATABASE_URL environment variable is not set. Please configure it in your .env file."
+      "No database URL found. Connect the Supabase integration in Vercel (injects POSTGRES_URL) or set DATABASE_URL in .env.local."
     );
   }
-  const sql = neon(databaseUrl);
-  return drizzle(sql, { schema });
+  // prepare: false — required for Supabase's transaction-mode pooler (Supavisor).
+  const client = postgres(databaseUrl, { prepare: false });
+  return drizzle(client, { schema });
 }
 
 export const db = new Proxy({} as ReturnType<typeof createDb>, {

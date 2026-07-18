@@ -112,7 +112,7 @@ export default function AdminPaymentsPage() {
           <EmptyState
             icon={CreditCard}
             title="No payments yet"
-            description="Payments will appear here as clients check out via Creem or as invoices sync in from GoHighLevel."
+            description="Payments will appear here as invoices sync in from GoHighLevel."
           />
         ) : (
           <div className="overflow-x-auto">
@@ -160,7 +160,7 @@ export default function AdminPaymentsPage() {
                       <Badge
                         variant={payment.source === "ghl" ? "orange" : "secondary"}
                       >
-                        {payment.source === "ghl" ? "GoHighLevel" : "Creem"}
+                        {payment.source === "ghl" ? "GoHighLevel" : "Portal"}
                       </Badge>
                     </td>
                     <td className="py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">

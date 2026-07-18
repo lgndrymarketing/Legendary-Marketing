@@ -129,13 +129,14 @@ export const payments = pgTable("payments", {
   userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  // Legacy column from the retired Creem checkout flow — kept for old rows.
   creemPaymentId: varchar("creem_payment_id", { length: 255 }).unique(),
   amount: integer("amount").notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default("usd"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  // Where this payment record originated — the project checkout flow (Creem)
-  // or synced in from the agency's GoHighLevel invoicing/CRM.
-  source: varchar("source", { length: 20 }).notNull().default("creem"),
+  // Where this payment record originated — synced from the agency's
+  // GoHighLevel invoicing/CRM ("ghl") or recorded in the portal.
+  source: varchar("source", { length: 20 }).notNull().default("ghl"),
   ghlPaymentId: varchar("ghl_payment_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

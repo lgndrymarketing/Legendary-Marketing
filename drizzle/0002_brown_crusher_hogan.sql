@@ -1,0 +1,1 @@
+ALTER TABLE "payments" ALTER COLUMN "source" SET DEFAULT 'ghl';

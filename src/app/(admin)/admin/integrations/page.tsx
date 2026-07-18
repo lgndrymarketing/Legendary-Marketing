@@ -62,8 +62,8 @@ export default async function AdminIntegrationsPage() {
         <div className="mt-4 max-w-2xl space-y-4">
           <p className="text-sm text-muted-foreground">
             Connects the agency&apos;s GoHighLevel account so revenue and pipeline
-            data (opportunities, invoices) shows up alongside Creem checkout
-            payments in the Payments dashboard. Contacts and opportunities are
+            data (opportunities, invoices) shows up in the Payments dashboard.
+            Contacts and opportunities are
             matched back to Legendary Marketing projects via their GHL IDs.
           </p>
           {ghlConfigured ? (

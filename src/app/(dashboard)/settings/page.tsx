@@ -56,7 +56,7 @@ export default async function SettingsPage() {
             Payment history and invoices.
           </p>
           <div className="mt-6 text-sm text-muted-foreground">
-            Payments are processed securely through Creem.io. Contact us for billing inquiries.
+            Invoices are handled by the LGNDRY team. Contact us for billing inquiries.
           </div>
         </section>
       </div>
