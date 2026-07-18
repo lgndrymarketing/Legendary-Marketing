@@ -17,6 +17,7 @@ interface ClientRow {
   companyName: string;
   businessType: string | null;
   package: "bronze" | "silver" | "gold" | "diamond" | "custom";
+  packageLabel: string | null;
   setupFee: number;
   monthlyFee: number;
   partnerCut: number;
@@ -47,7 +48,7 @@ const BUSINESS_TYPES = [
   "Dental",
   "Chiropractic",
   "Med Spa",
-  "Other",
+  "Custom…",
 ];
 
 const PACKAGES = ["bronze", "silver", "gold", "diamond", "custom"] as const;
@@ -78,7 +79,9 @@ const emptyForm = {
   contactName: "",
   companyName: "",
   businessType: "Coach",
+  businessTypeCustom: "",
   package: "gold" as string,
+  packageLabel: "",
   setupFee: "",
   monthlyFee: "",
   partnerCut: "0",
@@ -145,8 +148,16 @@ export default function AdminClientsPage() {
     setForm({
       contactName: c.contactName,
       companyName: c.companyName,
-      businessType: c.businessType ?? "Other",
+      businessType:
+        c.businessType && BUSINESS_TYPES.includes(c.businessType)
+          ? c.businessType
+          : "Custom…",
+      businessTypeCustom:
+        c.businessType && !BUSINESS_TYPES.includes(c.businessType)
+          ? c.businessType
+          : "",
       package: c.package,
+      packageLabel: c.packageLabel ?? "",
       setupFee: String(c.setupFee / 100),
       monthlyFee: String(c.monthlyFee / 100),
       partnerCut: String(c.partnerCut / 100),
@@ -171,8 +182,13 @@ export default function AdminClientsPage() {
     const payload = {
       contactName: form.contactName.trim(),
       companyName: form.companyName.trim(),
-      businessType: form.businessType,
+      businessType:
+        form.businessType === "Custom…"
+          ? form.businessTypeCustom.trim() || "Custom"
+          : form.businessType,
       package: form.package,
+      packageLabel:
+        form.package === "custom" ? form.packageLabel.trim() || null : null,
       setupFee: cents(form.setupFee),
       monthlyFee: cents(form.monthlyFee),
       partnerCut: cents(form.partnerCut),
@@ -275,7 +291,9 @@ export default function AdminClientsPage() {
                           packageBadge[client.package]
                         )}
                       >
-                        {client.package}
+                        {client.package === "custom" && client.packageLabel
+                          ? client.packageLabel
+                          : client.package}
                       </span>
                     </td>
                     <td className="py-3 pr-4 font-mono font-semibold">
@@ -385,6 +403,16 @@ export default function AdminClientsPage() {
                       </option>
                     ))}
                   </select>
+                  {form.businessType === "Custom…" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Enter custom type"
+                      value={form.businessTypeCustom}
+                      onChange={(e) =>
+                        setForm({ ...form, businessTypeCustom: e.target.value })
+                      }
+                    />
+                  )}
                 </Field>
                 <Field label="Package">
                   <select
@@ -396,10 +424,20 @@ export default function AdminClientsPage() {
                   >
                     {PACKAGES.map((p) => (
                       <option key={p} value={p}>
-                        {p[0].toUpperCase() + p.slice(1)}
+                        {p === "custom" ? "Custom…" : p[0].toUpperCase() + p.slice(1)}
                       </option>
                     ))}
                   </select>
+                  {form.package === "custom" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Enter custom package name"
+                      value={form.packageLabel}
+                      onChange={(e) =>
+                        setForm({ ...form, packageLabel: e.target.value })
+                      }
+                    />
+                  )}
                 </Field>
               </div>
 

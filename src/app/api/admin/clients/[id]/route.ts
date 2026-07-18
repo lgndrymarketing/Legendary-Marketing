@@ -15,6 +15,7 @@ const updateSchema = z
     companyName: z.string().min(1).max(255).optional(),
     businessType: z.string().max(100).nullable().optional(),
     package: z.enum(clientPackageEnum.enumValues).optional(),
+    packageLabel: z.string().max(100).nullable().optional(),
     setupFee: z.number().int().min(0).optional(),
     monthlyFee: z.number().int().min(0).optional(),
     partnerCut: z.number().int().min(0).optional(),

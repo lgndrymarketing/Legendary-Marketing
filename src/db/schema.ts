@@ -427,6 +427,8 @@ export const agencyClients = pgTable("agency_clients", {
   companyName: varchar("company_name", { length: 255 }).notNull(),
   businessType: varchar("business_type", { length: 100 }),
   package: clientPackageEnum("package").notNull().default("bronze"),
+  // Display name for package = "custom" (e.g. a bespoke retainer).
+  packageLabel: varchar("package_label", { length: 100 }),
   // Money in cents.
   setupFee: integer("setup_fee").notNull().default(0),
   monthlyFee: integer("monthly_fee").notNull().default(0),
