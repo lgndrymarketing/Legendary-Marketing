@@ -44,7 +44,10 @@ export default async function AdminLayout({
     { label: "Messages", href: "/admin/messages", icon: "MessageSquare" },
     ...(canManageAgency(user.role)
       ? [
+          { label: "Financials", href: "/admin/financials", icon: "BarChart3" },
           { label: "Payments", href: "/admin/payments", icon: "CreditCard" },
+          { label: "Expenses", href: "/admin/expenses", icon: "Receipt" },
+          { label: "Partner Ledger", href: "/admin/ledger", icon: "HandCoins" },
           { label: "Team", href: "/admin/team", icon: "UserCog" },
           { label: "Integrations", href: "/admin/integrations", icon: "Plug" },
         ]
