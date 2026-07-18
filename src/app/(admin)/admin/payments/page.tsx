@@ -130,7 +130,7 @@ export default function AdminPaymentsPage() {
       return;
     }
     if (!editingId && !form.projectId) {
-      setError("Pick a project.");
+      setError("Pick a campaign.");
       return;
     }
     setSaving(true);
@@ -231,7 +231,7 @@ export default function AdminPaymentsPage() {
                   setForm({ ...form, projectId: e.target.value })
                 }
               >
-                <option value="">Select project…</option>
+                <option value="">Select campaign…</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -300,7 +300,7 @@ export default function AdminPaymentsPage() {
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="micro-label py-3 pr-4">Client</th>
-                  <th className="micro-label py-3 pr-4">Project</th>
+                  <th className="micro-label py-3 pr-4">Campaign</th>
                   <th className="micro-label py-3 pr-4">Amount</th>
                   <th className="micro-label py-3 pr-4">Status</th>
                   <th className="micro-label py-3 pr-4">Source</th>

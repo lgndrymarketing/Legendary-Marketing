@@ -13,7 +13,7 @@ export default async function AdminClientsPage() {
   // layout only checks isStaff, which includes scoped VAs).
   const staff = await getAuthenticatedUser();
   if (!canViewAllProjects(staff.role)) {
-    redirect("/admin/projects");
+    redirect("/admin/campaigns");
   }
 
   const clients = await db
@@ -50,7 +50,7 @@ export default async function AdminClientsPage() {
                 <tr className="border-b border-border text-left">
                   <th className="micro-label py-3 pr-4">Name</th>
                   <th className="micro-label py-3 pr-4">Email</th>
-                  <th className="micro-label py-3 pr-4">Projects</th>
+                  <th className="micro-label py-3 pr-4">Campaigns</th>
                   <th className="micro-label py-3">Joined</th>
                 </tr>
               </thead>

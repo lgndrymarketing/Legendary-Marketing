@@ -155,7 +155,7 @@ export async function PATCH(req: Request) {
         type: "revision_response",
         title: "Revision update",
         body: `Your revision request is now ${status.replace("_", " ")}.`,
-        actionUrl: `/projects/${existing.projectId}`,
+        actionUrl: `/campaigns/${existing.projectId}`,
       });
     }
 

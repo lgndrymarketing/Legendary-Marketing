@@ -42,7 +42,7 @@ export default async function ProjectsPage() {
     return (
       <div className="space-y-8">
         <PageHero
-          title="Projects"
+          title="Campaigns"
           description="Your account is being set up. Please refresh in a moment."
         />
       </div>
@@ -67,7 +67,7 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-10">
       <PageHero
-        title="Projects"
+        title="Campaigns"
         description="Manage and track all your projects."
         action={
           <Button variant="glow" asChild>
@@ -83,8 +83,8 @@ export default async function ProjectsPage() {
         <div className="animate-fade-up rounded-xl border border-border">
           <EmptyState
             icon={FolderKanban}
-            title="No projects yet"
-            description="Start your first project and we'll build something great together."
+            title="No campaigns yet"
+            description="Start your first campaign and we'll build something great together."
             action={
               <Button variant="glow" asChild>
                 <Link href="/onboarding">
@@ -145,7 +145,7 @@ export default async function ProjectsPage() {
 
                 <div className="mt-6 flex justify-end">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/projects/${project.id}`} className="group">
+                    <Link href={`/campaigns/${project.id}`} className="group">
                       View Project
                       <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>

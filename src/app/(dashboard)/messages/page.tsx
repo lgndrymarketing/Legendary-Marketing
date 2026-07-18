@@ -178,7 +178,7 @@ export default function MessagesPage() {
           <EmptyState
             icon={MessageSquare}
             title="No messages yet"
-            description="Once you have an active project, you can chat directly with the LGNDRY team here."
+            description="Once you have an active campaign, you can chat directly with the LGNDRY team here."
           />
         </div>
       ) : (
@@ -205,7 +205,7 @@ export default function MessagesPage() {
           >
             <div className="border-b border-border px-4 py-3.5">
               <h2 className="text-[15px] font-semibold">
-                {selectedProject?.name || "Select a project"}
+                {selectedProject?.name || "Select a campaign"}
               </h2>
             </div>
 

@@ -185,8 +185,8 @@ export function ManageClient({
       {/* Header — back arrow + oversized title, closed by a hairline */}
       <div className="flex items-center gap-4 border-b border-border pb-6">
         <Link
-          href="/admin/projects"
-          aria-label="Back to projects"
+          href="/admin/campaigns"
+          aria-label="Back to campaigns"
           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-orange/40 hover:bg-orange/5 hover:text-orange active:scale-[0.98]"
         >
           <ArrowLeft className="h-4 w-4" />

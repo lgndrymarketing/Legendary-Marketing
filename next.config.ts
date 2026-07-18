@@ -21,6 +21,21 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "utfs.io" },
     ],
   },
+  async redirects() {
+    // Projects were renamed to Campaigns — keep old links working.
+    return [
+      {
+        source: "/projects/:path*",
+        destination: "/campaigns/:path*",
+        permanent: true,
+      },
+      {
+        source: "/admin/projects/:path*",
+        destination: "/admin/campaigns/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

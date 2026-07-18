@@ -87,7 +87,7 @@ export async function PATCH(
           type: "phase_update",
           title: "Project phase updated",
           body: `"${updated.name}" is now ${updated.status.replace("_", " ")}.`,
-          actionUrl: `/projects/${id}`,
+          actionUrl: `/campaigns/${id}`,
         });
       }
     }

@@ -134,8 +134,8 @@ export default async function DashboardPage() {
         <div className="animate-fade-up rounded-xl border border-border">
           <EmptyState
             icon={FolderKanban}
-            title="No active projects yet"
-            description="Start a new project and we'll track your progress right here."
+            title="No active campaigns yet"
+            description="Start a new campaign and we'll track your progress right here."
             action={
               <Button variant="glow" asChild>
                 <Link href="/onboarding">
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
 
               <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-4">
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/projects/${project.id}`}>View Details</Link>
+                  <Link href={`/campaigns/${project.id}`}>View Details</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/messages">
@@ -207,7 +207,7 @@ export default async function DashboardPage() {
                   </Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/projects/${project.id}`}>
+                  <Link href={`/campaigns/${project.id}`}>
                     <Upload className="mr-1 h-4 w-4" />
                     Upload Files
                   </Link>

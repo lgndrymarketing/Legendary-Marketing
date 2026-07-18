@@ -40,7 +40,7 @@ export default async function AdminLayout({
     ...(canManageLeads(user.role)
       ? [{ label: "Leads", href: "/admin/leads", icon: "Inbox" }]
       : []),
-    { label: "Projects", href: "/admin/projects", icon: "FolderKanban" },
+    { label: "Campaigns", href: "/admin/campaigns", icon: "FolderKanban" },
     { label: "Messages", href: "/admin/messages", icon: "MessageSquare" },
     ...(canManageAgency(user.role)
       ? [

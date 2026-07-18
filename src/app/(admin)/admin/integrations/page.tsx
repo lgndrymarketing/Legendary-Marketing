@@ -36,7 +36,7 @@ export default async function AdminIntegrationsPage() {
   // Integration config is admin-only (the layout only checks isStaff).
   const staff = await getAuthenticatedUser();
   if (!canManageAgency(staff.role)) {
-    redirect("/admin/projects");
+    redirect("/admin/campaigns");
   }
 
   const ghlConfigured = isGhlConfigured();

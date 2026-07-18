@@ -78,8 +78,8 @@ export default async function AdminProjectsPage() {
   return (
     <div className="space-y-10">
       <PageHero
-        title="Projects"
-        description="Manage all client projects and update phases."
+        title="Campaigns"
+        description="Manage all client campaigns and update phases."
       />
 
       <section>
@@ -87,15 +87,15 @@ export default async function AdminProjectsPage() {
         {rows.length === 0 ? (
           <EmptyState
             icon={FolderKanban}
-            title="No projects yet"
-            description="Client projects will appear here once they're created."
+            title="No campaigns yet"
+            description="Client campaigns will appear here once they're created."
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="micro-label py-3 pr-4">Project</th>
+                  <th className="micro-label py-3 pr-4">Campaign</th>
                   <th className="micro-label py-3 pr-4">Client</th>
                   <th className="micro-label py-3 pr-4">Service</th>
                   <th className="micro-label py-3 pr-4">Phase</th>
@@ -146,7 +146,7 @@ export default async function AdminProjectsPage() {
                       </td>
                       <td className="py-3 text-right">
                         <Link
-                          href={`/admin/projects/${project.id}`}
+                          href={`/admin/campaigns/${project.id}`}
                           aria-label={`Manage ${project.name}`}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-orange/40 hover:bg-orange/5 hover:text-orange active:scale-[0.98]"
                         >

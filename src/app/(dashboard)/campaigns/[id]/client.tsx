@@ -166,11 +166,11 @@ export function ProjectDetailClient({
         />
         <div className="relative">
           <Link
-            href="/projects"
+            href="/campaigns"
             className="group inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-            <span className="micro-label">Projects</span>
+            <span className="micro-label">Campaigns</span>
           </Link>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -399,7 +399,7 @@ export function ProjectDetailClient({
 
               {/* Project Info */}
               <section className="border-t border-border pt-5">
-                <h3 className="micro-label">Project Details</h3>
+                <h3 className="micro-label">Campaign Details</h3>
                 <div className="mt-4 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Service</span>
@@ -444,7 +444,7 @@ export function ProjectDetailClient({
         {/* Comments tab */}
         <Tabs.Content value="comments">
           <section className="border-t border-border pt-5">
-            <h3 className="micro-label">Project Comments</h3>
+            <h3 className="micro-label">Comments</h3>
             <div className="mt-4">
               <ProjectComments projectId={project.id} />
             </div>

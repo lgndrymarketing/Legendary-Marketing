@@ -79,7 +79,7 @@ export async function GET(req: Request) {
         type: "project" as const,
         title: p.name,
         subtitle: `${p.serviceType} · ${p.status}`,
-        href: `/projects/${p.id}`,
+        href: `/campaigns/${p.id}`,
       })),
       ...messageResults.map((m) => ({
         id: m.id,
@@ -93,7 +93,7 @@ export async function GET(req: Request) {
         type: "file" as const,
         title: f.name,
         subtitle: `File · ${f.type || "unknown"}`,
-        href: `/projects/${f.projectId}`,
+        href: `/campaigns/${f.projectId}`,
       })),
     ];
 
