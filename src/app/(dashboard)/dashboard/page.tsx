@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
+import { PerformanceOverview } from "@/components/dashboard/performance-overview";
 import { FolderKanban, MessageSquare, Upload, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
@@ -116,6 +117,9 @@ export default async function DashboardPage() {
           </Button>
         }
       />
+
+      {/* Performance Dashboard — campaign results and ROI */}
+      <PerformanceOverview />
 
       {/* Stats — hairline-divided 3-up, big numerals */}
       <div className="animate-fade-up grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
