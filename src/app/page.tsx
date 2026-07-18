@@ -1,27 +1,12 @@
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { HeroSection } from "@/components/sections/hero";
-import { StatsBand } from "@/components/sections/stats-band";
-import { ServicesSection } from "@/components/sections/services";
-import { HowItWorksSection } from "@/components/sections/how-it-works";
-import { TestimonialsSection } from "@/components/sections/testimonials";
-import { AboutSection } from "@/components/sections/about";
-import { CTASection } from "@/components/sections/cta";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return (
-    <>
-      <Header />
-      <main className="flex-1">
-        <HeroSection />
-        <StatsBand />
-        <ServicesSection />
-        <HowItWorksSection />
-        <TestimonialsSection />
-        <AboutSection />
-        <CTASection />
-      </main>
-      <Footer />
-    </>
-  );
+/**
+ * The public marketing site is gone — lgndrymarketing.app is portal-only.
+ * Logged-out visitors land on sign-in; signed-in users get routed to their
+ * role's home via /post-login.
+ */
+export default async function Home() {
+  const { userId } = await auth();
+  redirect(userId ? "/post-login" : "/sign-in");
 }

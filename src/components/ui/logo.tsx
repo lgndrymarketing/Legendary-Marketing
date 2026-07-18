@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -5,45 +6,26 @@ interface LogoProps {
   className?: string;
 }
 
-/** LM monogram mark — used wherever the full wordmark doesn't fit. */
+/* Native dimensions of public/logo.png — used to keep the aspect ratio. */
+const LOGO_WIDTH = 545;
+const LOGO_HEIGHT = 481;
+
+/** LGNDRY mark — the official logo, rendered at the requested height. */
 export function Logo({ size = 32, className }: LogoProps) {
   return (
-    <svg
-      width={size}
+    <Image
+      src="/logo.png"
+      alt="LGNDRY"
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      width={Math.round((size * LOGO_WIDTH) / LOGO_HEIGHT)}
       className={cn("shrink-0", className)}
-      role="img"
-      aria-label="Legendary Marketing"
-    >
-      <rect width="32" height="32" rx="8" className="fill-orange" />
-      <text
-        x="16"
-        y="16"
-        fill="white"
-        fontFamily="var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        fontSize="14"
-        fontWeight="700"
-        letterSpacing="0.5"
-        textAnchor="middle"
-        dominantBaseline="central"
-      >
-        LM
-      </text>
-    </svg>
+      priority
+    />
   );
 }
 
-/** Full lockup — monogram + wordmark. */
-export function LogoWordmark({ size = 28, className }: LogoProps) {
-  return (
-    <span className={cn("flex items-center gap-2", className)}>
-      <Logo size={size} />
-      <span className="text-base font-semibold tracking-tight text-foreground">
-        Legendary <span className="text-gradient-orange">Marketing</span>
-      </span>
-    </span>
-  );
+/** Full lockup — the logo already carries the LGNDRY wordmark, so this is the
+ * same mark at a slightly larger default size. Kept for API compatibility. */
+export function LogoWordmark({ size = 40, className }: LogoProps) {
+  return <Logo size={size} className={className} />;
 }
