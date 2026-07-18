@@ -14,7 +14,7 @@ import {
   Pencil,
   X,
   Trash2,
-  CircleDollarSign,
+  CircleCheck,
   Search,
   Pause,
   Play,
@@ -52,12 +52,10 @@ interface AdminOption {
 
 const PAYMENT_METHODS = [
   "Zelle",
-  "CashApp",
-  "Venmo",
-  "Wire",
-  "Card",
-  "Cash",
-  "Other",
+  "Cash App",
+  "PayPal",
+  "Stripe",
+  "Bank Transfer",
 ];
 
 /** Whole days until the due date; negative = overdue. */
@@ -120,6 +118,9 @@ const emptyForm = {
   status: "active" as string,
   userId: "",
   notes: "",
+  setupFeePaid: false,
+  setupReceivedBy: "",
+  setupMethod: "Zelle",
 };
 
 function Field({
@@ -230,6 +231,9 @@ export function ClientRoster({
       status: c.status,
       userId: c.userId ?? "",
       notes: c.notes ?? "",
+      setupFeePaid: false,
+      setupReceivedBy: "",
+      setupMethod: "Zelle",
     });
     setError(null);
     setModalOpen(true);
@@ -243,6 +247,17 @@ export function ClientRoster({
       return;
     }
     const cents = (v: string) => Math.round((parseFloat(v) || 0) * 100);
+    const setupFeeCents = cents(form.setupFee);
+    if (!editingId && form.setupFeePaid) {
+      if (setupFeeCents <= 0) {
+        setError("Enter a setup fee before marking it paid.");
+        return;
+      }
+      if (!form.setupReceivedBy) {
+        setError("Pick who received the setup fee.");
+        return;
+      }
+    }
     const payload = {
       contactName: form.contactName.trim(),
       companyName: form.companyName.trim(),
@@ -278,6 +293,24 @@ export function ClientRoster({
             body: JSON.stringify(payload),
           });
       if (!res.ok) throw new Error();
+
+      // "Setup fee already paid" → log the setup payment against the new
+      // client, which auto-generates the 50/50 partner split on the ledger.
+      if (!editingId && form.setupFeePaid && setupFeeCents > 0) {
+        const created = await res.json().catch(() => null);
+        if (created?.id) {
+          await fetch(`/api/admin/clients/${created.id}/payments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentType: "setup_fee",
+              method: form.setupMethod,
+              receivedBy: form.setupReceivedBy,
+            }),
+          });
+        }
+      }
+
       setModalOpen(false);
       changed();
     } catch {
@@ -536,11 +569,11 @@ export function ClientRoster({
                             });
                             setError(null);
                           }}
-                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-success/10 hover:text-success cursor-pointer"
+                          className="rounded-lg border border-border p-1.5 text-foreground transition-colors hover:bg-success/10 hover:text-success hover:border-success/40 cursor-pointer"
                           aria-label={`Record payment for ${client.companyName}`}
                           title="Record payment"
                         >
-                          <CircleDollarSign className="h-4 w-4" />
+                          <CircleCheck className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => openEdit(client)}
@@ -854,6 +887,70 @@ export function ClientRoster({
                   </p>
                 </Field>
               </div>
+
+              {/* Setup fee already paid — logs the payment + partner split
+                  the moment the client is created (add mode only). */}
+              {!editingId && (
+                <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={form.setupFeePaid}
+                      onChange={(e) =>
+                        setForm({ ...form, setupFeePaid: e.target.checked })
+                      }
+                      className="mt-0.5 h-4 w-4 accent-orange cursor-pointer"
+                    />
+                    <span>
+                      <span className="block text-[13px] font-medium">
+                        Setup fee already paid
+                      </span>
+                      <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
+                        Logs the setup payment and generates the partner split
+                        instantly.
+                      </span>
+                    </span>
+                  </label>
+                  {form.setupFeePaid && (
+                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field label="Received By" required>
+                        <select
+                          className={selectClass}
+                          value={form.setupReceivedBy}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              setupReceivedBy: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">Select partner…</option>
+                          {admins.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Payment Method">
+                        <select
+                          className={selectClass}
+                          value={form.setupMethod}
+                          onChange={(e) =>
+                            setForm({ ...form, setupMethod: e.target.value })
+                          }
+                        >
+                          {PAYMENT_METHODS.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Start Date">
