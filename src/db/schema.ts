@@ -403,6 +403,90 @@ export const tasks = pgTable("tasks", {
   index("idx_tasks_assignee_id").on(table.assigneeId),
 ]);
 
+// Agency clients — the business ledger of who we serve, matching how LGNDRY
+// actually sells (Bronze/Gold/Diamond, setup + monthly). Separate from portal
+// logins: a client may exist here before (or without) ever signing in, and can
+// be linked to a portal user once they do.
+export const clientPackageEnum = pgEnum("client_package", [
+  "bronze",
+  "silver",
+  "gold",
+  "diamond",
+  "custom",
+]);
+
+export const clientStatusEnum = pgEnum("client_status", [
+  "active",
+  "paused",
+  "churned",
+]);
+
+export const agencyClients = pgTable("agency_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  businessType: varchar("business_type", { length: 100 }),
+  package: clientPackageEnum("package").notNull().default("bronze"),
+  // Display name for package = "custom" (e.g. a bespoke retainer).
+  packageLabel: varchar("package_label", { length: 100 }),
+  // Money in cents.
+  setupFee: integer("setup_fee").notNull().default(0),
+  monthlyFee: integer("monthly_fee").notNull().default(0),
+  // Partner referral cut in cents — deducted before the 50/50 admin split.
+  partnerCut: integer("partner_cut").notNull().default(0),
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  nextDueDate: timestamp("next_due_date"),
+  status: clientStatusEnum("status").notNull().default("active"),
+  // Optional link to the client's portal login.
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  notes: text("notes"),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_agency_clients_status").on(table.status),
+]);
+
+// Client payments — money actually collected from agency clients (setup fees
+// and monthly retainers). Each payment carries who physically received it and
+// drives the partner ledger: net = amount - partnerCut, split 50/50, and the
+// receiver owes the other partner their half until the split is settled.
+export const clientPaymentTypeEnum = pgEnum("client_payment_type", [
+  "setup_fee",
+  "monthly_retainer",
+]);
+
+export const splitStatusEnum = pgEnum("split_status", ["pending", "settled"]);
+
+export const clientPayments = pgTable("client_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id")
+    .references(() => agencyClients.id, { onDelete: "cascade" })
+    .notNull(),
+  paymentType: clientPaymentTypeEnum("payment_type").notNull(),
+  method: varchar("method", { length: 50 }).notNull().default("zelle"),
+  // Cents. Snapshot of the fee at collection time (fees can change later).
+  amount: integer("amount").notNull(),
+  // Referral cut deducted before the 50/50 partner split, in cents.
+  partnerCut: integer("partner_cut").notNull().default(0),
+  receivedBy: uuid("received_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  splitStatus: splitStatusEnum("split_status").notNull().default("pending"),
+  settledAt: timestamp("settled_at"),
+  paidAt: timestamp("paid_at").defaultNow().notNull(),
+  notes: text("notes"),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_payments_client_id").on(table.clientId),
+  index("idx_client_payments_split_status").on(table.splitStatus),
+]);
+
 // Expenses — agency operating costs (SaaS subscriptions, team/contractor pay,
 // platform fees, ad spend). Feeds the Financials cost/profit metrics.
 export const expenseCategoryEnum = pgEnum("expense_category", [
@@ -491,3 +575,7 @@ export type Expense = typeof expenses.$inferSelect;
 export type NewExpense = typeof expenses.$inferInsert;
 export type PartnerLedgerEntry = typeof partnerLedgerEntries.$inferSelect;
 export type NewPartnerLedgerEntry = typeof partnerLedgerEntries.$inferInsert;
+export type AgencyClient = typeof agencyClients.$inferSelect;
+export type NewAgencyClient = typeof agencyClients.$inferInsert;
+export type ClientPayment = typeof clientPayments.$inferSelect;
+export type NewClientPayment = typeof clientPayments.$inferInsert;

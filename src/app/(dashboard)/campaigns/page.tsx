@@ -68,12 +68,12 @@ export default async function ProjectsPage() {
     <div className="space-y-10">
       <PageHero
         title="Campaigns"
-        description="Manage and track all your projects."
+        description="Manage and track all your campaigns."
         action={
           <Button variant="glow" asChild>
             <Link href="/onboarding">
               <Plus className="mr-1 h-4 w-4" />
-              New Project
+              New Campaign
             </Link>
           </Button>
         }
@@ -89,7 +89,7 @@ export default async function ProjectsPage() {
               <Button variant="glow" asChild>
                 <Link href="/onboarding">
                   <Plus className="mr-1 h-4 w-4" />
-                  New Project
+                  New Campaign
                 </Link>
               </Button>
             }
@@ -146,7 +146,7 @@ export default async function ProjectsPage() {
                 <div className="mt-6 flex justify-end">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/campaigns/${project.id}`} className="group">
-                      View Project
+                      View Campaign
                       <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </Button>

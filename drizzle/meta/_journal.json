@@ -29,6 +29,34 @@
       "when": 1784391887764,
       "tag": "0003_natural_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784392930328,
+      "tag": "0004_ordinary_zombie",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784393209868,
+      "tag": "0005_amusing_vampiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784393386565,
+      "tag": "0006_married_madame_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784393574916,
+      "tag": "0007_slimy_jackpot",
+      "breakpoints": true
     }
   ]
 }

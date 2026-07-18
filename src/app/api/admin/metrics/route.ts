@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, projects, payments, expenses } from "@/db/schema";
+import {
+  users,
+  projects,
+  payments,
+  expenses,
+  agencyClients,
+  clientPayments,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { getPricing } from "@/lib/pricing";
@@ -34,8 +41,14 @@ export async function GET() {
   try {
     await requireAdmin();
 
-    const [paymentRows, expenseRows, projectRows, clientRows] =
-      await Promise.all([
+    const [
+      paymentRows,
+      expenseRows,
+      projectRows,
+      clientRows,
+      rosterRows,
+      collectedRows,
+    ] = await Promise.all([
         db
           .select({
             amount: payments.amount,
@@ -70,6 +83,25 @@ export async function GET() {
           })
           .from(users)
           .where(eq(users.role, "client")),
+        db
+          .select({
+            package: agencyClients.package,
+            monthlyFee: agencyClients.monthlyFee,
+            startDate: agencyClients.startDate,
+            status: agencyClients.status,
+          })
+          .from(agencyClients),
+        db
+          .select({
+            amount: clientPayments.amount,
+            paidAt: clientPayments.paidAt,
+            companyName: agencyClients.companyName,
+          })
+          .from(clientPayments)
+          .leftJoin(
+            agencyClients,
+            eq(clientPayments.clientId, agencyClients.id)
+          ),
       ]);
 
     // Trailing month buckets, oldest → newest, current month last.
@@ -88,12 +120,19 @@ export async function GET() {
     const windowStart = buckets[0].start;
     const zeros = () => buckets.map(() => 0);
 
-    // Revenue — completed payments only.
+    // Revenue — completed project payments plus collected client payments
+    // (setup fees + retainers recorded on the roster).
     const completed = paymentRows.filter((p) => p.status === "completed");
-    const totalRevenue = completed.reduce((s, p) => s + p.amount, 0);
+    const totalRevenue =
+      completed.reduce((s, p) => s + p.amount, 0) +
+      collectedRows.reduce((s, p) => s + p.amount, 0);
     const revenueSeries = zeros();
     for (const p of completed) {
       const i = bucketIndex.get(monthKey(new Date(p.createdAt)));
+      if (i !== undefined) revenueSeries[i] += p.amount;
+    }
+    for (const p of collectedRows) {
+      const i = bucketIndex.get(monthKey(new Date(p.paidAt)));
       if (i !== undefined) revenueSeries[i] += p.amount;
     }
 
@@ -210,16 +249,22 @@ export async function GET() {
       spendByUser.set(p.userId, (spendByUser.get(p.userId) ?? 0) + p.amount);
     }
     const clientById = new Map(clientRows.map((c) => [c.id, c]));
-    const topCustomers = [...spendByUser.entries()]
+    const spendByName = new Map<string, number>();
+    for (const [userId, total] of spendByUser) {
+      const c = clientById.get(userId);
+      const name = c
+        ? [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email
+        : "Unknown";
+      spendByName.set(name, (spendByName.get(name) ?? 0) + total);
+    }
+    for (const p of collectedRows) {
+      const name = p.companyName ?? "Unknown";
+      spendByName.set(name, (spendByName.get(name) ?? 0) + p.amount);
+    }
+    const topCustomers = [...spendByName.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([userId, total]) => {
-        const c = clientById.get(userId);
-        const name = c
-          ? [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email
-          : "Unknown";
-        return { name, total };
-      });
+      .map(([name, total]) => ({ name, total }));
 
     // Packages distribution — live projects by service package.
     const packageCounts = new Map<string, number>();
@@ -232,6 +277,61 @@ export async function GET() {
       ([label, count]) => ({ label, count })
     );
 
+    // When the agency-client roster exists, it is the source of truth for
+    // recurring revenue, package mix, and churn — the project-derived numbers
+    // above only apply while the roster is empty.
+    let finalMrr = mrr;
+    let finalArr = arr;
+    let finalMrrSeries = mrrSeries;
+    let finalArrSeries = arrSeries;
+    let finalActiveClients = activeClientIds.size;
+    let finalChurnRate = churnRate;
+    let finalClientsLost = clientsLost;
+    let finalNewClientsSeries = newClientsSeries;
+    let finalNewClientsThisPeriod = newClientsThisPeriod;
+    let finalPackages = packagesDistribution;
+    if (rosterRows.length > 0) {
+      const active = rosterRows.filter((c) => c.status === "active");
+      finalMrr = active.reduce((s, c) => s + c.monthlyFee, 0);
+      finalArr = finalMrr * 12;
+      finalMrrSeries = buckets.map((b) =>
+        rosterRows
+          .filter((c) => {
+            const started = new Date(c.startDate);
+            return (
+              c.status !== "churned" &&
+              b.start >=
+                new Date(
+                  Date.UTC(started.getUTCFullYear(), started.getUTCMonth(), 1)
+                )
+            );
+          })
+          .reduce((s, c) => s + c.monthlyFee, 0)
+      );
+      finalArrSeries = finalMrrSeries.map((v) => v * 12);
+      finalActiveClients = active.length;
+      finalClientsLost = rosterRows.filter((c) => c.status === "churned").length;
+      finalChurnRate =
+        rosterRows.length > 0 ? finalClientsLost / rosterRows.length : 0;
+      finalNewClientsSeries = zeros();
+      for (const c of rosterRows) {
+        const i = bucketIndex.get(monthKey(new Date(c.startDate)));
+        if (i !== undefined) finalNewClientsSeries[i]++;
+      }
+      finalNewClientsThisPeriod = rosterRows.filter(
+        (c) => new Date(c.startDate) >= thirtyDaysAgo
+      ).length;
+      const byPackage = new Map<string, number>();
+      for (const c of active) {
+        const label = c.package[0].toUpperCase() + c.package.slice(1);
+        byPackage.set(label, (byPackage.get(label) ?? 0) + 1);
+      }
+      finalPackages = [...byPackage.entries()].map(([label, count]) => ({
+        label,
+        count,
+      }));
+    }
+
     return NextResponse.json({
       totals: {
         totalRevenue,
@@ -239,26 +339,26 @@ export async function GET() {
         monthlyRecurringCosts,
         profitMargin,
         totalProfit,
-        mrr,
-        arr,
-        activeClients: activeClientIds.size,
-        newClientsThisPeriod,
+        mrr: finalMrr,
+        arr: finalArr,
+        activeClients: finalActiveClients,
+        newClientsThisPeriod: finalNewClientsThisPeriod,
         avgLtv,
         avgMonthsRetained,
-        churnRate,
-        clientsLost,
+        churnRate: finalChurnRate,
+        clientsLost: finalClientsLost,
       },
       months: buckets.map((b) => b.label),
       series: {
         revenue: revenueSeries,
         costs: costsSeries,
         profit: profitSeries,
-        mrr: mrrSeries,
-        arr: arrSeries,
-        newClients: newClientsSeries,
+        mrr: finalMrrSeries,
+        arr: finalArrSeries,
+        newClients: finalNewClientsSeries,
       },
       topCustomers,
-      packagesDistribution,
+      packagesDistribution: finalPackages,
       windowStart: windowStart.toISOString(),
     });
   } catch (error) {

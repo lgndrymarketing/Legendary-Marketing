@@ -1,0 +1,1 @@
+ALTER TABLE "agency_clients" ADD COLUMN "package_label" varchar(100);
