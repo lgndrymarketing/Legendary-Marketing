@@ -112,7 +112,6 @@ export default async function DashboardPage() {
         description={`Welcome back, ${
           user.firstName || "there"
         } — track your campaign performance and ROI.`}
-        action={<NewCampaignButton />}
       />
 
       {/* Launch pipeline — the client's onboarding progress (transparency
