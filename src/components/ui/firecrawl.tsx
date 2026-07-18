@@ -270,15 +270,18 @@ export function Sparkline({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.35 }}
         />
+        {/* Opacity fade, not a pathLength draw-in — dash-based draw animations
+            render with gaps when the viewBox is stretched (preserveAspectRatio
+            "none" + non-scaling-stroke). */}
         <motion.path
           d={line}
           fill="none"
           stroke="var(--color-orange)"
           strokeWidth={1.6}
           vectorEffect="non-scaling-stroke"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.8, ease: easeOutExpo }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: easeOutExpo }}
         />
       </svg>
       {labels && (

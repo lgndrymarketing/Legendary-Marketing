@@ -138,6 +138,8 @@ export const payments = pgTable("payments", {
   // GoHighLevel invoicing/CRM ("ghl") or recorded in the portal.
   source: varchar("source", { length: 20 }).notNull().default("ghl"),
   ghlPaymentId: varchar("ghl_payment_id", { length: 255 }),
+  // Free-form admin notes ("wire ref 4421", "50% deposit", …).
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

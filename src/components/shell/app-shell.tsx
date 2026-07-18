@@ -135,7 +135,6 @@ function SidebarBody({
 
 export function AppShell({
   navItems,
-  roleLabel,
   cta,
   accountEmail,
   children,
@@ -207,8 +206,8 @@ export function AppShell({
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar */}
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
+        {/* Topbar — borderless; PageHero draws its own hairline */}
+        <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl">
           <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-2">
               <button
@@ -218,15 +217,6 @@ export function AppShell({
               >
                 <Menu className="h-4 w-4" />
               </button>
-              {/* Workspace pill — role only; the sidebar already carries the brand */}
-              {roleLabel && (
-                <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-                  <span className="h-3.5 w-3.5 shrink-0 rounded-[4px] bg-orange" />
-                  <span className="truncate text-[13px] font-medium">
-                    {roleLabel}
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center gap-1.5">
