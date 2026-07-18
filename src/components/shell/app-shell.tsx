@@ -99,18 +99,16 @@ function SidebarBody({
 }) {
   return (
     <>
-      {/* Logo */}
+      {/* Logo — the mark already carries the LGNDRY wordmark, so no text label. */}
       <Link
         href="/"
-        className="flex h-14 items-center gap-2 border-b border-border px-4"
+        className={cn(
+          "flex h-14 items-center border-b border-border",
+          collapsed ? "justify-center px-2" : "px-4"
+        )}
         onClick={onNavigate}
       >
-        <Logo size={26} />
-        {!collapsed && (
-          <span className="truncate text-[15px] font-semibold tracking-tight">
-            Legendary
-          </span>
-        )}
+        <Logo size={collapsed ? 26 : 34} />
       </Link>
 
       {/* Nav */}
@@ -147,11 +145,11 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — floating white card with a soft shadow */}
       <motion.aside
-        animate={{ width: collapsed ? 64 : 232 }}
+        animate={{ width: collapsed ? 76 : 244 }}
         transition={springSnappy}
-        className="sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-border bg-sidebar lg:flex"
+        className="sticky top-3 z-40 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-white shadow-[0_1px_3px_rgba(15,16,16,0.04),0_8px_24px_-12px_rgba(15,16,16,0.12)] lg:ml-3 lg:flex dark:bg-sidebar"
       >
         <SidebarBody
           navItems={navItems}
@@ -220,18 +218,15 @@ export function AppShell({
               >
                 <Menu className="h-4 w-4" />
               </button>
-              {/* Workspace pill */}
-              <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-                <span className="h-3.5 w-3.5 shrink-0 rounded-[4px] bg-orange" />
-                <span className="hidden truncate text-[13px] font-medium sm:inline">
-                  Legendary Marketing
-                </span>
-                {roleLabel && (
-                  <span className="shrink-0 rounded bg-orange/10 px-1.5 py-0.5 text-[10px] font-medium text-orange">
+              {/* Workspace pill — role only; the sidebar already carries the brand */}
+              {roleLabel && (
+                <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
+                  <span className="h-3.5 w-3.5 shrink-0 rounded-[4px] bg-orange" />
+                  <span className="truncate text-[13px] font-medium">
                     {roleLabel}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5">

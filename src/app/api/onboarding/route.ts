@@ -16,7 +16,9 @@ import { z } from "zod";
 const onboardingSchema = z.object({
   businessName: z.string().min(1).max(255),
   industry: z.string().max(255).optional(),
-  website: z.string().url().max(2048).optional().or(z.literal("")),
+  // Accept bare domains ("acme.com") — the client collects a plain domain, so
+  // don't demand a scheme here; we normalize to a full URL before storing.
+  website: z.string().max(2048).optional(),
   description: z.string().max(5000).optional(),
   targetAudience: z.string().max(2000).optional(),
   timeline: z.string().max(100).optional(),
@@ -93,6 +95,14 @@ export async function POST(req: Request) {
       additionalNotes,
     } = parsed.data;
 
+    // Normalize a bare domain to a full URL so stored links are clickable.
+    const normalizedWebsite =
+      website && website.trim() !== ""
+        ? /^https?:\/\//i.test(website.trim())
+          ? website.trim()
+          : `https://${website.trim()}`
+        : website;
+
     // Create project
     const [project] = await db
       .insert(projects)
@@ -109,7 +119,7 @@ export async function POST(req: Request) {
       projectId: project.id,
       businessName,
       industry,
-      website,
+      website: normalizedWebsite,
       description,
       targetAudience,
       timeline,
