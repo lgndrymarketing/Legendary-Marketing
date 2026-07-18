@@ -18,6 +18,7 @@ interface ExpenseRow {
   id: string;
   name: string;
   category: string;
+  categoryLabel: string | null;
   amount: number;
   cadence: string;
   incurredAt: string;
@@ -37,11 +38,12 @@ const CATEGORIES = [
   { value: "team", label: "Team" },
   { value: "fees", label: "Fees" },
   { value: "ads", label: "Ad Spend" },
-  { value: "other", label: "Other" },
 ] as const;
 
-const categoryLabel = (v: string) =>
-  CATEGORIES.find((c) => c.value === v)?.label ?? v;
+const categoryLabel = (row: { category: string; categoryLabel?: string | null }) =>
+  row.category === "other" && row.categoryLabel
+    ? row.categoryLabel
+    : CATEGORIES.find((c) => c.value === row.category)?.label ?? row.category;
 
 const selectClass =
   "h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
@@ -61,13 +63,24 @@ export default function AdminExpensesPage() {
   const [form, setForm] = useState({
     name: "",
     category: "saas",
+    categoryCustom: "",
     amount: "",
     cadence: "monthly",
+    incurredAt: "",
   });
+
+  const today = () => new Date().toISOString().slice(0, 10);
 
   function openAdd() {
     setEditingId(null);
-    setForm({ name: "", category: "saas", amount: "", cadence: "monthly" });
+    setForm({
+      name: "",
+      category: "saas",
+      categoryCustom: "",
+      amount: "",
+      cadence: "monthly",
+      incurredAt: today(),
+    });
     setError(null);
     setFormOpen(true);
   }
@@ -77,8 +90,11 @@ export default function AdminExpensesPage() {
     setForm({
       name: expense.name,
       category: expense.category,
+      categoryCustom:
+        expense.category === "other" ? expense.categoryLabel ?? "" : "",
       amount: String(expense.amount / 100),
       cadence: expense.cadence,
+      incurredAt: expense.incurredAt.slice(0, 10),
     });
     setError(null);
     setFormOpen(true);
@@ -112,8 +128,13 @@ export default function AdminExpensesPage() {
       const payload = {
         name: form.name.trim(),
         category: form.category,
+        categoryLabel:
+          form.category === "other" ? form.categoryCustom.trim() || null : null,
         amount: cents,
         cadence: form.cadence,
+        incurredAt: form.incurredAt
+          ? new Date(form.incurredAt + "T00:00:00Z").toISOString()
+          : undefined,
       };
       const res = editingId
         ? await fetch(`/api/admin/expenses/${editingId}`, {
@@ -257,36 +278,79 @@ export default function AdminExpensesPage() {
             </button>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              placeholder="Name (e.g. GoHighLevel subscription)"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <select
-              className={selectClass}
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder="Amount ($)"
-              inputMode="decimal"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            />
-            <select
-              className={selectClass}
-              value={form.cadence}
-              onChange={(e) => setForm({ ...form, cadence: e.target.value })}
-            >
-              <option value="monthly">Monthly</option>
-              <option value="one_time">One-time</option>
-            </select>
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium">
+                Description
+              </span>
+              <Input
+                placeholder="e.g. GoHighLevel subscription"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium">
+                Category
+              </span>
+              <select
+                className={cn(selectClass, "w-full")}
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+                <option value="other">Custom…</option>
+              </select>
+              {form.category === "other" && (
+                <Input
+                  className="mt-2"
+                  placeholder="Custom category name"
+                  value={form.categoryCustom}
+                  onChange={(e) =>
+                    setForm({ ...form, categoryCustom: e.target.value })
+                  }
+                />
+              )}
+            </div>
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium">
+                Amount ($)
+              </span>
+              <Input
+                placeholder="Amount ($)"
+                inputMode="decimal"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              />
+            </div>
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium">
+                Date
+              </span>
+              <Input
+                type="date"
+                value={form.incurredAt}
+                onChange={(e) =>
+                  setForm({ ...form, incurredAt: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <span className="mb-1.5 block text-[13px] font-medium">
+                Cadence
+              </span>
+              <select
+                className={cn(selectClass, "w-full")}
+                value={form.cadence}
+                onChange={(e) => setForm({ ...form, cadence: e.target.value })}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="one_time">One-time</option>
+              </select>
+            </div>
           </div>
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
           <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
@@ -345,7 +409,7 @@ export default function AdminExpensesPage() {
                     <td className="py-3 pr-4 font-medium">{expense.name}</td>
                     <td className="py-3 pr-4">
                       <Badge variant="secondary">
-                        {categoryLabel(expense.category)}
+                        {categoryLabel(expense)}
                       </Badge>
                     </td>
                     <td className="py-3 pr-4 font-mono font-semibold">

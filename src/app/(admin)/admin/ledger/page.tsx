@@ -7,11 +7,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { HandCoins, CheckCircle2, Pencil, X, Plus } from "lucide-react";
-import { ClientPaymentModal } from "@/components/admin/client-payment-modal";
+import {
+  HandCoins,
+  CheckCircle2,
+  Pencil,
+  X,
+  ArrowLeftRight,
+  Calendar,
+} from "lucide-react";
 
 interface Partner {
   id: string;
@@ -43,12 +48,10 @@ interface LedgerResponse {
 
 const PAYMENT_METHODS = [
   "Zelle",
-  "CashApp",
-  "Venmo",
-  "Wire",
-  "Card",
-  "Cash",
-  "Other",
+  "Cash App",
+  "PayPal",
+  "Stripe",
+  "Bank Transfer",
 ];
 
 const usd = (cents: number) =>
@@ -60,10 +63,43 @@ const usd = (cents: number) =>
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
+/** Floating white card in the house style. */
+function Card({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_12px_32px_-16px_rgba(15,16,16,0.18)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Start-of-range for the date filter, or null for "all". */
+function rangeStart(range: string): Date | null {
+  const now = new Date();
+  if (range === "this_month")
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  if (range === "last_30")
+    return new Date(now.getTime() - 30 * 86_400_000);
+  if (range === "this_year")
+    return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  return null;
+}
+
 export default function AdminLedgerPage() {
   const [data, setData] = useState<LedgerResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editForm, setEditForm] = useState({
     paymentType: "monthly_retainer",
@@ -73,7 +109,6 @@ export default function AdminLedgerPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recordOpen, setRecordOpen] = useState(false);
 
   const load = useCallback(() => {
     fetch("/api/admin/ledger")
@@ -138,117 +173,110 @@ export default function AdminLedgerPage() {
   }
 
   const partners = data?.partners ?? [];
-  const transactions = (data?.transactions ?? []).filter((t) =>
-    filter === "all" ? true : t.splitStatus === filter
-  );
+  const p1 = partners[0];
+  const p2 = partners[1];
+  const dateStart = rangeStart(dateFilter);
+  const transactions = (data?.transactions ?? []).filter((t) => {
+    const matchesStatus =
+      statusFilter === "all" ? true : t.splitStatus === statusFilter;
+    const matchesDate = !dateStart || new Date(t.paidAt) >= dateStart;
+    return matchesStatus && matchesDate;
+  });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <PageHero
         title="Partner Ledger"
         description={
-          partners.length >= 2
-            ? `Payments between ${partners[0].name} and ${partners[1].name}, tracked automatically from recorded client payments.`
+          p1 && p2
+            ? `Track payments between ${p1.name} and ${p2.name} automatically.`
             : "Partner splits, tracked automatically from recorded client payments."
         }
-        action={
-          <Button size="sm" onClick={() => setRecordOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" />
-            Record Payment
-          </Button>
-        }
       />
 
-      <ClientPaymentModal
-        open={recordOpen}
-        onClose={() => setRecordOpen(false)}
-        onSaved={load}
-      />
-
-      {/* Balance band — hairline-divided 3-up */}
+      {/* Balance + earnings cards */}
       <motion.section
         variants={cascade}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-3"
       >
-        <motion.div variants={cascadeItem} className="px-5 py-6">
-          <p className="micro-label">Net Balance</p>
-          {data?.netBalance ? (
-            <>
-              <p className="mt-2 text-2xl font-bold tracking-tight text-success">
-                {data.netBalance.from} owes {data.netBalance.to}{" "}
-                {usd(data.netBalance.amount)}
+        <motion.div variants={cascadeItem}>
+          <Card>
+            <div className="flex items-start justify-between">
+              <p className="text-[15px] font-medium text-muted-foreground">
+                Net Balance
               </p>
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                Based on unsettled transactions
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="mt-2 text-2xl font-bold tracking-tight">
-                All settled
-              </p>
-              <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                No pending splits
-              </p>
-            </>
-          )}
+              <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+            {data?.netBalance ? (
+              <>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-orange">
+                  {data.netBalance.from} owes {data.netBalance.to}{" "}
+                  {usd(data.netBalance.amount)}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Based on unsettled transactions
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-3xl font-bold tracking-tight">
+                  All settled up!
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Based on unsettled transactions
+                </p>
+              </>
+            )}
+          </Card>
         </motion.div>
         {partners.slice(0, 2).map((p) => (
-          <motion.div key={p.id} variants={cascadeItem} className="px-5 py-6">
-            <p className="micro-label">{p.name} Total Earned</p>
-            <p className="mt-2 text-2xl font-bold tracking-tight">
-              {usd(p.earned)}
-            </p>
-            <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-              Half of all net collections
-            </p>
+          <motion.div key={p.id} variants={cascadeItem}>
+            <Card>
+              <div className="flex items-start justify-between">
+                <p className="text-[15px] font-medium text-muted-foreground">
+                  {p.name} Total Earned
+                </p>
+                <HandCoins className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="mt-3 text-3xl font-bold tracking-tight">
+                {usd(p.earned)}
+              </p>
+            </Card>
           </motion.div>
         ))}
       </motion.section>
 
-      {/* Trends — net collections + each partner's earnings */}
-      {!loading && (data?.transactions.length ?? 0) > 0 && (
-        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <TrendCard
-            title="Net Collections"
-            caption="After partner cuts"
-            points={(data?.transactions ?? []).map((t) => ({
-              date: t.paidAt,
-              value: t.amount - t.partnerCut,
-            }))}
-            format={usd}
-          />
-          <TrendCard
-            title="Earnings Per Partner"
-            caption="Half of net, monthly"
-            points={(data?.transactions ?? []).map((t) => ({
-              date: t.paidAt,
-              value: Math.round((t.amount - t.partnerCut) / 2),
-            }))}
-            format={usd}
-          />
-        </section>
-      )}
-
-      {/* History */}
-      <section>
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <HandCoins className="h-4 w-4 text-orange" />
-            <h2 className="text-[15px] font-semibold">Transaction History</h2>
-          </div>
+      {/* Filters — date range (left) + transaction status (right) */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative sm:w-72">
+          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <select
-            className="h-9 rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none transition-colors focus:border-orange"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
           >
-            <option value="all">All Transactions</option>
-            <option value="pending">Pending</option>
-            <option value="settled">Settled</option>
+            <option value="all">All time</option>
+            <option value="this_month">This month</option>
+            <option value="last_30">Last 30 days</option>
+            <option value="this_year">This year</option>
           </select>
         </div>
+        <select
+          className="h-11 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange sm:w-56"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Transactions</option>
+          <option value="pending">Pending</option>
+          <option value="settled">Settled</option>
+        </select>
+      </div>
+
+      {/* History */}
+      <Card>
+        <h2 className="text-xl font-bold tracking-tight">Transaction History</h2>
         {loading ? (
           <div className="pt-4">
             <TableSkeleton rows={5} />
@@ -257,20 +285,20 @@ export default function AdminLedgerPage() {
           <EmptyState
             icon={HandCoins}
             title="No transactions yet"
-            description="Record client payments from the Clients page — each one lands here with its partner split."
+            description="Record client payments from the Clients & Payments page — each one lands here with its partner split."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="micro-label py-3 pr-4">Date</th>
                   <th className="micro-label py-3 pr-4">Client</th>
-                  <th className="micro-label py-3 pr-4">Type</th>
-                  <th className="micro-label py-3 pr-4">Method</th>
                   <th className="micro-label py-3 pr-4">Total Paid</th>
                   <th className="micro-label py-3 pr-4">Received By</th>
-                  <th className="micro-label py-3 pr-4">Partner Cut</th>
+                  <th className="micro-label py-3 pr-4">
+                    {p1 ? `${p1.name}'s Cut` : "Partner Cut"}
+                  </th>
                   <th className="micro-label py-3 pr-4">Status</th>
                   <th className="micro-label py-3 text-right">Actions</th>
                 </tr>
@@ -287,7 +315,7 @@ export default function AdminLedgerPage() {
                     variants={rowItem}
                     className={cn(
                       "group transition-colors hover:bg-muted/50",
-                      t.splitStatus === "settled" && "opacity-60"
+                      t.splitStatus === "settled" && "opacity-70"
                     )}
                   >
                     <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
@@ -300,31 +328,24 @@ export default function AdminLedgerPage() {
                     <td className="py-3 pr-4 font-medium">
                       {t.companyName ?? "—"}
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[11px] uppercase text-muted-foreground whitespace-nowrap">
-                      {t.paymentType === "setup_fee" ? "Setup" : "Retainer"}
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground">
-                      {t.method}
-                    </td>
                     <td className="py-3 pr-4 font-mono font-semibold">
                       {usd(t.amount)}
                     </td>
-                    <td className="py-3 pr-4">{t.receivedByName}</td>
                     <td className="py-3 pr-4">
-                      <span className="font-mono font-semibold text-success">
-                        {usd(t.otherPartnerCut)}
+                      <span className="rounded-full border border-border px-2.5 py-0.5 text-[11px] font-semibold">
+                        {t.receivedByName}
                       </span>
-                      <span className="ml-1 font-mono text-[10px] text-muted-foreground">
-                        → {t.otherPartnerName}
-                      </span>
+                    </td>
+                    <td className="py-3 pr-4 font-mono font-semibold text-success">
+                      {usd(t.otherPartnerCut)}
                     </td>
                     <td className="py-3 pr-4">
                       <span
                         className={cn(
-                          "font-mono text-[11px] font-semibold uppercase tracking-wide",
+                          "rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize",
                           t.splitStatus === "pending"
-                            ? "text-warning"
-                            : "text-muted-foreground"
+                            ? "bg-warning/10 text-warning"
+                            : "bg-muted text-muted-foreground"
                         )}
                       >
                         {t.splitStatus}
@@ -356,7 +377,7 @@ export default function AdminLedgerPage() {
             </table>
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Edit payment modal */}
       <AnimatePresence>

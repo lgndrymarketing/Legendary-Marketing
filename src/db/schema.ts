@@ -507,6 +507,8 @@ export const expenses = pgTable("expenses", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   category: expenseCategoryEnum("category").notNull().default("other"),
+  // Free-text label when category is "other" (custom category input).
+  categoryLabel: text("category_label"),
   // Money in cents. Monthly-cadence expenses recur every month from incurredAt.
   amount: integer("amount").notNull(),
   cadence: expenseCadenceEnum("cadence").notNull().default("one_time"),
