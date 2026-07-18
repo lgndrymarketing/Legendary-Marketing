@@ -97,7 +97,7 @@ export default async function DashboardPage() {
       : 0;
 
   const stats = [
-    { label: "Active Projects", value: activeProjects.length },
+    { label: "Active Campaigns", value: activeProjects.length },
     { label: "Messages", value: messageCount },
     { label: "Files Uploaded", value: fileCount },
   ];
@@ -107,12 +107,12 @@ export default async function DashboardPage() {
       {/* Welcome */}
       <PageHero
         title={`Welcome back, ${user.firstName || "there"}`}
-        description="Here's an overview of your projects."
+        description="Here's an overview of your campaigns."
         action={
           <Button variant="glow" asChild>
             <Link href="/onboarding">
               <Plus className="mr-1 h-4 w-4" />
-              New Project
+              New Campaign
             </Link>
           </Button>
         }
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Active Projects */}
+      {/* Active Campaigns */}
       {activeProjects.length === 0 ? (
         <div className="animate-fade-up rounded-xl border border-border">
           <EmptyState
@@ -144,7 +144,7 @@ export default async function DashboardPage() {
               <Button variant="glow" asChild>
                 <Link href="/onboarding">
                   <Plus className="mr-1 h-4 w-4" />
-                  New Project
+                  New Campaign
                 </Link>
               </Button>
             }

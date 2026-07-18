@@ -17,15 +17,15 @@ prior "AI automation agency" product line and rebuilt around two areas:
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind v4
-- Clerk (auth) · Neon Postgres + Drizzle ORM (data)
-- Creem.io (client project checkout) · GoHighLevel (agency CRM/revenue sync)
+- Clerk (auth) · Supabase Postgres + Drizzle ORM (data)
+- Supabase Postgres · GoHighLevel (agency CRM/revenue sync)
 - Ably (real-time client ↔ agency messaging)
 
 ## Getting Started
 
 ```bash
 pnpm install
-cp .env.local.example .env.local   # fill in Clerk, Neon, Creem, Ably, GHL keys
+cp .env.local.example .env.local   # fill in Clerk, Supabase, Ably, GHL keys
 pnpm drizzle-kit generate          # once DATABASE_URL is set
 pnpm drizzle-kit migrate
 pnpm dev
@@ -72,7 +72,7 @@ managed from the admin project view; clients see a read-only version), with
 - **GoHighLevel** — `src/lib/ghl.ts` client (contacts, opportunities,
   transactions, appointments), `/admin/integrations` settings page,
   `/api/integrations/ghl/sync` + `/api/webhooks/ghl`. Revenue in
-  `/admin/payments` is tagged by `source` (`creem` vs `ghl`).
+  `/admin/payments` is tagged by `source` (`portal` vs `ghl`).
 - **Ably** — `src/lib/ably.ts` (server) issues scoped tokens from
   `/api/ably/token`; `src/hooks/use-ably-channel.ts` powers live messaging.
 

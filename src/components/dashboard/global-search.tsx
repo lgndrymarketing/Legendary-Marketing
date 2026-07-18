@@ -270,7 +270,7 @@ export function GlobalSearch() {
               {/* Empty state */}
               {!query.trim() && !error && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  Type to search across projects, messages, and files
+                  Type to search across campaigns, messages, and files
                 </div>
               )}
             </div>
