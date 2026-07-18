@@ -33,23 +33,83 @@ export default async function AdminLayout({
   // Same role gating as before, expressed as serializable nav config for the
   // client shell (icon = lucide name).
   const navItems: ShellNavItem[] = [
-    { label: "Overview", href: "/admin", icon: "LayoutDashboard", exact: true },
+    {
+      label: "Overview",
+      href: "/admin",
+      icon: "LayoutDashboard",
+      exact: true,
+      section: "Operations",
+    },
     ...(canViewAllProjects(user.role)
-      ? [{ label: "Clients", href: "/admin/clients", icon: "Users" }]
+      ? [
+          {
+            label: "Clients",
+            href: "/admin/clients",
+            icon: "Users",
+            section: "Operations",
+          },
+        ]
       : []),
     ...(canManageLeads(user.role)
-      ? [{ label: "Leads", href: "/admin/leads", icon: "Inbox" }]
+      ? [
+          {
+            label: "Leads",
+            href: "/admin/leads",
+            icon: "Inbox",
+            section: "Operations",
+          },
+        ]
       : []),
-    { label: "Campaigns", href: "/admin/campaigns", icon: "FolderKanban" },
-    { label: "Messages", href: "/admin/messages", icon: "MessageSquare" },
+    {
+      label: "Campaigns",
+      href: "/admin/campaigns",
+      icon: "FolderKanban",
+      section: "Operations",
+    },
+    {
+      label: "Messages",
+      href: "/admin/messages",
+      icon: "MessageSquare",
+      section: "Operations",
+    },
     ...(canManageAgency(user.role)
       ? [
-          { label: "Financials", href: "/admin/financials", icon: "BarChart3" },
-          { label: "Payments", href: "/admin/payments", icon: "CreditCard" },
-          { label: "Expenses", href: "/admin/expenses", icon: "Receipt" },
-          { label: "Partner Ledger", href: "/admin/ledger", icon: "HandCoins" },
-          { label: "Team", href: "/admin/team", icon: "UserCog" },
-          { label: "Integrations", href: "/admin/integrations", icon: "Plug" },
+          {
+            label: "Financials",
+            href: "/admin/financials",
+            icon: "BarChart3",
+            section: "Finance",
+          },
+          {
+            label: "Payments",
+            href: "/admin/payments",
+            icon: "CreditCard",
+            section: "Finance",
+          },
+          {
+            label: "Expenses",
+            href: "/admin/expenses",
+            icon: "Receipt",
+            section: "Finance",
+          },
+          {
+            label: "Partner Ledger",
+            href: "/admin/ledger",
+            icon: "HandCoins",
+            section: "Finance",
+          },
+          {
+            label: "Team",
+            href: "/admin/team",
+            icon: "UserCog",
+            section: "Manage",
+          },
+          {
+            label: "Integrations",
+            href: "/admin/integrations",
+            icon: "Plug",
+            section: "Manage",
+          },
         ]
       : []),
   ];

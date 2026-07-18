@@ -29,6 +29,9 @@ export interface ShellNavItem {
   icon: string;
   /** Match nested routes too (default true; "/admin" uses exact). */
   exact?: boolean;
+  /** Mono micro-label group header; consecutive items sharing a section are
+   * rendered under one header ("OPERATIONS", "FINANCE", …). */
+  section?: string;
 }
 
 interface AppShellProps {
@@ -66,10 +69,11 @@ function NavLink({
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors",
+        "group/link relative flex items-center rounded-lg text-[13px] transition-colors",
+        collapsed ? "h-9 justify-center" : "gap-2.5 px-3 py-2",
         isActive
-          ? "text-orange font-medium"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+          ? "font-medium text-orange"
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       )}
       title={collapsed ? item.label : undefined}
     >
@@ -77,13 +81,41 @@ function NavLink({
         <motion.span
           layoutId="nav-pill"
           transition={springSnappy}
-          className="absolute inset-0 rounded-lg bg-orange/10"
+          className="absolute inset-0 rounded-lg bg-orange/[0.08]"
         />
       )}
-      <NavIcon name={item.icon} className="relative h-4 w-4 shrink-0" />
+      {/* Orange tick — the system's bracket-label accent, marking the live route. */}
+      {isActive && !collapsed && (
+        <motion.span
+          layoutId="nav-tick"
+          transition={springSnappy}
+          className="absolute left-0 h-4 w-[3px] rounded-full bg-orange"
+        />
+      )}
+      <NavIcon
+        name={item.icon}
+        className={cn(
+          "relative h-4 w-4 shrink-0 transition-transform duration-200",
+          !isActive && "group-hover/link:scale-110"
+        )}
+      />
       {!collapsed && <span className="relative truncate">{item.label}</span>}
+      {isActive && collapsed && (
+        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-orange" />
+      )}
     </Link>
   );
+}
+
+/** Group consecutive items by their section label. */
+function groupNav(navItems: ShellNavItem[]) {
+  const groups: { section?: string; items: ShellNavItem[] }[] = [];
+  for (const item of navItems) {
+    const last = groups[groups.length - 1];
+    if (last && last.section === item.section) last.items.push(item);
+    else groups.push({ section: item.section, items: [item] });
+  }
+  return groups;
 }
 
 function SidebarBody({
@@ -97,36 +129,76 @@ function SidebarBody({
   accountEmail?: string;
   onNavigate?: () => void;
 }) {
+  const groups = groupNav(navItems);
+
   return (
     <>
-      {/* Logo — the mark already carries the LGNDRY wordmark, so no text label. */}
+      {/* Logo band — hairline close with a dot-texture accent fading in from
+          the right (PageHero's signature). */}
       <Link
         href="/"
         className={cn(
-          "flex h-14 items-center border-b border-border",
-          collapsed ? "justify-center px-2" : "px-4"
+          "relative flex h-16 shrink-0 items-center border-b border-border",
+          collapsed ? "justify-center px-2" : "px-5"
         )}
         onClick={onNavigate}
       >
-        <Logo size={collapsed ? 26 : 34} />
+        {!collapsed && (
+          <span
+            className="dot-texture pointer-events-none absolute inset-y-0 right-0 w-24"
+            style={{
+              maskImage: "linear-gradient(to left, black, transparent)",
+              WebkitMaskImage: "linear-gradient(to left, black, transparent)",
+            }}
+          />
+        )}
+        <Logo size={collapsed ? 26 : 36} className="relative" />
       </Link>
 
-      {/* Nav */}
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            collapsed={collapsed}
-            onNavigate={onNavigate}
-          />
+      {/* Nav — grouped under mono micro-labels; collapsed mode swaps headers
+          for hairline separators. */}
+      <nav className={cn("flex-1 overflow-y-auto py-3", collapsed ? "px-2" : "px-3")}>
+        {groups.map((group, gi) => (
+          <div key={group.section ?? gi} className={cn(gi > 0 && "mt-4")}>
+            {group.section && !collapsed && (
+              <p className="micro-label px-3 pb-1.5">{group.section}</p>
+            )}
+            {group.section && collapsed && gi > 0 && (
+              <span className="mx-auto mb-3 block h-px w-6 bg-border" />
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      {/* Account */}
-      {accountEmail && !collapsed && (
-        <div className="border-t border-border px-4 py-3">
-          <p className="truncate text-xs text-muted-foreground">{accountEmail}</p>
+      {/* Account — orange monogram chip over a hairline, mono email. */}
+      {accountEmail && (
+        <div
+          className={cn(
+            "flex shrink-0 items-center border-t border-border",
+            collapsed ? "justify-center px-2 py-3" : "gap-2.5 px-4 py-3.5"
+          )}
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange/10 font-mono text-[11px] font-semibold uppercase text-orange">
+            {accountEmail[0]}
+          </span>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="micro-label">Signed in</p>
+              <p className="truncate font-mono text-[11px] text-muted-foreground">
+                {accountEmail}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>
@@ -157,13 +229,16 @@ export function AppShell({
         />
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground cursor-pointer"
+          className={cn(
+            "flex items-center gap-2 border-t border-border py-3 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground cursor-pointer",
+            collapsed ? "justify-center px-2" : "px-5"
+          )}
         >
           {collapsed ? (
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRight className="h-3.5 w-3.5" />
           ) : (
             <>
-              <ChevronsLeft className="h-4 w-4" /> Collapse
+              <ChevronsLeft className="h-3.5 w-3.5" /> Collapse
             </>
           )}
         </button>
