@@ -247,10 +247,42 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-28 sm:px-8 lg:pb-8">
           {children}
         </main>
+
+        {/* Bottom tab bar (mobile) — floating white card, first five destinations */}
+        <nav
+          className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-border/70 bg-white/95 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_10px_28px_-10px_rgba(15,16,16,0.22)] backdrop-blur-xl lg:hidden dark:bg-sidebar/95"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="flex items-stretch justify-around">
+            {navItems.slice(0, 5).map((item) => (
+              <BottomTab key={item.href} item={item} />
+            ))}
+          </div>
+        </nav>
       </div>
     </div>
+  );
+}
+
+function BottomTab({ item }: { item: ShellNavItem }) {
+  const pathname = usePathname();
+  const isActive = item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + "/");
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
+        isActive ? "text-orange" : "text-muted-foreground"
+      )}
+    >
+      <NavIcon name={item.icon} className="h-5 w-5" />
+      <span className="truncate px-1">{item.label}</span>
+    </Link>
   );
 }

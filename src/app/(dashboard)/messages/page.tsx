@@ -140,7 +140,7 @@ export default function MessagesPage() {
       <div className="space-y-8">
         <PageHero
           title="Messages"
-          description="Chat with the Legendary Marketing team about your project."
+          description="Chat with the LGNDRY team about your project."
         />
         <div
           className="flex flex-col rounded-xl border border-border"
@@ -163,7 +163,7 @@ export default function MessagesPage() {
     <div className="space-y-8">
       <PageHero
         title="Messages"
-        description="Chat with the Legendary Marketing team about your project."
+        description="Chat with the LGNDRY team about your project."
         action={
           connectionState === "connected" ? (
             <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-orange">
@@ -178,7 +178,7 @@ export default function MessagesPage() {
           <EmptyState
             icon={MessageSquare}
             title="No messages yet"
-            description="Once you have an active project, you can chat directly with the Legendary Marketing team here."
+            description="Once you have an active project, you can chat directly with the LGNDRY team here."
           />
         </div>
       ) : (
@@ -239,7 +239,7 @@ export default function MessagesPage() {
                       {message.content}
                     </div>
                     <span className="mt-1 font-mono text-[11px] text-muted-foreground">
-                      {message.role === "admin" ? "Legendary Marketing Team" : "You"} &middot;{" "}
+                      {message.role === "admin" ? "LGNDRY Team" : "You"} &middot;{" "}
                       {new Date(message.createdAt).toLocaleString()}
                     </span>
                   </div>

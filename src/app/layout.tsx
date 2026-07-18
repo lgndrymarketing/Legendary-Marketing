@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: `${brand.name} | ${brand.tagline}`,
   description: brand.description,
   metadataBase: new URL(brand.url),
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: brand.name,
+  },
   openGraph: {
     title: `${brand.name} | ${brand.tagline}`,
     description: brand.description,

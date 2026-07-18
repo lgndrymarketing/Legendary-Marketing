@@ -46,7 +46,7 @@ export default async function AdminIntegrationsPage() {
     <div className="space-y-10">
       <PageHero
         title="Integrations"
-        description="Connect Legendary Marketing to the tools that power revenue tracking and real-time client communication."
+        description="Connect LGNDRY to the tools that power revenue tracking and real-time client communication."
       />
 
       {/* GoHighLevel */}
@@ -64,7 +64,7 @@ export default async function AdminIntegrationsPage() {
             Connects the agency&apos;s GoHighLevel account so revenue and pipeline
             data (opportunities, invoices) shows up in the Payments dashboard.
             Contacts and opportunities are
-            matched back to Legendary Marketing projects via their GHL IDs.
+            matched back to LGNDRY projects via their GHL IDs.
           </p>
           {ghlConfigured ? (
             <GhlSyncButton />
