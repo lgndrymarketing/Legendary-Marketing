@@ -168,7 +168,7 @@ export default function AdminFinancialsPage() {
 
       {/* Headline metrics — hairline-divided 4-up grid */}
       <motion.section variants={cascade} initial="hidden" animate="visible">
-        <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+        <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
           {loading || !t
             ? Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className={cn(statCell(i), "space-y-3")}>

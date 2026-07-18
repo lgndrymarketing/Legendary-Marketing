@@ -8,9 +8,11 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { TrendCard, type TrendPoint } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { Receipt, Plus, Trash2 } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import { Receipt, Plus, Trash2, Pencil, X } from "lucide-react";
 
 interface ExpenseRow {
   id: string;
@@ -53,6 +55,7 @@ export default function AdminExpensesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -61,6 +64,25 @@ export default function AdminExpensesPage() {
     amount: "",
     cadence: "monthly",
   });
+
+  function openAdd() {
+    setEditingId(null);
+    setForm({ name: "", category: "saas", amount: "", cadence: "monthly" });
+    setError(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(expense: ExpenseRow) {
+    setEditingId(expense.id);
+    setForm({
+      name: expense.name,
+      category: expense.category,
+      amount: String(expense.amount / 100),
+      cadence: expense.cadence,
+    });
+    setError(null);
+    setFormOpen(true);
+  }
 
   const load = useCallback(() => {
     fetch("/api/admin/expenses")
@@ -87,19 +109,26 @@ export default function AdminExpensesPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/expenses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          category: form.category,
-          amount: cents,
-          cadence: form.cadence,
-        }),
-      });
+      const payload = {
+        name: form.name.trim(),
+        category: form.category,
+        amount: cents,
+        cadence: form.cadence,
+      };
+      const res = editingId
+        ? await fetch(`/api/admin/expenses/${editingId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/admin/expenses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
       if (!res.ok) throw new Error();
-      setForm({ name: "", category: form.category, amount: "", cadence: form.cadence });
       setFormOpen(false);
+      setEditingId(null);
       load();
     } catch {
       setError("Could not save the expense — try again.");
@@ -115,13 +144,39 @@ export default function AdminExpensesPage() {
     load();
   }
 
+  // Cost points for the trend charts — one-time expenses land in their
+  // month; monthly expenses recur every month from incurredAt onward.
+  const costPoints: TrendPoint[] = [];
+  const oneTimePoints: TrendPoint[] = [];
+  {
+    const now = new Date();
+    for (const e of expenses) {
+      if (e.cadence === "monthly") {
+        const start = new Date(e.incurredAt);
+        const startMonth = new Date(
+          Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)
+        );
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
+          );
+          if (d >= startMonth)
+            costPoints.push({ date: d.toISOString(), value: e.amount });
+        }
+      } else {
+        costPoints.push({ date: e.incurredAt, value: e.amount });
+        oneTimePoints.push({ date: e.incurredAt, value: e.amount });
+      }
+    }
+  }
+
   return (
     <div className="space-y-10">
       <PageHero
         title="Expenses"
         description="SaaS, team, fees, and ad spend — the cost side of the P&L."
         action={
-          <Button size="sm" onClick={() => setFormOpen((o) => !o)}>
+          <Button size="sm" onClick={openAdd}>
             <Plus className="mr-1.5 h-4 w-4" />
             Add Expense
           </Button>
@@ -129,7 +184,7 @@ export default function AdminExpensesPage() {
       />
 
       {/* Summary — hairline-divided 3-up */}
-      <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <StatHeader
           className="px-5 py-6"
           title="Monthly Recurring"
@@ -153,16 +208,55 @@ export default function AdminExpensesPage() {
         />
       </div>
 
-      {/* Inline add form */}
+      {/* Trends — monthly cost burn + one-time spend */}
+      {!loading && expenses.length > 0 && (
+        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <TrendCard
+            title="Total Costs"
+            caption="Recurring + one-time"
+            points={costPoints}
+            format={usd}
+          />
+          <TrendCard
+            title="One-Time Spend"
+            points={oneTimePoints}
+            format={usd}
+          />
+        </section>
+      )}
+
+      {/* Add / edit modal */}
+      <AnimatePresence>
       {formOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-background/60 backdrop-blur-xl"
+          onClick={() => setFormOpen(false)}
+        />
         <motion.form
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.98 }}
           onSubmit={submit}
-          className="rounded-xl border border-border p-5"
+          className="relative w-full max-w-lg rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
         >
-          <p className="micro-label pb-4">New expense</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto]">
+          <div className="flex items-start justify-between pb-6">
+            <h2 className="text-xl font-bold tracking-tight">
+              {editingId ? "Edit Expense" : "Add Expense"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setFormOpen(false)}
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               placeholder="Name (e.g. GoHighLevel subscription)"
               value={form.name}
@@ -180,7 +274,6 @@ export default function AdminExpensesPage() {
               ))}
             </select>
             <Input
-              className="sm:w-32"
               placeholder="Amount ($)"
               inputMode="decimal"
               value={form.amount}
@@ -194,13 +287,20 @@ export default function AdminExpensesPage() {
               <option value="monthly">Monthly</option>
               <option value="one_time">One-time</option>
             </select>
+          </div>
+          {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+          <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
+            <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : "Save Expense"}
             </Button>
           </div>
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
         </motion.form>
+        </div>
       )}
+      </AnimatePresence>
 
       <section>
         <div className="flex items-center gap-2 border-b border-border pb-3">
@@ -270,7 +370,14 @@ export default function AdminExpensesPage() {
                         year: "numeric",
                       })}
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => openEdit(expense)}
+                        className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 cursor-pointer"
+                        aria-label={`Edit ${expense.name}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => remove(expense.id)}
                         className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 cursor-pointer"

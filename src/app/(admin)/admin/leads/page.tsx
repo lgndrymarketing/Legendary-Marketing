@@ -112,7 +112,7 @@ export default function AdminLeadsPage() {
         variants={cascade}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 border-y border-border lg:grid-cols-4"
+        className="grid grid-cols-2 border-b border-border lg:grid-cols-4"
       >
         {stats.map((stat, i) => (
           <motion.div key={stat.label} variants={cascadeItem} className={statCell(i)}>

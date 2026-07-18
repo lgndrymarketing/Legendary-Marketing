@@ -52,7 +52,7 @@ export function PerformanceOverview() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-px border-y border-border lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px border-b border-border lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="space-y-3 px-5 py-6">
             <Skeleton className="h-3 w-24" />
@@ -119,7 +119,7 @@ export function PerformanceOverview() {
       className="space-y-8"
     >
       <div>
-        <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+        <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
           {tiles.map((tile, i) => (
             <motion.div
               key={tile.label}

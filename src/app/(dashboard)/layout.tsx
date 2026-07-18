@@ -21,6 +21,12 @@ const navItems: ShellNavItem[] = [
     section: "Workspace",
   },
   {
+    label: "Payments",
+    href: "/payments",
+    icon: "CreditCard",
+    section: "Workspace",
+  },
+  {
     label: "Analytics",
     href: "/analytics",
     icon: "BarChart3",

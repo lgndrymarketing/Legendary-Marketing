@@ -7,9 +7,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { HandCoins, CheckCircle2, Pencil, X } from "lucide-react";
+import { HandCoins, CheckCircle2, Pencil, X, Plus } from "lucide-react";
+import { ClientPaymentModal } from "@/components/admin/client-payment-modal";
 
 interface Partner {
   id: string;
@@ -71,6 +73,7 @@ export default function AdminLedgerPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const load = useCallback(() => {
     fetch("/api/admin/ledger")
@@ -148,6 +151,18 @@ export default function AdminLedgerPage() {
             ? `Payments between ${partners[0].name} and ${partners[1].name}, tracked automatically from recorded client payments.`
             : "Partner splits, tracked automatically from recorded client payments."
         }
+        action={
+          <Button size="sm" onClick={() => setRecordOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Record Payment
+          </Button>
+        }
+      />
+
+      <ClientPaymentModal
+        open={recordOpen}
+        onClose={() => setRecordOpen(false)}
+        onSaved={load}
       />
 
       {/* Balance band — hairline-divided 3-up */}
@@ -155,7 +170,7 @@ export default function AdminLedgerPage() {
         variants={cascade}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+        className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
       >
         <motion.div variants={cascadeItem} className="px-5 py-6">
           <p className="micro-label">Net Balance</p>
@@ -192,6 +207,30 @@ export default function AdminLedgerPage() {
           </motion.div>
         ))}
       </motion.section>
+
+      {/* Trends — net collections + each partner's earnings */}
+      {!loading && (data?.transactions.length ?? 0) > 0 && (
+        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <TrendCard
+            title="Net Collections"
+            caption="After partner cuts"
+            points={(data?.transactions ?? []).map((t) => ({
+              date: t.paidAt,
+              value: t.amount - t.partnerCut,
+            }))}
+            format={usd}
+          />
+          <TrendCard
+            title="Earnings Per Partner"
+            caption="Half of net, monthly"
+            points={(data?.transactions ?? []).map((t) => ({
+              date: t.paidAt,
+              value: Math.round((t.amount - t.partnerCut) / 2),
+            }))}
+            format={usd}
+          />
+        </section>
+      )}
 
       {/* History */}
       <section>
