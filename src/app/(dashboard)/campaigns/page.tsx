@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { NewCampaignButton } from "@/components/dashboard/new-campaign-modal";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
-import { Plus, ArrowRight, FolderKanban } from "lucide-react";
+import { ArrowRight, FolderKanban } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, users } from "@/db/schema";
@@ -70,12 +71,7 @@ export default async function ProjectsPage() {
         title="Campaigns"
         description="Manage and track all your campaigns."
         action={
-          <Button variant="glow" asChild>
-            <Link href="/onboarding">
-              <Plus className="mr-1 h-4 w-4" />
-              New Campaign
-            </Link>
-          </Button>
+          <NewCampaignButton />
         }
       />
 
@@ -86,12 +82,7 @@ export default async function ProjectsPage() {
             title="No campaigns yet"
             description="Start your first campaign and we'll build something great together."
             action={
-              <Button variant="glow" asChild>
-                <Link href="/onboarding">
-                  <Plus className="mr-1 h-4 w-4" />
-                  New Campaign
-                </Link>
-              </Button>
+              <NewCampaignButton />
             }
           />
         </div>
