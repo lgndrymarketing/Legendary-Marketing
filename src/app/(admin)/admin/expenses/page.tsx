@@ -8,6 +8,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { TrendCard, type TrendPoint } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence } from "motion/react";
@@ -143,6 +144,32 @@ export default function AdminExpensesPage() {
     load();
   }
 
+  // Cost points for the trend charts — one-time expenses land in their
+  // month; monthly expenses recur every month from incurredAt onward.
+  const costPoints: TrendPoint[] = [];
+  const oneTimePoints: TrendPoint[] = [];
+  {
+    const now = new Date();
+    for (const e of expenses) {
+      if (e.cadence === "monthly") {
+        const start = new Date(e.incurredAt);
+        const startMonth = new Date(
+          Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)
+        );
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
+          );
+          if (d >= startMonth)
+            costPoints.push({ date: d.toISOString(), value: e.amount });
+        }
+      } else {
+        costPoints.push({ date: e.incurredAt, value: e.amount });
+        oneTimePoints.push({ date: e.incurredAt, value: e.amount });
+      }
+    }
+  }
+
   return (
     <div className="space-y-10">
       <PageHero
@@ -157,7 +184,7 @@ export default function AdminExpensesPage() {
       />
 
       {/* Summary — hairline-divided 3-up */}
-      <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <StatHeader
           className="px-5 py-6"
           title="Monthly Recurring"
@@ -180,6 +207,23 @@ export default function AdminExpensesPage() {
           format={usd}
         />
       </div>
+
+      {/* Trends — monthly cost burn + one-time spend */}
+      {!loading && expenses.length > 0 && (
+        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <TrendCard
+            title="Total Costs"
+            caption="Recurring + one-time"
+            points={costPoints}
+            format={usd}
+          />
+          <TrendCard
+            title="One-Time Spend"
+            points={oneTimePoints}
+            format={usd}
+          />
+        </section>
+      )}
 
       {/* Add / edit modal */}
       <AnimatePresence>

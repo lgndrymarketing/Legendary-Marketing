@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
 
       {loading ? (
         <>
-          <div className="grid grid-cols-2 gap-px border-y border-border lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-px border-b border-border lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="space-y-3 px-5 py-6">
                 <Skeleton className="h-3 w-24" />
@@ -195,7 +195,7 @@ export default function AnalyticsPage() {
             variants={cascade}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 border-y border-border lg:grid-cols-3"
+            className="grid grid-cols-2 border-b border-border lg:grid-cols-3"
           >
             {tiles.map((tile, i) => (
               <motion.div

@@ -10,8 +10,8 @@ import {
   ClientPaymentModal,
   type EditablePayment,
 } from "@/components/admin/client-payment-modal";
+import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import { CreditCard, Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Transaction {
@@ -97,7 +97,7 @@ export default function AdminPaymentsPage() {
       />
 
       {/* Summary — hairline-divided 3-up */}
-      <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <StatHeader
           className="px-5 py-6"
           title="Total Collected"
@@ -120,6 +120,25 @@ export default function AdminPaymentsPage() {
           format={usd}
         />
       </div>
+
+      {/* Trends — monthly collections + volume */}
+      {!loading && transactions.length > 0 && (
+        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+          <TrendCard
+            title="Collections"
+            points={transactions.map((t) => ({
+              date: t.paidAt,
+              value: t.amount,
+            }))}
+            format={usd}
+          />
+          <TrendCard
+            title="Payments Recorded"
+            points={transactions.map((t) => ({ date: t.paidAt, value: 1 }))}
+            format={(v) => Math.round(v).toLocaleString("en-US")}
+          />
+        </section>
+      )}
 
       <section>
         <div className="flex items-center gap-2 border-b border-border pb-3">

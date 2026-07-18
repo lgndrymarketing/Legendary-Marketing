@@ -178,7 +178,7 @@ export default function AdminDashboardPage() {
       {/* Financial command center — the agency P&L at a glance (admin only) */}
       {metrics && (
         <motion.section variants={cascade} initial="hidden" animate="visible">
-          <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+          <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
             {(() => {
               const t = metrics.totals;
               const pct = (f: number) => `${(f * 100).toFixed(1)}%`;
@@ -305,7 +305,7 @@ export default function AdminDashboardPage() {
       {/* Stats — hidden for VAs; superseded by the financial band for admins */}
       {!statsDenied && !metrics && (
         <motion.section variants={cascade} initial="hidden" animate="visible">
-          <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+          <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
             {loading || !stats
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className={cn(statCell(i), "space-y-3")}>

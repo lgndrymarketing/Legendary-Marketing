@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import {
   users,
-  projects,
   payments,
   expenses,
   agencyClients,
@@ -10,7 +9,6 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
-import { getPricing } from "@/lib/pricing";
 
 /**
  * GET /api/admin/metrics — the Financials command center. Admin-only (this is
@@ -44,7 +42,6 @@ export async function GET() {
     const [
       paymentRows,
       expenseRows,
-      projectRows,
       clientRows,
       rosterRows,
       collectedRows,
@@ -65,14 +62,6 @@ export async function GET() {
             incurredAt: expenses.incurredAt,
           })
           .from(expenses),
-        db
-          .select({
-            serviceType: projects.serviceType,
-            status: projects.status,
-            userId: projects.userId,
-            createdAt: projects.createdAt,
-          })
-          .from(projects),
         db
           .select({
             id: users.id,
@@ -168,46 +157,6 @@ export async function GET() {
     const totalProfit = totalRevenue - totalCosts;
     const profitMargin = totalRevenue > 0 ? totalProfit / totalRevenue : 0;
 
-    // MRR — monthly-billing services on projects that are still live. The
-    // trend approximates history: a project contributes from its creation
-    // month onward (cancellation dates aren't tracked).
-    const liveStatuses = new Set(["onboarding", "payment_pending", "in_progress", "revision"]);
-    const mrrSeries = zeros();
-    let mrr = 0;
-    for (const p of projectRows) {
-      const pricing = getPricing(p.serviceType);
-      if (!pricing || pricing.billing !== "monthly") continue;
-      if (p.status === "cancelled") continue;
-      const isLive = liveStatuses.has(p.status);
-      if (isLive) mrr += pricing.amountCents;
-      const created = new Date(p.createdAt);
-      buckets.forEach((b, i) => {
-        const afterCreation =
-          b.start >=
-            new Date(Date.UTC(created.getUTCFullYear(), created.getUTCMonth(), 1));
-        // Completed projects stop contributing to the current MRR but still
-        // shape the historical curve up to now only if live; keep it simple:
-        // count live projects from creation onward.
-        if (afterCreation && isLive) mrrSeries[i] += pricing.amountCents;
-      });
-    }
-    const arr = mrr * 12;
-    const arrSeries = mrrSeries.map((v) => v * 12);
-
-    // Clients — active = owns at least one live project.
-    const activeClientIds = new Set(
-      projectRows.filter((p) => liveStatuses.has(p.status)).map((p) => p.userId)
-    );
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
-    const newClientsThisPeriod = clientRows.filter(
-      (c) => new Date(c.createdAt) >= thirtyDaysAgo
-    ).length;
-    const newClientsSeries = zeros();
-    for (const c of clientRows) {
-      const i = bucketIndex.get(monthKey(new Date(c.createdAt)));
-      if (i !== undefined) newClientsSeries[i]++;
-    }
-
     // LTV — recognized revenue per client, avg months retained as caption.
     const avgLtv =
       clientRows.length > 0 ? Math.round(totalRevenue / clientRows.length) : 0;
@@ -224,24 +173,6 @@ export async function GET() {
             0
           ) / clientRows.length
         : 0;
-
-    // Churn — clients who signed up but have no live projects and at least one
-    // cancelled one ("clients lost"), over all clients with projects.
-    const clientProjectStatuses = new Map<string, string[]>();
-    for (const p of projectRows) {
-      const list = clientProjectStatuses.get(p.userId) ?? [];
-      list.push(p.status);
-      clientProjectStatuses.set(p.userId, list);
-    }
-    let clientsLost = 0;
-    for (const [, statuses] of clientProjectStatuses) {
-      const anyLive = statuses.some((s) => liveStatuses.has(s));
-      const anyCancelled = statuses.includes("cancelled");
-      if (!anyLive && anyCancelled) clientsLost++;
-    }
-    const clientsWithProjects = clientProjectStatuses.size;
-    const churnRate =
-      clientsWithProjects > 0 ? clientsLost / clientsWithProjects : 0;
 
     // Top customers by completed spend.
     const spendByUser = new Map<string, number>();
@@ -266,31 +197,21 @@ export async function GET() {
       .slice(0, 5)
       .map(([name, total]) => ({ name, total }));
 
-    // Packages distribution — live projects by service package.
-    const packageCounts = new Map<string, number>();
-    for (const p of projectRows) {
-      if (!liveStatuses.has(p.status)) continue;
-      const label = getPricing(p.serviceType)?.label ?? p.serviceType;
-      packageCounts.set(label, (packageCounts.get(label) ?? 0) + 1);
-    }
-    const packagesDistribution = [...packageCounts.entries()].map(
-      ([label, count]) => ({ label, count })
-    );
-
-    // When the agency-client roster exists, it is the source of truth for
-    // recurring revenue, package mix, and churn — the project-derived numbers
-    // above only apply while the roster is empty.
-    let finalMrr = mrr;
-    let finalArr = arr;
-    let finalMrrSeries = mrrSeries;
-    let finalArrSeries = arrSeries;
-    let finalActiveClients = activeClientIds.size;
-    let finalChurnRate = churnRate;
-    let finalClientsLost = clientsLost;
-    let finalNewClientsSeries = newClientsSeries;
-    let finalNewClientsThisPeriod = newClientsThisPeriod;
-    let finalPackages = packagesDistribution;
+    // The agency-client roster is the ONLY source of truth for recurring
+    // revenue, package mix, client counts, and churn. No roster rows means
+    // zeros — never estimated numbers.
+    let finalMrr = 0;
+    let finalArr = 0;
+    let finalMrrSeries = zeros();
+    let finalArrSeries = zeros();
+    let finalActiveClients = 0;
+    let finalChurnRate = 0;
+    let finalClientsLost = 0;
+    let finalNewClientsSeries = zeros();
+    let finalNewClientsThisPeriod = 0;
+    let finalPackages: { label: string; count: number }[] = [];
     if (rosterRows.length > 0) {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
       const active = rosterRows.filter((c) => c.status === "active");
       finalMrr = active.reduce((s, c) => s + c.monthlyFee, 0);
       finalArr = finalMrr * 12;

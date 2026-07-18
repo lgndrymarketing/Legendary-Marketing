@@ -56,6 +56,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
   imageUrl: text("image_url"),
+  bio: text("bio"),
   // "client" | "admin" | "project_manager" | "va" — see lib/permissions.ts
   role: varchar("role", { length: 50 }).notNull().default("client"),
   // GoHighLevel contact sync (client-side users only)

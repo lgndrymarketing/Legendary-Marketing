@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CreditCard, Send, X, CheckCircle2 } from "lucide-react";
@@ -146,7 +147,7 @@ export default function ClientPaymentsPage() {
             variants={cascade}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+            className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
           >
             <motion.div variants={cascadeItem} className="px-5 py-6">
               <p className="micro-label">Your Plan</p>
@@ -203,6 +204,25 @@ export default function ClientPaymentsPage() {
               )}
             </motion.div>
           </motion.section>
+
+          {/* Trends — what you've paid, month by month */}
+          {history.length > 0 && (
+            <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+              <TrendCard
+                title="Amount Paid"
+                points={history.map((p) => ({
+                  date: p.paidAt,
+                  value: p.amount,
+                }))}
+                format={usd}
+              />
+              <TrendCard
+                title="Payments Made"
+                points={history.map((p) => ({ date: p.paidAt, value: 1 }))}
+                format={(v) => Math.round(v).toLocaleString("en-US")}
+              />
+            </section>
+          )}
 
           {/* History */}
           <section>
