@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHero, StatHeader } from "@/components/ui/firecrawl";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -10,9 +11,10 @@ import {
   ClientPaymentModal,
   type EditablePayment,
 } from "@/components/admin/client-payment-modal";
+import { ClientRoster } from "@/components/admin/client-roster";
 import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
-import { CreditCard, Plus, Pencil, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Pencil, Trash2, Users } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -80,19 +82,27 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-10">
       <PageHero
-        title="Payments"
-        description="Money collected from clients — setup fees and monthly retainers."
+        title="Clients & Payments"
+        description="Manage your agency retainers, setup fees, and client statuses."
         action={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Add Payment
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/admin/clients">
+                <Users className="mr-1.5 h-4 w-4" />
+                Add Client
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditing(null);
+                setModalOpen(true);
+              }}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add Payment
+            </Button>
+          </div>
         }
       />
 
@@ -120,6 +130,10 @@ export default function AdminPaymentsPage() {
           format={usd}
         />
       </div>
+
+      {/* Client roster — created on the Clients page, always in sync here.
+          Recording a payment from a row refreshes the ledger below. */}
+      <ClientRoster onChanged={load} />
 
       {/* Trends — monthly collections + volume */}
       {!loading && transactions.length > 0 && (
