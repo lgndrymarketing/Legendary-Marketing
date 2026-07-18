@@ -37,7 +37,7 @@ export async function GET() {
   try {
     await requireAdmin();
 
-    const [clients, portalUsers] = await Promise.all([
+    const [clients, portalUsers, admins] = await Promise.all([
       db
         .select({
           id: agencyClients.id,
@@ -68,9 +68,26 @@ export async function GET() {
         })
         .from(users)
         .where(eq(users.role, "client")),
+      db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.role, "admin"))
+        .orderBy(users.createdAt),
     ]);
 
-    return NextResponse.json({ clients, portalUsers });
+    return NextResponse.json({
+      clients,
+      portalUsers,
+      admins: admins.map((a) => ({
+        id: a.id,
+        name: a.firstName || a.email.split("@")[0],
+      })),
+    });
   } catch (error) {
     if (error instanceof NextResponse) return error;
     console.error("Clients fetch error:", error);

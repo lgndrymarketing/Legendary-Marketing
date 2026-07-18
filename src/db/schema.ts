@@ -449,6 +449,44 @@ export const agencyClients = pgTable("agency_clients", {
   index("idx_agency_clients_status").on(table.status),
 ]);
 
+// Client payments — money actually collected from agency clients (setup fees
+// and monthly retainers). Each payment carries who physically received it and
+// drives the partner ledger: net = amount - partnerCut, split 50/50, and the
+// receiver owes the other partner their half until the split is settled.
+export const clientPaymentTypeEnum = pgEnum("client_payment_type", [
+  "setup_fee",
+  "monthly_retainer",
+]);
+
+export const splitStatusEnum = pgEnum("split_status", ["pending", "settled"]);
+
+export const clientPayments = pgTable("client_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id")
+    .references(() => agencyClients.id, { onDelete: "cascade" })
+    .notNull(),
+  paymentType: clientPaymentTypeEnum("payment_type").notNull(),
+  method: varchar("method", { length: 50 }).notNull().default("zelle"),
+  // Cents. Snapshot of the fee at collection time (fees can change later).
+  amount: integer("amount").notNull(),
+  // Referral cut deducted before the 50/50 partner split, in cents.
+  partnerCut: integer("partner_cut").notNull().default(0),
+  receivedBy: uuid("received_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  splitStatus: splitStatusEnum("split_status").notNull().default("pending"),
+  settledAt: timestamp("settled_at"),
+  paidAt: timestamp("paid_at").defaultNow().notNull(),
+  notes: text("notes"),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_payments_client_id").on(table.clientId),
+  index("idx_client_payments_split_status").on(table.splitStatus),
+]);
+
 // Expenses — agency operating costs (SaaS subscriptions, team/contractor pay,
 // platform fees, ad spend). Feeds the Financials cost/profit metrics.
 export const expenseCategoryEnum = pgEnum("expense_category", [
@@ -539,3 +577,5 @@ export type PartnerLedgerEntry = typeof partnerLedgerEntries.$inferSelect;
 export type NewPartnerLedgerEntry = typeof partnerLedgerEntries.$inferInsert;
 export type AgencyClient = typeof agencyClients.$inferSelect;
 export type NewAgencyClient = typeof agencyClients.$inferInsert;
+export type ClientPayment = typeof clientPayments.$inferSelect;
+export type NewClientPayment = typeof clientPayments.$inferInsert;

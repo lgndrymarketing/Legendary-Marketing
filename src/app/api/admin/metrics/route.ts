@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, projects, payments, expenses, agencyClients } from "@/db/schema";
+import {
+  users,
+  projects,
+  payments,
+  expenses,
+  agencyClients,
+  clientPayments,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { getPricing } from "@/lib/pricing";
@@ -34,8 +41,14 @@ export async function GET() {
   try {
     await requireAdmin();
 
-    const [paymentRows, expenseRows, projectRows, clientRows, rosterRows] =
-      await Promise.all([
+    const [
+      paymentRows,
+      expenseRows,
+      projectRows,
+      clientRows,
+      rosterRows,
+      collectedRows,
+    ] = await Promise.all([
         db
           .select({
             amount: payments.amount,
@@ -78,6 +91,17 @@ export async function GET() {
             status: agencyClients.status,
           })
           .from(agencyClients),
+        db
+          .select({
+            amount: clientPayments.amount,
+            paidAt: clientPayments.paidAt,
+            companyName: agencyClients.companyName,
+          })
+          .from(clientPayments)
+          .leftJoin(
+            agencyClients,
+            eq(clientPayments.clientId, agencyClients.id)
+          ),
       ]);
 
     // Trailing month buckets, oldest → newest, current month last.
@@ -96,12 +120,19 @@ export async function GET() {
     const windowStart = buckets[0].start;
     const zeros = () => buckets.map(() => 0);
 
-    // Revenue — completed payments only.
+    // Revenue — completed project payments plus collected client payments
+    // (setup fees + retainers recorded on the roster).
     const completed = paymentRows.filter((p) => p.status === "completed");
-    const totalRevenue = completed.reduce((s, p) => s + p.amount, 0);
+    const totalRevenue =
+      completed.reduce((s, p) => s + p.amount, 0) +
+      collectedRows.reduce((s, p) => s + p.amount, 0);
     const revenueSeries = zeros();
     for (const p of completed) {
       const i = bucketIndex.get(monthKey(new Date(p.createdAt)));
+      if (i !== undefined) revenueSeries[i] += p.amount;
+    }
+    for (const p of collectedRows) {
+      const i = bucketIndex.get(monthKey(new Date(p.paidAt)));
       if (i !== undefined) revenueSeries[i] += p.amount;
     }
 
@@ -218,16 +249,22 @@ export async function GET() {
       spendByUser.set(p.userId, (spendByUser.get(p.userId) ?? 0) + p.amount);
     }
     const clientById = new Map(clientRows.map((c) => [c.id, c]));
-    const topCustomers = [...spendByUser.entries()]
+    const spendByName = new Map<string, number>();
+    for (const [userId, total] of spendByUser) {
+      const c = clientById.get(userId);
+      const name = c
+        ? [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email
+        : "Unknown";
+      spendByName.set(name, (spendByName.get(name) ?? 0) + total);
+    }
+    for (const p of collectedRows) {
+      const name = p.companyName ?? "Unknown";
+      spendByName.set(name, (spendByName.get(name) ?? 0) + p.amount);
+    }
+    const topCustomers = [...spendByName.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([userId, total]) => {
-        const c = clientById.get(userId);
-        const name = c
-          ? [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email
-          : "Unknown";
-        return { name, total };
-      });
+      .map(([name, total]) => ({ name, total }));
 
     // Packages distribution — live projects by service package.
     const packageCounts = new Map<string, number>();

@@ -21,6 +21,7 @@ import {
   Plug,
 } from "lucide-react";
 import { serviceLabels } from "@/lib/services";
+import { AreaChart } from "@/components/ui/charts";
 
 interface AdminStats {
   totalClients: number;
@@ -30,6 +31,30 @@ interface AdminStats {
   totalLeads: number;
   newLeads: number;
   totalRevenue: number;
+}
+
+interface Metrics {
+  totals: {
+    totalRevenue: number;
+    totalCosts: number;
+    profitMargin: number;
+    totalProfit: number;
+    mrr: number;
+    arr: number;
+    activeClients: number;
+    newClientsThisPeriod: number;
+    avgLtv: number;
+    avgMonthsRetained: number;
+    churnRate: number;
+    clientsLost: number;
+  };
+  months: string[];
+  series: {
+    revenue: number[];
+    costs: number[];
+    profit: number[];
+    mrr: number[];
+  };
 }
 
 interface ProjectRow {
@@ -75,6 +100,7 @@ export default function AdminDashboardPage() {
   // overview (their assigned projects) without the revenue/pipeline tiles.
   const [statsDenied, setStatsDenied] = useState(false);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -87,12 +113,15 @@ export default function AdminDashboardPage() {
         return res.ok ? res.json() : null;
       }),
       fetch("/api/projects").then((res) => (res.ok ? res.json() : [])),
+      // Financial command center — admin-only; PMs simply don't get the band.
+      fetch("/api/admin/metrics").then((res) => (res.ok ? res.json() : null)),
     ])
-      .then(([statsData, projectsData]) => {
+      .then(([statsData, projectsData, metricsData]) => {
         if (statsData && typeof statsData === "object" && !statsData.error) {
           setStats(statsData);
         }
         if (Array.isArray(projectsData)) setProjects(projectsData);
+        if (metricsData && !metricsData.error) setMetrics(metricsData);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -146,8 +175,135 @@ export default function AdminDashboardPage() {
         description="Your pulse across clients, campaigns, pipeline, and revenue."
       />
 
-      {/* Stats — hidden entirely for VAs (agency-wide numbers are admin/PM only) */}
-      {!statsDenied && (
+      {/* Financial command center — the agency P&L at a glance (admin only) */}
+      {metrics && (
+        <motion.section variants={cascade} initial="hidden" animate="visible">
+          <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+            {(() => {
+              const t = metrics.totals;
+              const pct = (f: number) => `${(f * 100).toFixed(1)}%`;
+              const tiles: {
+                label: string;
+                caption: string;
+                value: number;
+                format: (v: number) => string;
+                accent?: string;
+              }[] = [
+                {
+                  label: "Total Revenue",
+                  caption: "Setup + monthly fees",
+                  value: t.totalRevenue,
+                  format: formatCents,
+                },
+                {
+                  label: "Total Costs",
+                  caption: "SaaS, team, fees",
+                  value: t.totalCosts,
+                  format: formatCents,
+                  accent: "text-destructive",
+                },
+                {
+                  label: "Profit Margin",
+                  caption: `${formatCents(t.totalProfit)} profit`,
+                  value: t.profitMargin,
+                  format: pct,
+                  accent:
+                    t.totalProfit >= 0 ? "text-success" : "text-destructive",
+                },
+                {
+                  label: "Total MRR",
+                  caption: `ARR: ${formatCents(t.arr)}`,
+                  value: t.mrr,
+                  format: formatCents,
+                  accent: "text-orange",
+                },
+                {
+                  label: "Active Clients",
+                  caption: `+${t.newClientsThisPeriod} new this period`,
+                  value: t.activeClients,
+                  format: (v) => Math.round(v).toLocaleString("en-US"),
+                },
+                {
+                  label: "Avg LTV",
+                  caption: `~${t.avgMonthsRetained.toFixed(1)} months avg stay`,
+                  value: t.avgLtv,
+                  format: formatCents,
+                },
+                {
+                  label: "Churn Rate",
+                  caption: `${t.clientsLost} client${
+                    t.clientsLost === 1 ? "" : "s"
+                  } lost`,
+                  value: t.churnRate,
+                  format: pct,
+                  accent: t.churnRate > 0 ? "text-warning" : "text-success",
+                },
+                {
+                  label: "Unread Messages",
+                  caption: "Across all campaigns",
+                  value: stats?.unreadMessages ?? 0,
+                  format: (v) => Math.round(v).toLocaleString("en-US"),
+                },
+              ];
+              return tiles.map((tile, i) => (
+                <motion.div
+                  key={tile.label}
+                  variants={cascadeItem}
+                  className={cn(
+                    statCell(i),
+                    i >= 4 && "lg:border-t lg:border-border"
+                  )}
+                >
+                  <p className="micro-label">{tile.label}</p>
+                  <p
+                    className={cn(
+                      "mt-2 text-3xl font-bold tracking-tight",
+                      tile.accent
+                    )}
+                  >
+                    <CountUp value={tile.value} format={tile.format} />
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                    {tile.caption}
+                  </p>
+                </motion.div>
+              ));
+            })()}
+          </div>
+
+          <div className="grid grid-cols-1 gap-10 border-b border-border py-8 lg:grid-cols-2">
+            {(
+              [
+                { title: "Revenue", series: metrics.series.revenue },
+                { title: "Costs", series: metrics.series.costs },
+                { title: "Profit", series: metrics.series.profit },
+                { title: "MRR Trend", series: metrics.series.mrr },
+              ] as const
+            ).map((chart) => (
+              <div key={chart.title}>
+                <div className="flex items-baseline justify-between pb-3">
+                  <h3 className="text-[15px] font-semibold">{chart.title}</h3>
+                  <Link
+                    href="/admin/financials"
+                    className="font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:text-orange"
+                  >
+                    Financials →
+                  </Link>
+                </div>
+                <AreaChart
+                  points={[...chart.series]}
+                  xLabels={metrics.months.map((m) => m.split(" ")[0])}
+                  height={150}
+                  format={(v) => formatCents(v)}
+                />
+              </div>
+            ))}
+          </div>
+        </motion.section>
+      )}
+
+      {/* Stats — hidden for VAs; superseded by the financial band for admins */}
+      {!statsDenied && !metrics && (
         <motion.section variants={cascade} initial="hidden" animate="visible">
           <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
             {loading || !stats

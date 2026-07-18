@@ -27,6 +27,38 @@ const updateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
 
+/** DELETE /api/admin/clients/[id] — remove a client (payments cascade). Admin-only. */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await requireAdmin();
+
+    const { id } = await params;
+    if (!z.string().uuid().safeParse(id).success) {
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const [deleted] = await db
+      .delete(agencyClients)
+      .where(eq(agencyClients.id, id))
+      .returning({ id: agencyClients.id });
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof NextResponse) return error;
+    console.error("Client delete error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete client" },
+      { status: 500 }
+    );
+  }
+}
+
 /** PATCH /api/admin/clients/[id] — edit a client record. Admin-only. */
 export async function PATCH(
   request: Request,

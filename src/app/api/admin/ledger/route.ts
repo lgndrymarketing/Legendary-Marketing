@@ -1,53 +1,25 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import {
-  partnerLedgerEntries,
-  ledgerEntryTypeEnum,
-  users,
-  payments,
-} from "@/db/schema";
-import { desc, eq, inArray } from "drizzle-orm";
+import { agencyClients, clientPayments, users } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
-import { z } from "zod";
 
 /**
- * Partner ledger — profit splits between the agency's admins. Admin-only.
- * GET  /api/admin/ledger — entries (newest first), per-partner balances, and
- *                          the list of partners (admin users) for the form.
- * POST /api/admin/ledger — record a credit (profit share allocated) or a
- *                          payout (money actually sent). Amount in cents.
+ * GET /api/admin/ledger — the partner ledger, computed from collected client
+ * payments. Admin-only.
+ *
+ * Model: net = amount - partnerCut (referral cut leaves before the split);
+ * each partner earns net/2 on every payment. The receiver holds the other
+ * partner's half until the split is marked settled, so:
+ *   net balance = Σ over PENDING payments of (other partner's half),
+ * signed by who received the money. Assumes the two-admin partnership the
+ * agency actually runs; with 3+ admins the first two by creation are used.
  */
-
-const entrySchema = z.object({
-  partnerId: z.string().uuid(),
-  entryType: z.enum(ledgerEntryTypeEnum.enumValues),
-  amount: z.number().int().positive(),
-  description: z.string().max(2000).optional(),
-  paymentId: z.string().uuid().optional(),
-});
-
 export async function GET() {
   try {
     await requireAdmin();
 
-    const [entries, partners] = await Promise.all([
-      db
-        .select({
-          id: partnerLedgerEntries.id,
-          partnerId: partnerLedgerEntries.partnerId,
-          entryType: partnerLedgerEntries.entryType,
-          amount: partnerLedgerEntries.amount,
-          description: partnerLedgerEntries.description,
-          paymentId: partnerLedgerEntries.paymentId,
-          createdAt: partnerLedgerEntries.createdAt,
-          partnerFirstName: users.firstName,
-          partnerLastName: users.lastName,
-          partnerEmail: users.email,
-        })
-        .from(partnerLedgerEntries)
-        .leftJoin(users, eq(partnerLedgerEntries.partnerId, users.id))
-        .orderBy(desc(partnerLedgerEntries.createdAt))
-        .limit(500),
+    const [admins, rows] = await Promise.all([
       db
         .select({
           id: users.id,
@@ -56,99 +28,79 @@ export async function GET() {
           email: users.email,
         })
         .from(users)
-        .where(inArray(users.role, ["admin", "project_manager"])),
+        .where(eq(users.role, "admin"))
+        .orderBy(users.createdAt),
+      db
+        .select({
+          id: clientPayments.id,
+          clientId: clientPayments.clientId,
+          companyName: agencyClients.companyName,
+          paymentType: clientPayments.paymentType,
+          method: clientPayments.method,
+          amount: clientPayments.amount,
+          partnerCut: clientPayments.partnerCut,
+          receivedBy: clientPayments.receivedBy,
+          splitStatus: clientPayments.splitStatus,
+          paidAt: clientPayments.paidAt,
+          notes: clientPayments.notes,
+        })
+        .from(clientPayments)
+        .leftJoin(agencyClients, eq(clientPayments.clientId, agencyClients.id))
+        .orderBy(desc(clientPayments.paidAt))
+        .limit(500),
     ]);
 
-    // Per-partner balances from the full entry set.
-    const balances = new Map<
-      string,
-      { credited: number; paidOut: number }
-    >();
-    for (const e of entries) {
-      const b = balances.get(e.partnerId) ?? { credited: 0, paidOut: 0 };
-      if (e.entryType === "credit") b.credited += e.amount;
-      else b.paidOut += e.amount;
-      balances.set(e.partnerId, b);
-    }
-
-    const partnerName = (p: {
+    const name = (a: {
       firstName: string | null;
       lastName: string | null;
       email: string;
-    }) => [p.firstName, p.lastName].filter(Boolean).join(" ") || p.email;
+    }) => a.firstName || a.email.split("@")[0];
+
+    const partners = admins.map((a) => ({ id: a.id, name: name(a) }));
+    const [p1, p2] = partners;
+
+    const transactions = rows.map((r) => {
+      const net = r.amount - r.partnerCut;
+      const half = Math.round(net / 2);
+      const receiver = partners.find((p) => p.id === r.receivedBy);
+      const other = partners.find((p) => p.id !== r.receivedBy);
+      return {
+        ...r,
+        receivedByName: receiver?.name ?? "—",
+        otherPartnerName: other?.name ?? "—",
+        otherPartnerCut: half,
+      };
+    });
+
+    // Earnings: each partner earns half of every net, regardless of receiver.
+    const totalNet = rows.reduce((s, r) => s + (r.amount - r.partnerCut), 0);
+    const perPartnerEarned = Math.round(totalNet / 2);
+
+    // Net balance from pending splits only.
+    let balance = 0; // positive → p1 received extra, owes p2
+    for (const r of rows) {
+      if (r.splitStatus !== "pending") continue;
+      const half = Math.round((r.amount - r.partnerCut) / 2);
+      if (r.receivedBy === p1?.id) balance += half;
+      else if (r.receivedBy === p2?.id) balance -= half;
+    }
+    const netBalance =
+      !p1 || !p2 || balance === 0
+        ? null
+        : balance > 0
+        ? { from: p1.name, to: p2.name, amount: balance }
+        : { from: p2.name, to: p1.name, amount: -balance };
 
     return NextResponse.json({
-      entries,
-      partners: partners.map((p) => ({
-        id: p.id,
-        name: partnerName(p),
-        email: p.email,
-        credited: balances.get(p.id)?.credited ?? 0,
-        paidOut: balances.get(p.id)?.paidOut ?? 0,
-        balance:
-          (balances.get(p.id)?.credited ?? 0) -
-          (balances.get(p.id)?.paidOut ?? 0),
-      })),
+      partners: partners.map((p) => ({ ...p, earned: perPartnerEarned })),
+      netBalance,
+      transactions,
     });
   } catch (error) {
     if (error instanceof NextResponse) return error;
     console.error("Ledger fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch ledger" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const admin = await requireAdmin();
-
-    const parsed = entrySchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid entry", details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
-    const { partnerId, paymentId } = parsed.data;
-
-    // The partner must be a staff partner (admin or PM), not a client.
-    const [partner] = await db
-      .select({ id: users.id, role: users.role })
-      .from(users)
-      .where(eq(users.id, partnerId));
-    if (!partner || !["admin", "project_manager"].includes(partner.role)) {
-      return NextResponse.json(
-        { error: "Partner must be an admin or project manager" },
-        { status: 400 }
-      );
-    }
-
-    if (paymentId) {
-      const [payment] = await db
-        .select({ id: payments.id })
-        .from(payments)
-        .where(eq(payments.id, paymentId));
-      if (!payment) {
-        return NextResponse.json(
-          { error: "Linked payment not found" },
-          { status: 400 }
-        );
-      }
-    }
-
-    const [created] = await db
-      .insert(partnerLedgerEntries)
-      .values({ ...parsed.data, createdBy: admin.id })
-      .returning();
-
-    return NextResponse.json(created, { status: 201 });
-  } catch (error) {
-    if (error instanceof NextResponse) return error;
-    console.error("Ledger create error:", error);
-    return NextResponse.json(
-      { error: "Failed to create entry" },
       { status: 500 }
     );
   }

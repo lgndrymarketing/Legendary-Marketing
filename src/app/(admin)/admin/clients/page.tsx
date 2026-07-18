@@ -9,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { Users, Plus, Pencil, X } from "lucide-react";
+import {
+  Users,
+  Plus,
+  Pencil,
+  X,
+  Trash2,
+  CircleDollarSign,
+  Search,
+} from "lucide-react";
 
 interface ClientRow {
   id: string;
@@ -34,6 +42,29 @@ interface PortalUser {
   email: string;
   firstName: string | null;
   lastName: string | null;
+}
+
+interface AdminOption {
+  id: string;
+  name: string;
+}
+
+const PAYMENT_METHODS = [
+  "Zelle",
+  "CashApp",
+  "Venmo",
+  "Wire",
+  "Card",
+  "Cash",
+  "Other",
+];
+
+/** Whole days until the due date; negative = overdue. */
+function daysLeft(due: string | null): number | null {
+  if (!due) return null;
+  return Math.ceil(
+    (new Date(due).getTime() - Date.now()) / 86_400_000
+  );
 }
 
 const BUSINESS_TYPES = [
@@ -120,6 +151,15 @@ export default function AdminClientsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [admins, setAdmins] = useState<AdminOption[]>([]);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFor, setPaymentFor] = useState<ClientRow | null>(null);
+  const [payForm, setPayForm] = useState({
+    paymentType: "monthly_retainer",
+    method: "Zelle",
+    receivedBy: "",
+  });
 
   const load = useCallback(() => {
     fetch("/api/admin/clients")
@@ -128,6 +168,7 @@ export default function AdminClientsPage() {
         if (data && Array.isArray(data.clients)) {
           setClients(data.clients);
           setPortalUsers(data.portalUsers ?? []);
+          setAdmins(data.admins ?? []);
         }
       })
       .catch(() => {})
@@ -223,6 +264,68 @@ export default function AdminClientsPage() {
     }
   }
 
+  async function recordPayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!paymentFor) return;
+    setError(null);
+    if (!payForm.receivedBy) {
+      setError("Pick who received the payment.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/clients/${paymentFor.id}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payForm),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "failed");
+      }
+      setPaymentFor(null);
+      load();
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message !== "failed"
+          ? err.message
+          : "Could not record the payment — try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeClient(c: ClientRow) {
+    if (
+      !window.confirm(
+        `Delete ${c.companyName}? Their payment history goes with them.`
+      )
+    )
+      return;
+    await fetch(`/api/admin/clients/${c.id}`, { method: "DELETE" });
+    load();
+  }
+
+  const visible = clients.filter((c) => {
+    const q = query.trim().toLowerCase();
+    const matchesQuery =
+      !q ||
+      c.companyName.toLowerCase().includes(q) ||
+      c.contactName.toLowerCase().includes(q);
+    const dl = daysLeft(c.nextDueDate);
+    const isOverdue = c.status === "active" && dl !== null && dl < 0;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "overdue" ? isOverdue : c.status === statusFilter);
+    return matchesQuery && matchesStatus;
+  });
+
+  const setupTotal = visible.reduce((s, c) => s + c.setupFee, 0);
+  const mrrTotal = visible
+    .filter((c) => c.status === "active")
+    .reduce((s, c) => s + c.monthlyFee, 0);
+
   return (
     <div className="space-y-10">
       <PageHero
@@ -237,7 +340,31 @@ export default function AdminClientsPage() {
       />
 
       <section>
-        <BracketLabel n={clients.length} label="CLIENTS" className="pb-4" />
+        <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <BracketLabel n={visible.length} label="CLIENTS" />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-9 w-56 rounded-full pl-9"
+                placeholder="Search clients or companies…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <select
+              className="h-9 rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="overdue">Overdue</option>
+              <option value="paused">Paused</option>
+              <option value="churned">Churned</option>
+            </select>
+          </div>
+        </div>
         {loading ? (
           <TableSkeleton rows={5} />
         ) : clients.length === 0 ? (
@@ -250,15 +377,26 @@ export default function AdminClientsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="micro-label py-3 pr-4">Company</th>
-                  <th className="micro-label py-3 pr-4">Contact</th>
+                <tr className="border-b border-border text-left align-top">
+                  <th className="micro-label py-3 pr-4">Client &amp; Company</th>
                   <th className="micro-label py-3 pr-4">Package</th>
-                  <th className="micro-label py-3 pr-4">Monthly</th>
-                  <th className="micro-label py-3 pr-4">Setup</th>
-                  <th className="micro-label py-3 pr-4">Status</th>
+                  <th className="py-3 pr-4">
+                    <span className="micro-label block">Setup</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {usd(setupTotal)}
+                    </span>
+                  </th>
+                  <th className="py-3 pr-4">
+                    <span className="micro-label block">MRR</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {usd(mrrTotal)}
+                    </span>
+                  </th>
+                  <th className="micro-label py-3 pr-4">Start Date</th>
                   <th className="micro-label py-3 pr-4">Next Due</th>
-                  <th className="py-3" />
+                  <th className="micro-label py-3 pr-4">Days Left</th>
+                  <th className="micro-label py-3 pr-4">Status</th>
+                  <th className="micro-label py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <motion.tbody
@@ -267,7 +405,11 @@ export default function AdminClientsPage() {
                 animate="visible"
                 className="divide-y divide-border"
               >
-                {clients.map((client) => (
+                {visible.map((client) => {
+                  const dl = daysLeft(client.nextDueDate);
+                  const isOverdue =
+                    client.status === "active" && dl !== null && dl < 0;
+                  return (
                   <motion.tr
                     key={client.id}
                     variants={rowItem}
@@ -275,14 +417,14 @@ export default function AdminClientsPage() {
                   >
                     <td className="py-3 pr-4">
                       <p className="font-medium">{client.companyName}</p>
-                      {client.portalEmail && (
+                      <p className="text-xs text-muted-foreground">
+                        {client.contactName}
+                      </p>
+                      {client.businessType && (
                         <p className="font-mono text-[10px] text-muted-foreground">
-                          {client.portalEmail}
+                          {client.businessType}
                         </p>
                       )}
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground">
-                      {client.contactName}
                     </td>
                     <td className="py-3 pr-4">
                       <span
@@ -296,47 +438,219 @@ export default function AdminClientsPage() {
                           : client.package}
                       </span>
                     </td>
+                    <td className="py-3 pr-4 font-mono text-muted-foreground">
+                      {usd(client.setupFee)}
+                    </td>
                     <td className="py-3 pr-4 font-mono font-semibold">
                       {usd(client.monthlyFee)}
                       <span className="font-normal text-muted-foreground">/mo</span>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-muted-foreground">
-                      {usd(client.setupFee)}
+                    <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(client.startDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td
+                      className={cn(
+                        "py-3 pr-4 font-mono text-xs whitespace-nowrap",
+                        isOverdue
+                          ? "font-semibold text-destructive"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {client.nextDueDate
+                        ? new Date(client.nextDueDate).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", year: "numeric" }
+                          )
+                        : "—"}
+                    </td>
+                    <td
+                      className={cn(
+                        "py-3 pr-4 font-mono text-xs whitespace-nowrap",
+                        isOverdue
+                          ? "font-semibold text-destructive"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {dl === null
+                        ? "—"
+                        : dl < 0
+                        ? `${-dl} day${dl === -1 ? "" : "s"} overdue`
+                        : `${dl} days`}
                     </td>
                     <td className="py-3 pr-4">
                       <span
                         className={cn(
                           "font-mono text-[11px] font-semibold uppercase tracking-wide",
-                          statusClass(client.status)
+                          isOverdue ? "text-destructive" : statusClass(client.status)
                         )}
                       >
-                        {client.status}
+                        {isOverdue ? "Overdue" : client.status}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                      {client.nextDueDate
-                        ? new Date(client.nextDueDate).toLocaleDateString(
-                            "en-US",
-                            { month: "short", day: "numeric" }
-                          )
-                        : "—"}
-                    </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => {
+                          setPaymentFor(client);
+                          setPayForm({
+                            paymentType: "monthly_retainer",
+                            method: "Zelle",
+                            receivedBy: admins[0]?.id ?? "",
+                          });
+                          setError(null);
+                        }}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-success/10 hover:text-success cursor-pointer"
+                        aria-label={`Record payment for ${client.companyName}`}
+                        title="Record payment"
+                      >
+                        <CircleDollarSign className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => openEdit(client)}
-                        className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 cursor-pointer"
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
                         aria-label={`Edit ${client.companyName}`}
+                        title="Edit"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
+                      <button
+                        onClick={() => removeClient(client)}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                        aria-label={`Delete ${client.companyName}`}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </motion.tr>
-                ))}
+                  );
+                })}
               </motion.tbody>
             </table>
           </div>
         )}
       </section>
+
+      {/* Record payment modal */}
+      <AnimatePresence>
+        {paymentFor && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setPaymentFor(null)}
+            />
+            <motion.form
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              onSubmit={recordPayment}
+              className="relative w-full max-w-lg rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
+            >
+              <div className="flex items-start justify-between pb-1">
+                <h2 className="text-xl font-bold tracking-tight">
+                  Record Payment
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setPaymentFor(null)}
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="pb-6 font-mono text-[11px] text-muted-foreground">
+                {paymentFor.companyName} ·{" "}
+                {payForm.paymentType === "setup_fee"
+                  ? `${usd(paymentFor.setupFee)} setup fee`
+                  : `${usd(paymentFor.monthlyFee)} monthly retainer`}
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Payment Type">
+                  <select
+                    className={selectClass}
+                    value={payForm.paymentType}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, paymentType: e.target.value })
+                    }
+                  >
+                    <option value="setup_fee">Setup Fee</option>
+                    <option value="monthly_retainer">Monthly Retainer</option>
+                  </select>
+                </Field>
+                <Field label="Payment Method">
+                  <select
+                    className={selectClass}
+                    value={payForm.method}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, method: e.target.value })
+                    }
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+
+              <div className="mt-4">
+                <Field label="Received By">
+                  <select
+                    className={selectClass}
+                    value={payForm.receivedBy}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, receivedBy: e.target.value })
+                    }
+                  >
+                    <option value="">Select partner…</option>
+                    {admins.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                  Who received this payment directly? The split lands on the
+                  Partner Ledger.
+                </p>
+              </div>
+
+              {payForm.paymentType === "monthly_retainer" && (
+                <p className="mt-4 font-mono text-[10px] text-muted-foreground">
+                  Recording a retainer moves the next due date one month out.
+                </p>
+              )}
+
+              {error && (
+                <p className="mt-4 text-sm text-destructive">{error}</p>
+              )}
+
+              <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPaymentFor(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving…" : "Confirm Payment"}
+                </Button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add / edit modal */}
       <AnimatePresence>
