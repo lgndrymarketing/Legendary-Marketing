@@ -413,6 +413,7 @@ export const clientPackageEnum = pgEnum("client_package", [
   "silver",
   "gold",
   "diamond",
+  "rev_split",
   "custom",
 ]);
 
@@ -420,6 +421,38 @@ export const clientStatusEnum = pgEnum("client_status", [
   "active",
   "paused",
   "churned",
+]);
+
+// The 12-stage launch pipeline that governs the client journey. Drives the
+// Kanban board columns on the Client CRM and each client's onboarding
+// checklist. Order matters — stage auto-progression walks it top to bottom.
+export const crmStageEnum = pgEnum("crm_stage", [
+  "onboarding_form",
+  "onboarding_guide",
+  "crm_access",
+  "funnel_build_out",
+  "automations_build_out",
+  "a2p_submitted",
+  "a2p_verified",
+  "ad_creatives",
+  "launch_form_submitted",
+  "launch_call_completed",
+  "ads_campaign_build_out",
+  "ads_launched",
+]);
+
+// The four departments work is routed to on the onboarding checklist.
+export const departmentEnum = pgEnum("department", [
+  "csm",
+  "funnel",
+  "automations",
+  "ads",
+]);
+
+export const clientTaskStatusEnum = pgEnum("client_task_status", [
+  "pending",
+  "in_progress",
+  "completed",
 ]);
 
 export const agencyClients = pgTable("agency_clients", {
@@ -438,6 +471,15 @@ export const agencyClients = pgTable("agency_clients", {
   startDate: timestamp("start_date").defaultNow().notNull(),
   nextDueDate: timestamp("next_due_date"),
   status: clientStatusEnum("status").notNull().default("active"),
+  // Current position in the 12-stage launch pipeline (Client CRM board).
+  stage: crmStageEnum("stage").notNull().default("onboarding_form"),
+  // SaaS plan the client is on (free-form, separate from their package tier).
+  saasPlan: varchar("saas_plan", { length: 100 }),
+  // Login email for the portal invite (kept even before the account exists).
+  email: varchar("email", { length: 255 }),
+  // Shared asset links surfaced on the client portal.
+  driveUrl: text("drive_url"),
+  landingPageUrl: text("landing_page_url"),
   // Optional link to the client's portal login.
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
   notes: text("notes"),
@@ -448,6 +490,35 @@ export const agencyClients = pgTable("agency_clients", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_agency_clients_status").on(table.status),
+]);
+
+// Onboarding checklist tasks per client — the 15 default steps (auto-created
+// on client creation and routed to the four departments) plus any custom
+// tasks. Completing tasks auto-advances the client's pipeline stage.
+export const clientTasks = pgTable("client_tasks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id")
+    .references(() => agencyClients.id, { onDelete: "cascade" })
+    .notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  department: departmentEnum("department"),
+  // Which pipeline stage this task belongs to (null for ad-hoc custom tasks).
+  stage: crmStageEnum("stage"),
+  status: clientTaskStatusEnum("status").notNull().default("pending"),
+  // Denormalized assignee name so the checklist reads correctly even if the
+  // staff account is later removed; assigneeId is the live link.
+  assigneeId: uuid("assignee_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  assigneeName: varchar("assignee_name", { length: 255 }),
+  order: integer("order").notNull().default(0),
+  dueDate: timestamp("due_date"),
+  // Private admin notes the client never sees.
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_tasks_client_id").on(table.clientId),
 ]);
 
 // Client payments — money actually collected from agency clients (setup fees
