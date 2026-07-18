@@ -59,6 +59,8 @@ export const users = pgTable("users", {
   bio: text("bio"),
   // "client" | "admin" | "project_manager" | "va" — see lib/permissions.ts
   role: varchar("role", { length: 50 }).notNull().default("client"),
+  // Team department for staff — "csm" | "funnel" | "automations" | "ads".
+  department: varchar("department", { length: 50 }),
   // GoHighLevel contact sync (client-side users only)
   ghlContactId: varchar("ghl_contact_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),

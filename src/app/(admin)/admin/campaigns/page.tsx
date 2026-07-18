@@ -8,7 +8,6 @@ import { projects, users, projectPhases } from "@/db/schema";
 import { eq, inArray, desc, and } from "drizzle-orm";
 import { getAuthenticatedUser, getAccessibleProjectIds } from "@/lib/auth-utils";
 import { serviceLabels } from "@/lib/services";
-import { NewAdminCampaignButton } from "@/components/admin/new-campaign-admin";
 
 const statusLabels: Record<string, string> = {
   onboarding: "Onboarding",
@@ -81,7 +80,6 @@ export default async function AdminProjectsPage() {
       <PageHero
         title="Campaigns"
         description="Manage all client campaigns and update phases."
-        action={<NewAdminCampaignButton />}
       />
 
       <section>

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, agencyClients } from "@/db/schema";
+import { and, eq, isNull, like } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isGhlConfigured, syncContactToGhl } from "@/lib/ghl";
 
@@ -71,29 +71,70 @@ export async function POST(req: Request) {
       const firstName = data.first_name as string | undefined;
       const lastName = data.last_name as string | undefined;
 
-      // Idempotent: svix retries the same event, so upsert on the unique
-      // clerkId instead of a bare insert (which would 500 and retry-loop).
-      const [created] = await db
-        .insert(users)
-        .values({
-          clerkId: data.id as string,
-          email,
-          firstName,
-          lastName,
-          imageUrl: data.image_url as string | undefined,
-          role: "client",
-        })
-        .onConflictDoUpdate({
-          target: users.clerkId,
-          set: {
-            email,
+      // Reconcile an invited placeholder account: team members (and any
+      // pre-provisioned user) are seeded with a clerkId of "invite:<email>".
+      // When they accept the Clerk invite and sign up, swap in the real
+      // clerkId on that same row so their role/department are preserved
+      // instead of creating a duplicate client row.
+      let created;
+      const [placeholder] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(
+            eq(users.email, email),
+            like(users.clerkId, "invite:%")
+          )
+        );
+      if (placeholder) {
+        [created] = await db
+          .update(users)
+          .set({
+            clerkId: data.id as string,
             firstName,
             lastName,
             imageUrl: data.image_url as string | undefined,
             updatedAt: new Date(),
-          },
-        })
-        .returning();
+          })
+          .where(eq(users.id, placeholder.id))
+          .returning();
+      } else {
+        // Idempotent: svix retries the same event, so upsert on the unique
+        // clerkId instead of a bare insert (which would 500 and retry-loop).
+        [created] = await db
+          .insert(users)
+          .values({
+            clerkId: data.id as string,
+            email,
+            firstName,
+            lastName,
+            imageUrl: data.image_url as string | undefined,
+            role: "client",
+          })
+          .onConflictDoUpdate({
+            target: users.clerkId,
+            set: {
+              email,
+              firstName,
+              lastName,
+              imageUrl: data.image_url as string | undefined,
+              updatedAt: new Date(),
+            },
+          })
+          .returning();
+      }
+
+      // Link the client's CRM roster record (created from the admin invite)
+      // to their new portal account by email, so their onboarding pipeline
+      // shows up on their dashboard.
+      if (email) {
+        await db
+          .update(agencyClients)
+          .set({ userId: created.id, updatedAt: new Date() })
+          .where(
+            and(eq(agencyClients.email, email), isNull(agencyClients.userId))
+          );
+      }
 
       // GHL is the agency's CRM of record — mirror every new portal signup
       // as a GHL contact. Best-effort: a GHL failure must never fail the
