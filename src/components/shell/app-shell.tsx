@@ -169,7 +169,7 @@ export function AppShell({
         </button>
       </motion.aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile navigation — bottom sheet */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-[100] lg:hidden">
@@ -181,24 +181,54 @@ export function AppShell({
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              initial={{ x: -260 }}
-              animate={{ x: 0 }}
-              exit={{ x: -260 }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
               transition={springSnappy}
-              className="absolute inset-y-0 left-0 flex w-[240px] flex-col border-r border-border bg-sidebar"
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 80 || info.velocity.y > 500) {
+                  setMobileOpen(false);
+                }
+              }}
+              className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl border-t border-border/60 bg-white shadow-[0_-8px_40px_-12px_rgba(15,16,16,0.25)] dark:bg-sidebar"
+              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
-              <SidebarBody
-                navItems={navItems}
-                collapsed={false}
-                accountEmail={accountEmail}
-                onNavigate={() => setMobileOpen(false)}
-              />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground cursor-pointer"
-              >
-                <X className="h-4 w-4" /> Close
-              </button>
+              {/* Grab handle */}
+              <div className="flex justify-center pb-1 pt-3">
+                <span className="h-1.5 w-10 rounded-full bg-border" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-2 pt-1">
+                <Logo size={30} />
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted cursor-pointer"
+                  aria-label="Close navigation"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Nav */}
+              <nav className="grid grid-cols-2 gap-2 overflow-y-auto p-4">
+                {navItems.map((item) => (
+                  <SheetNavLink
+                    key={item.href}
+                    item={item}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ))}
+              </nav>
+
+              {accountEmail && (
+                <p className="truncate border-t border-border px-5 py-3 text-center text-xs text-muted-foreground">
+                  {accountEmail}
+                </p>
+              )}
             </motion.aside>
           </div>
         )}
@@ -254,6 +284,36 @@ export function AppShell({
         </nav>
       </div>
     </div>
+  );
+}
+
+/** Bottom-sheet tile — icon + label card, orange when active. */
+function SheetNavLink({
+  item,
+  onNavigate,
+}: {
+  item: ShellNavItem;
+  onNavigate: () => void;
+}) {
+  const pathname = usePathname();
+  const isActive = item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + "/");
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium transition-colors",
+        isActive
+          ? "border-orange/30 bg-orange/10 text-orange"
+          : "border-border text-foreground hover:bg-muted/70"
+      )}
+    >
+      <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
+      <span className="truncate">{item.label}</span>
+    </Link>
   );
 }
 
