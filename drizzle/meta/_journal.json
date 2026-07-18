@@ -8,6 +8,27 @@
       "when": 1784308415175,
       "tag": "0000_smart_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784337347261,
+      "tag": "0001_lean_namor",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784339965779,
+      "tag": "0002_brown_crusher_hogan",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784391887764,
+      "tag": "0003_natural_venom",
+      "breakpoints": true
     }
   ]
 }

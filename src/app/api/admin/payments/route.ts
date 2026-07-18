@@ -3,6 +3,17 @@ import { db } from "@/db";
 import { payments, projects, users } from "@/db/schema";
 import { desc, eq, sum } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
+import { z } from "zod";
+
+const PAYMENT_STATUSES = ["completed", "pending", "failed", "refunded"] as const;
+
+const createPaymentSchema = z.object({
+  projectId: z.string().uuid(),
+  // Cents, positive.
+  amount: z.number().int().positive(),
+  status: z.enum(PAYMENT_STATUSES).default("completed"),
+  notes: z.string().max(2000).optional(),
+});
 
 /**
  * GET /api/admin/payments — billing history for the agency. Admin-only.
@@ -24,6 +35,7 @@ export async function GET() {
         currency: payments.currency,
         status: payments.status,
         source: payments.source,
+        notes: payments.notes,
         createdAt: payments.createdAt,
         projectId: payments.projectId,
         projectName: projects.name,
@@ -67,6 +79,54 @@ export async function GET() {
     console.error("Admin payments error:", error);
     return NextResponse.json(
       { error: "Failed to fetch payments" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/admin/payments — record a payment manually (admin-only).
+ * The client is derived from the chosen project's owner; source = "portal".
+ */
+export async function POST(request: Request) {
+  try {
+    await requireAdmin();
+
+    const parsed = createPaymentSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payment", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { projectId, amount, status, notes } = parsed.data;
+
+    const [project] = await db
+      .select({ id: projects.id, userId: projects.userId })
+      .from(projects)
+      .where(eq(projects.id, projectId));
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 400 });
+    }
+
+    const [created] = await db
+      .insert(payments)
+      .values({
+        projectId,
+        userId: project.userId,
+        amount,
+        status,
+        notes,
+        source: "portal",
+      })
+      .returning();
+
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    if (error instanceof NextResponse) return error;
+    console.error("Payment create error:", error);
+    return NextResponse.json(
+      { error: "Failed to create payment" },
       { status: 500 }
     );
   }

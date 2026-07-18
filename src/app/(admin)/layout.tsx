@@ -40,11 +40,14 @@ export default async function AdminLayout({
     ...(canManageLeads(user.role)
       ? [{ label: "Leads", href: "/admin/leads", icon: "Inbox" }]
       : []),
-    { label: "Projects", href: "/admin/projects", icon: "FolderKanban" },
+    { label: "Campaigns", href: "/admin/campaigns", icon: "FolderKanban" },
     { label: "Messages", href: "/admin/messages", icon: "MessageSquare" },
     ...(canManageAgency(user.role)
       ? [
+          { label: "Financials", href: "/admin/financials", icon: "BarChart3" },
           { label: "Payments", href: "/admin/payments", icon: "CreditCard" },
+          { label: "Expenses", href: "/admin/expenses", icon: "Receipt" },
+          { label: "Partner Ledger", href: "/admin/ledger", icon: "HandCoins" },
           { label: "Team", href: "/admin/team", icon: "UserCog" },
           { label: "Integrations", href: "/admin/integrations", icon: "Plug" },
         ]

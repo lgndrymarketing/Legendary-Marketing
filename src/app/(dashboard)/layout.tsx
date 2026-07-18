@@ -3,7 +3,7 @@ import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 
 const navItems: ShellNavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-  { label: "Projects", href: "/projects", icon: "FolderKanban" },
+  { label: "Campaigns", href: "/campaigns", icon: "FolderKanban" },
   { label: "Messages", href: "/messages", icon: "MessageSquare" },
   { label: "Analytics", href: "/analytics", icon: "BarChart3" },
   { label: "Notifications", href: "/notifications", icon: "Bell" },
@@ -20,7 +20,7 @@ export default async function DashboardLayout({
   return (
     <AppShell
       navItems={navItems}
-      cta={{ label: "New Project", href: "/onboarding" }}
+      cta={{ label: "New Campaign", href: "/onboarding" }}
       accountEmail={user?.emailAddresses[0]?.emailAddress}
     >
       {children}

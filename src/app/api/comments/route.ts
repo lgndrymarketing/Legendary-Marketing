@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         type: "comment_added",
         title: "New comment on your project",
         body: content.slice(0, 140),
-        actionUrl: `/projects/${projectId}`,
+        actionUrl: `/campaigns/${projectId}`,
       });
     }
 

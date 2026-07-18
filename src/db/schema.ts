@@ -129,14 +129,17 @@ export const payments = pgTable("payments", {
   userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  // Legacy column from the retired Creem checkout flow — kept for old rows.
   creemPaymentId: varchar("creem_payment_id", { length: 255 }).unique(),
   amount: integer("amount").notNull(),
   currency: varchar("currency", { length: 10 }).notNull().default("usd"),
   status: varchar("status", { length: 50 }).notNull().default("pending"),
-  // Where this payment record originated — the project checkout flow (Creem)
-  // or synced in from the agency's GoHighLevel invoicing/CRM.
-  source: varchar("source", { length: 20 }).notNull().default("creem"),
+  // Where this payment record originated — synced from the agency's
+  // GoHighLevel invoicing/CRM ("ghl") or recorded in the portal.
+  source: varchar("source", { length: 20 }).notNull().default("ghl"),
   ghlPaymentId: varchar("ghl_payment_id", { length: 255 }),
+  // Free-form admin notes ("wire ref 4421", "50% deposit", …).
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -400,6 +403,68 @@ export const tasks = pgTable("tasks", {
   index("idx_tasks_assignee_id").on(table.assigneeId),
 ]);
 
+// Expenses — agency operating costs (SaaS subscriptions, team/contractor pay,
+// platform fees, ad spend). Feeds the Financials cost/profit metrics.
+export const expenseCategoryEnum = pgEnum("expense_category", [
+  "saas",
+  "team",
+  "fees",
+  "ads",
+  "other",
+]);
+
+export const expenseCadenceEnum = pgEnum("expense_cadence", [
+  "one_time",
+  "monthly",
+]);
+
+export const expenses = pgTable("expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: expenseCategoryEnum("category").notNull().default("other"),
+  // Money in cents. Monthly-cadence expenses recur every month from incurredAt.
+  amount: integer("amount").notNull(),
+  cadence: expenseCadenceEnum("cadence").notNull().default("one_time"),
+  incurredAt: timestamp("incurred_at").defaultNow().notNull(),
+  notes: text("notes"),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_expenses_incurred_at").on(table.incurredAt),
+]);
+
+// Partner ledger — tracks profit splits between the agency's admins.
+// "credit" allocates a share of profit to a partner; "payout" records money
+// actually paid out to them. Balance = sum(credits) - sum(payouts).
+export const ledgerEntryTypeEnum = pgEnum("ledger_entry_type", [
+  "credit",
+  "payout",
+]);
+
+export const partnerLedgerEntries = pgTable("partner_ledger_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  partnerId: uuid("partner_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  entryType: ledgerEntryTypeEnum("entry_type").notNull(),
+  // Money in cents, always positive; entryType carries the direction.
+  amount: integer("amount").notNull(),
+  description: text("description"),
+  // Optional link back to the client payment this split derives from.
+  paymentId: uuid("payment_id").references(() => payments.id, {
+    onDelete: "set null",
+  }),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ledger_partner_id").on(table.partnerId),
+]);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -422,3 +487,7 @@ export type NewLead = typeof leads.$inferInsert;
 export type AdCampaign = typeof adCampaigns.$inferSelect;
 export type NewAdCampaign = typeof adCampaigns.$inferInsert;
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type Expense = typeof expenses.$inferSelect;
+export type NewExpense = typeof expenses.$inferInsert;
+export type PartnerLedgerEntry = typeof partnerLedgerEntries.$inferSelect;
+export type NewPartnerLedgerEntry = typeof partnerLedgerEntries.$inferInsert;

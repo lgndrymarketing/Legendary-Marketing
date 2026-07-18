@@ -19,7 +19,7 @@ const typeIcons = {
 };
 
 const typeLabels: Record<SearchResult["type"], string> = {
-  project: "Projects",
+  project: "Campaigns",
   message: "Messages",
   file: "Files",
 };
@@ -195,7 +195,7 @@ export function GlobalSearch() {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search projects, messages, files..."
+                placeholder="Search campaigns, messages, files..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent py-3.5 text-sm outline-none placeholder:text-muted-foreground"

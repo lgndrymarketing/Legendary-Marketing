@@ -99,18 +99,16 @@ function SidebarBody({
 }) {
   return (
     <>
-      {/* Logo */}
+      {/* Logo — the mark already carries the LGNDRY wordmark, so no text label. */}
       <Link
         href="/"
-        className="flex h-14 items-center gap-2 border-b border-border px-4"
+        className={cn(
+          "flex h-14 items-center border-b border-border",
+          collapsed ? "justify-center px-2" : "px-4"
+        )}
         onClick={onNavigate}
       >
-        <Logo size={26} />
-        {!collapsed && (
-          <span className="truncate text-[15px] font-semibold tracking-tight">
-            Legendary
-          </span>
-        )}
+        <Logo size={collapsed ? 26 : 34} />
       </Link>
 
       {/* Nav */}
@@ -137,7 +135,6 @@ function SidebarBody({
 
 export function AppShell({
   navItems,
-  roleLabel,
   cta,
   accountEmail,
   children,
@@ -147,11 +144,11 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — floating white card with a soft shadow */}
       <motion.aside
-        animate={{ width: collapsed ? 64 : 232 }}
+        animate={{ width: collapsed ? 76 : 244 }}
         transition={springSnappy}
-        className="sticky top-0 z-40 hidden h-screen shrink-0 flex-col border-r border-border bg-sidebar lg:flex"
+        className="sticky top-3 z-40 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-white shadow-[0_1px_3px_rgba(15,16,16,0.04),0_8px_24px_-12px_rgba(15,16,16,0.12)] lg:ml-3 lg:flex dark:bg-sidebar"
       >
         <SidebarBody
           navItems={navItems}
@@ -172,7 +169,7 @@ export function AppShell({
         </button>
       </motion.aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile navigation — bottom sheet */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-[100] lg:hidden">
@@ -184,24 +181,54 @@ export function AppShell({
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              initial={{ x: -260 }}
-              animate={{ x: 0 }}
-              exit={{ x: -260 }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
               transition={springSnappy}
-              className="absolute inset-y-0 left-0 flex w-[240px] flex-col border-r border-border bg-sidebar"
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.6 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 80 || info.velocity.y > 500) {
+                  setMobileOpen(false);
+                }
+              }}
+              className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl border-t border-border/60 bg-white shadow-[0_-8px_40px_-12px_rgba(15,16,16,0.25)] dark:bg-sidebar"
+              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
-              <SidebarBody
-                navItems={navItems}
-                collapsed={false}
-                accountEmail={accountEmail}
-                onNavigate={() => setMobileOpen(false)}
-              />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground cursor-pointer"
-              >
-                <X className="h-4 w-4" /> Close
-              </button>
+              {/* Grab handle */}
+              <div className="flex justify-center pb-1 pt-3">
+                <span className="h-1.5 w-10 rounded-full bg-border" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-2 pt-1">
+                <Logo size={30} />
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted cursor-pointer"
+                  aria-label="Close navigation"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Nav */}
+              <nav className="grid grid-cols-2 gap-2 overflow-y-auto p-4">
+                {navItems.map((item) => (
+                  <SheetNavLink
+                    key={item.href}
+                    item={item}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ))}
+              </nav>
+
+              {accountEmail && (
+                <p className="truncate border-t border-border px-5 py-3 text-center text-xs text-muted-foreground">
+                  {accountEmail}
+                </p>
+              )}
             </motion.aside>
           </div>
         )}
@@ -209,8 +236,8 @@ export function AppShell({
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar */}
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
+        {/* Topbar — borderless; PageHero draws its own hairline */}
+        <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl">
           <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-2">
               <button
@@ -220,18 +247,6 @@ export function AppShell({
               >
                 <Menu className="h-4 w-4" />
               </button>
-              {/* Workspace pill */}
-              <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border px-2.5 py-1.5">
-                <span className="h-3.5 w-3.5 shrink-0 rounded-[4px] bg-orange" />
-                <span className="hidden truncate text-[13px] font-medium sm:inline">
-                  Legendary Marketing
-                </span>
-                {roleLabel && (
-                  <span className="shrink-0 rounded bg-orange/10 px-1.5 py-0.5 text-[10px] font-medium text-orange">
-                    {roleLabel}
-                  </span>
-                )}
-              </div>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -252,10 +267,72 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-28 sm:px-8 lg:pb-8">
           {children}
         </main>
+
+        {/* Bottom tab bar (mobile) — floating white card, first five destinations */}
+        <nav
+          className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-border/70 bg-white/95 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_10px_28px_-10px_rgba(15,16,16,0.22)] backdrop-blur-xl lg:hidden dark:bg-sidebar/95"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="flex items-stretch justify-around">
+            {navItems.slice(0, 5).map((item) => (
+              <BottomTab key={item.href} item={item} />
+            ))}
+          </div>
+        </nav>
       </div>
     </div>
+  );
+}
+
+/** Bottom-sheet tile — icon + label card, orange when active. */
+function SheetNavLink({
+  item,
+  onNavigate,
+}: {
+  item: ShellNavItem;
+  onNavigate: () => void;
+}) {
+  const pathname = usePathname();
+  const isActive = item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + "/");
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium transition-colors",
+        isActive
+          ? "border-orange/30 bg-orange/10 text-orange"
+          : "border-border text-foreground hover:bg-muted/70"
+      )}
+    >
+      <NavIcon name={item.icon} className="h-4 w-4 shrink-0" />
+      <span className="truncate">{item.label}</span>
+    </Link>
+  );
+}
+
+function BottomTab({ item }: { item: ShellNavItem }) {
+  const pathname = usePathname();
+  const isActive = item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + "/");
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex min-w-0 flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
+        isActive ? "text-orange" : "text-muted-foreground"
+      )}
+    >
+      <NavIcon name={item.icon} className="h-5 w-5" />
+      <span className="truncate px-1">{item.label}</span>
+    </Link>
   );
 }

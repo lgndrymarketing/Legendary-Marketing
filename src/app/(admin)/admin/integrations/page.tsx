@@ -36,7 +36,7 @@ export default async function AdminIntegrationsPage() {
   // Integration config is admin-only (the layout only checks isStaff).
   const staff = await getAuthenticatedUser();
   if (!canManageAgency(staff.role)) {
-    redirect("/admin/projects");
+    redirect("/admin/campaigns");
   }
 
   const ghlConfigured = isGhlConfigured();
@@ -46,7 +46,7 @@ export default async function AdminIntegrationsPage() {
     <div className="space-y-10">
       <PageHero
         title="Integrations"
-        description="Connect Legendary Marketing to the tools that power revenue tracking and real-time client communication."
+        description="Connect LGNDRY to the tools that power revenue tracking and real-time client communication."
       />
 
       {/* GoHighLevel */}
@@ -62,9 +62,9 @@ export default async function AdminIntegrationsPage() {
         <div className="mt-4 max-w-2xl space-y-4">
           <p className="text-sm text-muted-foreground">
             Connects the agency&apos;s GoHighLevel account so revenue and pipeline
-            data (opportunities, invoices) shows up alongside Creem checkout
-            payments in the Payments dashboard. Contacts and opportunities are
-            matched back to Legendary Marketing projects via their GHL IDs.
+            data (opportunities, invoices) shows up in the Payments dashboard.
+            Contacts and opportunities are
+            matched back to LGNDRY projects via their GHL IDs.
           </p>
           {ghlConfigured ? (
             <GhlSyncButton />

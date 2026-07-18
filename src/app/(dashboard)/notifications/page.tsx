@@ -143,7 +143,7 @@ export default function NotificationsPage() {
           <EmptyState
             icon={Bell}
             title="You're all caught up"
-            description="Project updates, messages, and payment confirmations will show up here."
+            description="Campaign updates, messages, and payment confirmations will show up here."
           />
         </div>
       ) : (

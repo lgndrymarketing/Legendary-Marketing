@@ -54,7 +54,7 @@ const statusClass = (status: string): string =>
       : "text-orange";
 
 const quickLinks = [
-  { label: "Projects", href: "/admin/projects", icon: FolderKanban },
+  { label: "Campaigns", href: "/admin/campaigns", icon: FolderKanban },
   { label: "Leads", href: "/admin/leads", icon: Inbox },
   { label: "Team", href: "/admin/team", icon: UserCog },
   { label: "Integrations", href: "/admin/integrations", icon: Plug },
@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
   }[] = stats
     ? [
         { label: "Total Clients", value: stats.totalClients },
-        { label: "Active Projects", value: stats.activeProjects },
+        { label: "Active Campaigns", value: stats.activeProjects },
         {
           label: "Recognized Revenue",
           value: stats.totalRevenue,
@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-10">
       <PageHero
         title="Agency Dashboard"
-        description="Your pulse across clients, projects, pipeline, and revenue."
+        description="Your pulse across clients, campaigns, pipeline, and revenue."
       />
 
       {/* Stats — hidden entirely for VAs (agency-wide numbers are admin/PM only) */}
@@ -203,9 +203,9 @@ export default function AdminDashboardPage() {
         {/* Recent projects */}
         <section className="lg:col-span-2">
           <div className="flex items-center justify-between border-b border-border pb-3">
-            <h2 className="text-[15px] font-semibold">Recent Projects</h2>
+            <h2 className="text-[15px] font-semibold">Recent Campaigns</h2>
             <Link
-              href="/admin/projects"
+              href="/admin/campaigns"
               className="group inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-orange"
             >
               View all
@@ -213,19 +213,19 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
           {loading ? (
-            <EmptyState icon={FolderKanban} title="Loading projects…" description="" />
+            <EmptyState icon={FolderKanban} title="Loading campaigns…" description="" />
           ) : recentProjects.length === 0 ? (
             <EmptyState
               icon={FolderKanban}
-              title="No projects yet"
-              description="Client projects will appear here once they onboard."
+              title="No campaigns yet"
+              description="Client campaigns will appear here once they onboard."
             />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
-                    <th className="micro-label py-3 pr-4">Project</th>
+                    <th className="micro-label py-3 pr-4">Campaign</th>
                     <th className="micro-label py-3 pr-4">Service</th>
                     <th className="micro-label py-3">Status</th>
                   </tr>
@@ -244,7 +244,7 @@ export default function AdminDashboardPage() {
                     >
                       <td className="py-3 pr-4 font-medium">
                         <Link
-                          href={`/admin/projects/${project.id}`}
+                          href={`/admin/campaigns/${project.id}`}
                           className="transition-colors group-hover:text-orange"
                         >
                           {project.name}
@@ -309,7 +309,7 @@ export default function AdminDashboardPage() {
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {(statsDenied
-                ? quickLinks.filter((l) => l.href === "/admin/projects")
+                ? quickLinks.filter((l) => l.href === "/admin/campaigns")
                 : quickLinks
               ).map((link) => {
                 const Icon = link.icon;

@@ -69,7 +69,7 @@ Status: ${invoice.status.toUpperCase()}
           <span>{invoice.date}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Project</span>
+          <span className="text-muted-foreground">Campaign</span>
           <span>{invoice.projectName}</span>
         </div>
 
