@@ -7,9 +7,9 @@ export default function SignUpPage() {
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
       {/* Subtle aurora glow pinned to the upper portion of the page */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[45vh] opacity-30">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[45vh] opacity-35">
         <Aurora
-          colorStops={["#ff9953", "#F97316", "#9c4407"]}
+          colorStops={["#FFB347", "#FF7A00", "#F97316"]}
           blend={0.5}
           amplitude={1.0}
           speed={0.5}
