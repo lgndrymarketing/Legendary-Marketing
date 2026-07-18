@@ -81,7 +81,7 @@ export default async function AdminLayout({
             section: "Finance",
           },
           {
-            label: "Payments",
+            label: "Clients & Payments",
             href: "/admin/payments",
             icon: "CreditCard",
             section: "Finance",

@@ -90,7 +90,9 @@ export async function POST(
       })
       .returning();
 
-    // A collected retainer pushes the next due date a month out.
+    // A collected retainer pushes the next due date a month out and brings a
+    // paused/overdue client back to Active (an overdue client is Active with a
+    // past-due date, so advancing the date clears the overdue flag too).
     if (paymentType === "monthly_retainer") {
       const base =
         client.nextDueDate && new Date(client.nextDueDate) > new Date()
@@ -100,7 +102,11 @@ export async function POST(
       next.setUTCMonth(next.getUTCMonth() + 1);
       await db
         .update(agencyClients)
-        .set({ nextDueDate: next, updatedAt: new Date() })
+        .set({
+          nextDueDate: next,
+          ...(client.status !== "churned" && { status: "active" }),
+          updatedAt: new Date(),
+        })
         .where(eq(agencyClients.id, id));
     }
 

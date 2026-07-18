@@ -157,21 +157,24 @@ export async function GET() {
     const totalProfit = totalRevenue - totalCosts;
     const profitMargin = totalRevenue > 0 ? totalProfit / totalRevenue : 0;
 
-    // LTV — recognized revenue per client, avg months retained as caption.
+    // LTV — total collected revenue divided by the number of roster clients
+    // (matches the "grand total of all payments / total clients" definition).
     const avgLtv =
-      clientRows.length > 0 ? Math.round(totalRevenue / clientRows.length) : 0;
+      rosterRows.length > 0
+        ? Math.round(totalRevenue / rosterRows.length)
+        : 0;
     const avgMonthsRetained =
-      clientRows.length > 0
-        ? clientRows.reduce(
+      rosterRows.length > 0
+        ? rosterRows.reduce(
             (s, c) =>
               s +
               Math.max(
                 0,
-                (now.getTime() - new Date(c.createdAt).getTime()) /
+                (now.getTime() - new Date(c.startDate).getTime()) /
                   (30 * 86_400_000)
               ),
             0
-          ) / clientRows.length
+          ) / rosterRows.length
         : 0;
 
     // Top customers by completed spend.
