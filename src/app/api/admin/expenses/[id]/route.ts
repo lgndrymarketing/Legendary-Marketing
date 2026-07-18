@@ -9,6 +9,7 @@ const updateSchema = z
   .object({
     name: z.string().min(1).max(255).optional(),
     category: z.enum(expenseCategoryEnum.enumValues).optional(),
+    categoryLabel: z.string().max(100).nullable().optional(),
     amount: z.number().int().positive().optional(),
     cadence: z.enum(expenseCadenceEnum.enumValues).optional(),
     incurredAt: z.string().datetime().optional(),

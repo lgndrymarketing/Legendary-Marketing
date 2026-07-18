@@ -14,6 +14,7 @@ import { z } from "zod";
 const expenseSchema = z.object({
   name: z.string().min(1).max(255),
   category: z.enum(expenseCategoryEnum.enumValues),
+  categoryLabel: z.string().max(100).nullable().optional(),
   amount: z.number().int().positive(),
   cadence: z.enum(expenseCadenceEnum.enumValues),
   incurredAt: z.string().datetime().optional(),
