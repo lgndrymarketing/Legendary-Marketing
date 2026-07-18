@@ -180,7 +180,12 @@ export async function POST(req: Request) {
     if (error instanceof NextResponse) return error;
     console.error("Onboarding error:", error);
     return NextResponse.json(
-      { error: "Failed to create project" },
+      {
+        error: "Failed to create project",
+        // Temporary: surface the real cause so submission failures are
+        // diagnosable in the client. Safe to trim back once stable.
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

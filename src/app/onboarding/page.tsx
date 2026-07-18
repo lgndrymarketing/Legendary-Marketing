@@ -99,7 +99,24 @@ function OnboardingContent() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Failed to submit");
+      if (!res.ok) {
+        // Surface the server's actual reason so failures are diagnosable
+        // instead of a generic message.
+        let detail = `Error ${res.status}`;
+        try {
+          const body = await res.json();
+          detail =
+            body?.error +
+              (body?.details
+                ? `: ${JSON.stringify(body.details.fieldErrors ?? body.details)}`
+                : "") || detail;
+        } catch {
+          /* non-JSON error body */
+        }
+        setSubmitError(detail);
+        setIsSubmitting(false);
+        return;
+      }
       await res.json();
 
       // Celebrate, then land in the portal.
@@ -107,7 +124,7 @@ function OnboardingContent() {
       fireConfetti();
       setTimeout(() => router.push("/dashboard"), 1600);
     } catch {
-      setSubmitError("Something went wrong. Please try again.");
+      setSubmitError("Network error — please try again.");
       setIsSubmitting(false);
     }
   };
