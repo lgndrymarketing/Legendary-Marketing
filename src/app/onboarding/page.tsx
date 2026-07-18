@@ -2,29 +2,44 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import confetti from "canvas-confetti";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { services, type ServiceType } from "@/lib/services";
-import { getTemplatesForService } from "@/lib/project-templates";
-import {
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const steps = [
-  { id: "service", title: "Select Service" },
-  { id: "business", title: "Business Details" },
-  { id: "project", title: "Goals & Scope" },
-  { id: "review", title: "Review & Submit" },
-];
+const steps = ["service", "business", "goals", "review"] as const;
+
+const BRAND_CONFETTI = ["#F97316", "#FF7A00", "#FFB347", "#C2410C", "#FDBA74"];
+
+function fireConfetti() {
+  const defaults = { colors: BRAND_CONFETTI, disableForReducedMotion: true };
+  confetti({ ...defaults, particleCount: 120, spread: 75, origin: { y: 0.65 } });
+  setTimeout(
+    () =>
+      confetti({
+        ...defaults,
+        particleCount: 60,
+        angle: 60,
+        spread: 60,
+        origin: { x: 0 },
+      }),
+    180
+  );
+  setTimeout(
+    () =>
+      confetti({
+        ...defaults,
+        particleCount: 60,
+        angle: 120,
+        spread: 60,
+        origin: { x: 1 },
+      }),
+    300
+  );
+}
 
 export default function OnboardingPage() {
   return (
@@ -37,12 +52,12 @@ export default function OnboardingPage() {
 function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUser();
 
   const preselectedService = searchParams.get("service") as ServiceType | null;
 
   const [currentStep, setCurrentStep] = useState(preselectedService ? 1 : 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     serviceType: preselectedService || ("" as ServiceType | ""),
@@ -85,11 +100,12 @@ function OnboardingContent() {
       });
 
       if (!res.ok) throw new Error("Failed to submit");
-
-      // Portal is for existing clients — land them in their dashboard.
-      // Billing happens when the agency requests it, not at onboarding.
       await res.json();
-      router.push("/dashboard");
+
+      // Celebrate, then land in the portal.
+      setSubmitted(true);
+      fireConfetti();
+      setTimeout(() => router.push("/dashboard"), 1600);
     } catch {
       setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
@@ -97,362 +113,277 @@ function OnboardingContent() {
   };
 
   const selectedService = services.find((s) => s.id === formData.serviceType);
+  const progress = ((currentStep + 1) / steps.length) * 100;
+
+  const field = (label: string, required = false) => (
+    <label className="mb-1.5 block text-[13px] font-medium">
+      {label} {required && <span className="text-destructive">*</span>}
+    </label>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-          <Logo size={36} />
-          <span className="text-sm text-muted-foreground">
-            Welcome, {user?.firstName || "there"}
-          </span>
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Top bar — progress + logo */}
+      <div className="flex items-center gap-6 px-6 py-5 sm:px-10">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-orange transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
+        <Logo size={28} />
       </div>
 
-      {/* Progress bar */}
-      <div className="mx-auto max-w-4xl px-4 pt-8">
-        <div className="flex items-center justify-between mb-8">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-all ${
-                    index < currentStep
-                      ? "bg-orange text-white"
-                      : index === currentStep
-                      ? "bg-orange/20 text-orange border-2 border-orange"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {index < currentStep ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    index + 1
-                  )}
-                </div>
-                <span className="mt-2 text-xs text-muted-foreground hidden sm:block">
-                  {step.title}
-                </span>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`mx-2 h-0.5 w-8 sm:w-16 lg:w-24 transition-all ${
-                    index < currentStep ? "bg-orange" : "bg-border"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Step Content */}
-        <Card className="border-border">
-          {/* Step 0: Service Selection */}
-          {currentStep === 0 && (
-            <>
-              <CardHeader>
-                <CardTitle className="text-2xl">Choose Your Service</CardTitle>
-                <CardDescription>
-                  Which service can we help you with?
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Centered form column */}
+      <main className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col px-6 pt-14 pb-10">
+        {submitted ? (
+          <div className="my-auto text-center">
+            <h1 className="text-2xl font-bold tracking-tight">
+              You&apos;re all set
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Taking you to your dashboard…
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Step 0 — service */}
+            {currentStep === 0 && (
+              <section>
+                <h1 className="text-center text-2xl font-bold tracking-tight">
+                  What can we help you with?
+                </h1>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Make sure all the required fields (
+                  <span className="text-destructive">*</span>) are complete.
+                </p>
+                <div className="mt-10 space-y-2.5">
                   {services.map((service) => {
-                    const Icon = service.icon;
                     const isSelected = formData.serviceType === service.id;
                     return (
                       <button
                         key={service.id}
                         onClick={() => updateField("serviceType", service.id)}
-                        className={`flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all cursor-pointer ${
+                        className={cn(
+                          "w-full rounded-lg border px-4 py-3.5 text-left transition-colors cursor-pointer",
                           isSelected
-                            ? "border-orange bg-orange/5 shadow-lg shadow-orange-glow/10"
-                            : "border-border hover:border-orange/30"
-                        }`}
-                      >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange/10">
-                          <Icon className="h-5 w-5 text-orange" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{service.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {service.description}
-                          </p>
-                        </div>
-                        {isSelected && (
-                          <Badge variant="orange" className="mt-auto">
-                            Selected
-                          </Badge>
+                            ? "border-orange ring-1 ring-orange"
+                            : "border-border hover:border-foreground/25"
                         )}
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-medium">
+                            {service.name}
+                          </span>
+                          <span
+                            className={cn(
+                              "h-4 w-4 shrink-0 rounded-full border transition-colors",
+                              isSelected
+                                ? "border-[5px] border-orange"
+                                : "border-border"
+                            )}
+                          />
+                        </span>
                       </button>
                     );
                   })}
                 </div>
-              </CardContent>
-            </>
-          )}
-
-          {/* Step 1: Business Details */}
-          {currentStep === 1 && (
-            <>
-              <CardHeader>
-                <CardTitle className="text-2xl">Business Details</CardTitle>
-                <CardDescription>
-                  Tell us about your business so we can tailor the strategy.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Template picker */}
-                {formData.serviceType && (
-                  (() => {
-                    const templates = getTemplatesForService(formData.serviceType as ServiceType);
-                    if (templates.length === 0) return null;
-                    return (
-                      <div className="rounded-xl border border-orange/20 bg-orange/5 p-4 space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Sparkles className="h-4 w-4 text-orange" />
-                          Quick Start Templates
-                        </div>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          {templates.map((template) => (
-                            <button
-                              key={template.name}
-                              onClick={() => {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  industry: template.suggestedFields.industry,
-                                  description: template.suggestedFields.description,
-                                  targetAudience: template.suggestedFields.targetAudience,
-                                  timeline: template.suggestedFields.timeline,
-                                  budget: template.suggestedFields.budget,
-                                }));
-                              }}
-                              className="text-left rounded-lg border border-border p-3 hover:border-orange/50 hover:bg-orange/5 transition-all cursor-pointer"
-                            >
-                              <p className="text-sm font-medium">{template.name}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Business Name <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    placeholder="Acme Inc."
-                    value={formData.businessName}
-                    onChange={(e) => updateField("businessName", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Industry</label>
-                  <Input
-                    placeholder="e.g. Technology, Healthcare, Retail"
-                    value={formData.industry}
-                    onChange={(e) => updateField("industry", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Existing Website (if any)
-                  </label>
-                  <Input
-                    placeholder="https://example.com"
-                    value={formData.website}
-                    onChange={(e) => updateField("website", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Brand Colors (optional)
-                  </label>
-                  <Input
-                    placeholder="e.g. Blue and white, #3B82F6"
-                    value={formData.brandColors}
-                    onChange={(e) => updateField("brandColors", e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </>
-          )}
-
-          {/* Step 2: Project Scope */}
-          {currentStep === 2 && (
-            <>
-              <CardHeader>
-                <CardTitle className="text-2xl">Goals &amp; Scope</CardTitle>
-                <CardDescription>
-                  Tell us about your goals so we know what success looks like.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Goals &amp; Description <span className="text-destructive">*</span>
-                  </label>
-                  <Textarea
-                    placeholder="Tell us about your offer, your goals, and what a great outcome looks like..."
-                    rows={4}
-                    value={formData.description}
-                    onChange={(e) => updateField("description", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Target Audience
-                  </label>
-                  <Input
-                    placeholder="Who is this for? e.g. Small business owners, Gen Z consumers"
-                    value={formData.targetAudience}
-                    onChange={(e) =>
-                      updateField("targetAudience", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">
-                      Timeline
-                    </label>
-                    <Input
-                      placeholder="e.g. 2-4 weeks, ASAP"
-                      value={formData.timeline}
-                      onChange={(e) => updateField("timeline", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">
-                      Budget Range
-                    </label>
-                    <Input
-                      placeholder="e.g. $2,000 - $5,000"
-                      value={formData.budget}
-                      onChange={(e) => updateField("budget", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Additional Notes
-                  </label>
-                  <Textarea
-                    placeholder="Anything else we should know?"
-                    rows={3}
-                    value={formData.additionalNotes}
-                    onChange={(e) =>
-                      updateField("additionalNotes", e.target.value)
-                    }
-                  />
-                </div>
-              </CardContent>
-            </>
-          )}
-
-          {/* Step 3: Review */}
-          {currentStep === 3 && (
-            <>
-              <CardHeader>
-                <CardTitle className="text-2xl">Review & Submit</CardTitle>
-                <CardDescription>
-                  Double-check your details before submitting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Service */}
-                <div className="rounded-lg border border-border p-4">
-                  <p className="text-xs text-muted-foreground mb-1">Service</p>
-                  <div className="flex items-center gap-2">
-                    {selectedService && (
-                      <>
-                        <selectedService.icon className="h-5 w-5 text-orange" />
-                        <span className="font-semibold">{selectedService.name}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Business */}
-                <div className="rounded-lg border border-border p-4 space-y-2">
-                  <p className="text-xs text-muted-foreground mb-1">Business</p>
-                  <p className="font-semibold">{formData.businessName}</p>
-                  {formData.industry && (
-                    <p className="text-sm text-muted-foreground">
-                      Industry: {formData.industry}
-                    </p>
-                  )}
-                  {formData.website && (
-                    <p className="text-sm text-muted-foreground">
-                      Website: {formData.website}
-                    </p>
-                  )}
-                </div>
-
-                {/* Project */}
-                <div className="rounded-lg border border-border p-4 space-y-2">
-                  <p className="text-xs text-muted-foreground mb-1">Project</p>
-                  <p className="text-sm">{formData.description}</p>
-                  {formData.timeline && (
-                    <p className="text-sm text-muted-foreground">
-                      Timeline: {formData.timeline}
-                    </p>
-                  )}
-                  {formData.budget && (
-                    <p className="text-sm text-muted-foreground">
-                      Budget: {formData.budget}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </>
-          )}
-
-          {/* Navigation buttons */}
-          <div className="flex flex-col gap-3 p-6 pt-0">
-            {submitError && (
-              <p className="text-sm text-destructive text-center">{submitError}</p>
+              </section>
             )}
-            <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep((s) => s - 1)}
-              disabled={currentStep === 0}
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Back
-            </Button>
 
-            {currentStep < steps.length - 1 ? (
+            {/* Step 1 — business */}
+            {currentStep === 1 && (
+              <section>
+                <h1 className="text-center text-2xl font-bold tracking-tight">
+                  Tell us about your business
+                </h1>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Make sure all the required fields (
+                  <span className="text-destructive">*</span>) are complete.
+                </p>
+                <div className="mt-10 space-y-5">
+                  <div>
+                    {field("Company Name", true)}
+                    <Input
+                      placeholder="Acme Co."
+                      value={formData.businessName}
+                      onChange={(e) =>
+                        updateField("businessName", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    {field("Industry")}
+                    <Input
+                      placeholder="e.g. Technology, Healthcare, Retail"
+                      value={formData.industry}
+                      onChange={(e) => updateField("industry", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    {field("Website")}
+                    <Input
+                      placeholder="acme.com"
+                      value={formData.website}
+                      onChange={(e) => updateField("website", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    {field("Brand Color")}
+                    <Input
+                      placeholder="#F3F3F3"
+                      value={formData.brandColors}
+                      onChange={(e) =>
+                        updateField("brandColors", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Step 2 — goals */}
+            {currentStep === 2 && (
+              <section>
+                <h1 className="text-center text-2xl font-bold tracking-tight">
+                  Goals &amp; scope
+                </h1>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Make sure all the required fields (
+                  <span className="text-destructive">*</span>) are complete.
+                </p>
+                <div className="mt-10 space-y-5">
+                  <div>
+                    {field("Goals & Description", true)}
+                    <Textarea
+                      placeholder="Tell us about your offer, your goals, and what a great outcome looks like…"
+                      rows={4}
+                      value={formData.description}
+                      onChange={(e) =>
+                        updateField("description", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div>
+                    {field("Target Audience")}
+                    <Input
+                      placeholder="Who is this for?"
+                      value={formData.targetAudience}
+                      onChange={(e) =>
+                        updateField("targetAudience", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      {field("Timeline")}
+                      <Input
+                        placeholder="e.g. 2–4 weeks"
+                        value={formData.timeline}
+                        onChange={(e) =>
+                          updateField("timeline", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      {field("Budget Range")}
+                      <Input
+                        placeholder="e.g. $2,000 – $5,000"
+                        value={formData.budget}
+                        onChange={(e) => updateField("budget", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    {field("Additional Notes")}
+                    <Textarea
+                      placeholder="Anything else we should know?"
+                      rows={3}
+                      value={formData.additionalNotes}
+                      onChange={(e) =>
+                        updateField("additionalNotes", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Step 3 — review */}
+            {currentStep === 3 && (
+              <section>
+                <h1 className="text-center text-2xl font-bold tracking-tight">
+                  Review &amp; submit
+                </h1>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Double-check your details before submitting.
+                </p>
+                <dl className="mt-10 divide-y divide-border border-y border-border text-sm">
+                  {[
+                    ["Service", selectedService?.name],
+                    ["Company", formData.businessName],
+                    ["Industry", formData.industry],
+                    ["Website", formData.website],
+                    ["Goals", formData.description],
+                    ["Target Audience", formData.targetAudience],
+                    ["Timeline", formData.timeline],
+                    ["Budget", formData.budget],
+                    ["Notes", formData.additionalNotes],
+                  ]
+                    .filter(([, v]) => v)
+                    .map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="grid grid-cols-[8rem_1fr] gap-4 py-3"
+                      >
+                        <dt className="text-muted-foreground">{label}</dt>
+                        <dd className="min-w-0 break-words font-medium">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
+              </section>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer bar */}
+      {!submitted && (
+        <footer className="border-t border-border">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-4 sm:px-10">
+            {currentStep > 0 ? (
               <Button
-                onClick={() => setCurrentStep((s) => s + 1)}
-                disabled={!canProceed()}
-              >
-                Next
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                variant="glow"
-                onClick={handleSubmit}
+                variant="ghost"
+                onClick={() => setCurrentStep((s) => s - 1)}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Submit
-                <ArrowRight className="ml-1 h-4 w-4" />
+                Back
               </Button>
+            ) : (
+              <span />
             )}
+            <div className="flex items-center gap-4">
+              {submitError && (
+                <p className="text-sm text-destructive">{submitError}</p>
+              )}
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  onClick={() => setCurrentStep((s) => s + 1)}
+                  disabled={!canProceed()}
+                >
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting…" : "Submit"}
+                </Button>
+              )}
             </div>
           </div>
-        </Card>
-      </div>
+        </footer>
+      )}
     </div>
   );
 }
