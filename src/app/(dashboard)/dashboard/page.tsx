@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
 import { PerformanceOverview } from "@/components/dashboard/performance-overview";
-import { FolderKanban, MessageSquare, Upload, Plus } from "lucide-react";
+import { NewCampaignButton } from "@/components/dashboard/new-campaign-modal";
+import { FolderKanban, MessageSquare, Upload } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
 import { projects, projectPhases, messages, files, users } from "@/db/schema";
@@ -110,14 +111,7 @@ export default async function DashboardPage() {
         description={`Welcome back, ${
           user.firstName || "there"
         } — track your campaign performance and ROI.`}
-        action={
-          <Button variant="glow" asChild>
-            <Link href="/onboarding">
-              <Plus className="mr-1 h-4 w-4" />
-              New Campaign
-            </Link>
-          </Button>
-        }
+        action={<NewCampaignButton />}
       />
 
       {/* Performance Dashboard — campaign results and ROI */}
@@ -142,14 +136,7 @@ export default async function DashboardPage() {
             icon={FolderKanban}
             title="No active campaigns yet"
             description="Start a new campaign and we'll track your progress right here."
-            action={
-              <Button variant="glow" asChild>
-                <Link href="/onboarding">
-                  <Plus className="mr-1 h-4 w-4" />
-                  New Campaign
-                </Link>
-              </Button>
-            }
+            action={<NewCampaignButton />}
           />
         </div>
       ) : (
