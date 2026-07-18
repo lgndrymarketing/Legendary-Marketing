@@ -8,6 +8,13 @@
       "when": 1784308415175,
       "tag": "0000_smart_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784337347261,
+      "tag": "0001_lean_namor",
+      "breakpoints": true
     }
   ]
 }

@@ -113,7 +113,10 @@ void main() {
   float midPoint = 0.20;
   float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
 
-  vec3 auroraColor = intensity * rampColor;
+  // Keep the ramp color at full saturation and let alpha alone shape the
+  // glow — multiplying by intensity darkens the color, which reads as muddy
+  // brown over a light background.
+  vec3 auroraColor = rampColor;
 
   fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
 }
