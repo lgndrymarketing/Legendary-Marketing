@@ -86,8 +86,10 @@ function OnboardingContent() {
 
       if (!res.ok) throw new Error("Failed to submit");
 
-      const data = await res.json();
-      router.push(`/checkout?projectId=${data.projectId}`);
+      // Portal is for existing clients — land them in their dashboard.
+      // Billing happens when the agency requests it, not at onboarding.
+      await res.json();
+      router.push("/dashboard");
     } catch {
       setSubmitError("Something went wrong. Please try again.");
       setIsSubmitting(false);
@@ -101,10 +103,7 @@ function OnboardingContent() {
       {/* Header */}
       <div className="border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Logo size={32} />
-            <span className="font-semibold">Legendary Marketing</span>
-          </div>
+          <Logo size={36} />
           <span className="text-sm text-muted-foreground">
             Welcome, {user?.firstName || "there"}
           </span>
@@ -179,7 +178,7 @@ function OnboardingContent() {
                         <div>
                           <p className="font-semibold">{service.name}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {service.startingPrice}
+                            {service.description}
                           </p>
                         </div>
                         {isSelected && (
@@ -374,9 +373,6 @@ function OnboardingContent() {
                       <>
                         <selectedService.icon className="h-5 w-5 text-orange" />
                         <span className="font-semibold">{selectedService.name}</span>
-                        <Badge variant="orange" className="ml-auto">
-                          {selectedService.startingPrice}
-                        </Badge>
                       </>
                     )}
                   </div>
@@ -449,7 +445,7 @@ function OnboardingContent() {
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Submit & Continue to Payment
+                Submit
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             )}
