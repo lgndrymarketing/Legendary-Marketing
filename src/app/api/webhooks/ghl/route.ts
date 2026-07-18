@@ -58,18 +58,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const signature = getSignatureHeader(req);
-    if (!signature) {
-      return NextResponse.json(
-        { error: "Missing signature header" },
-        { status: 401 }
-      );
-    }
-
     const rawBody = await req.text();
 
-    if (!verifySignature(rawBody, signature, secret)) {
-      console.error("GHL webhook signature verification failed");
+    // Two accepted auth forms:
+    //  1. HMAC signature header (marketplace-app style webhooks)
+    //  2. Shared secret in the x-webhook-secret header — GHL workflow
+    //     "Custom Webhook" actions can't sign payloads, but they can attach
+    //     custom headers. Set the header to the same value as
+    //     GHL_WEBHOOK_SECRET when building the workflow.
+    const signature = getSignatureHeader(req);
+    const sharedSecret = req.headers.get("x-webhook-secret");
+
+    const secretBuf = Buffer.from(secret);
+    const sharedOk =
+      sharedSecret !== null &&
+      Buffer.byteLength(sharedSecret) === secretBuf.length &&
+      timingSafeEqual(Buffer.from(sharedSecret), secretBuf);
+    const signatureOk =
+      signature !== null && verifySignature(rawBody, signature, secret);
+
+    if (!sharedOk && !signatureOk) {
+      console.error("GHL webhook auth failed (no valid signature or secret)");
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 401 }
