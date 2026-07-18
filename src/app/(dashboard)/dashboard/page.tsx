@@ -106,8 +106,10 @@ export default async function DashboardPage() {
     <div className="space-y-10">
       {/* Welcome */}
       <PageHero
-        title={`Welcome back, ${user.firstName || "there"}`}
-        description="Here's an overview of your campaigns."
+        title="Performance Dashboard"
+        description={`Welcome back, ${
+          user.firstName || "there"
+        } — track your campaign performance and ROI.`}
         action={
           <Button variant="glow" asChild>
             <Link href="/onboarding">

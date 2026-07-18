@@ -27,11 +27,15 @@ const usd = (cents: number) =>
 const usdWhole = (cents: number) =>
   `$${Math.round(cents / 100).toLocaleString("en-US")}`;
 
-/**
- * Performance Dashboard band — leads, CPL, revenue, ROAS with weekly trends.
- * Renders nothing until the agency has tracked at least one metric, so new
- * clients aren't greeted by a wall of zeros.
- */
+const ZERO: Summary = {
+  totals: { totalLeads: 0, totalSpend: 0, totalRevenue: 0, avgCpl: 0, avgRoas: 0 },
+  weeks: Array.from({ length: 8 }, () => ""),
+  series: { leads: Array(8).fill(0), cpl: Array(8).fill(0), roas: Array(8).fill(0) },
+  hasData: false,
+};
+
+/** Performance Dashboard — leads, CPL, revenue, ROAS with weekly trends.
+ * Always visible; zeroes until the agency's tracked metrics start flowing. */
 export function PerformanceOverview() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,9 +63,8 @@ export function PerformanceOverview() {
     );
   }
 
-  if (!summary || !summary.hasData) return null;
-
-  const { totals } = summary;
+  const view = summary ?? ZERO;
+  const { totals } = view;
   const tiles = [
     {
       label: "Total Leads",
@@ -91,19 +94,19 @@ export function PerformanceOverview() {
     {
       title: "Leads Generated",
       caption: "Weekly progression of leads",
-      series: summary.series.leads,
+      series: view.series.leads,
       format: (v: number) => Math.round(v).toLocaleString("en-US"),
     },
     {
       title: "Cost Per Lead",
       caption: "CPL evolution over time",
-      series: summary.series.cpl,
+      series: view.series.cpl,
       format: usd,
     },
     {
       title: "Return on Ad Spend",
       caption: "Weekly ROAS multiplier",
-      series: summary.series.roas,
+      series: view.series.roas,
       format: (v: number) => `${v.toFixed(1)}×`,
     },
   ];
@@ -116,10 +119,7 @@ export function PerformanceOverview() {
       className="space-y-8"
     >
       <div>
-        <p className="micro-label border-b border-border pb-3">
-          Performance · Campaign results and ROI
-        </p>
-        <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
+        <div className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
           {tiles.map((tile, i) => (
             <motion.div
               key={tile.label}
@@ -157,8 +157,8 @@ export function PerformanceOverview() {
             <AreaChart
               className="mt-5"
               points={chart.series}
-              xLabels={summary.weeks.map((w, i) =>
-                i === 0 || i === summary.weeks.length - 1 ? w : ""
+              xLabels={view.weeks.map((w, i) =>
+                i === 0 || i === view.weeks.length - 1 ? w : ""
               )}
               height={140}
               format={chart.format}
