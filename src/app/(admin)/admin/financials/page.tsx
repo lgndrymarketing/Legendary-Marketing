@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { PageHero, CountUp } from "@/components/ui/firecrawl";
+import { PageHero, CountUp, BracketLabel } from "@/components/ui/firecrawl";
 import { AreaChart, DonutChart, BarList } from "@/components/ui/charts";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DateRangePill,
+  ALL_TIME,
+  rangeBounds,
+  rangeLabel,
+  type DateRange,
+} from "@/components/ui/filters";
 import { cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { BarChart3, Users2 } from "lucide-react";
@@ -37,7 +44,11 @@ interface Metrics {
   };
   topCustomers: { name: string; total: number }[];
   packagesDistribution: { label: string; count: number }[];
+  windowed: boolean;
 }
+
+/** yyyy-mm-dd for the metrics query, or null. */
+const isoDay = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 const usd = (cents: number) =>
   `$${Math.round(cents / 100).toLocaleString("en-US")}`;
@@ -56,9 +67,20 @@ const statCell = (i: number) =>
 export default function AdminFinancialsPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
 
-  useEffect(() => {
-    fetch("/api/admin/metrics")
+  const load = useCallback((r: DateRange) => {
+    // `to` is inclusive on the server; convert the exclusive upper bound back
+    // to the picked end day.
+    const { from, to } = rangeBounds(r);
+    const toInclusive = to ? new Date(to.getTime() - 86_400_000) : null;
+    const qs = new URLSearchParams();
+    if (from) qs.set("from", isoDay(from)!);
+    if (toInclusive) qs.set("to", isoDay(toInclusive)!);
+    const url = qs.toString()
+      ? `/api/admin/metrics?${qs}`
+      : "/api/admin/metrics";
+    fetch(url)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && !data.error) setMetrics(data);
@@ -66,6 +88,12 @@ export default function AdminFinancialsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load(range);
+  }, [range, load]);
+
+  const rangeCaption = range.preset === "all" ? "Last 6 months" : rangeLabel(range);
 
   if (!loading && !metrics) {
     return (
@@ -164,7 +192,15 @@ export default function AdminFinancialsPage() {
       <PageHero
         title="Financials"
         description="Revenue, costs, profit, and growth across the agency."
+        action={<DateRangePill value={range} onChange={setRange} />}
       />
+
+      {range.preset !== "all" && (
+        <BracketLabel
+          n={rangeLabel(range)}
+          label="FLOW METRICS WINDOWED · SNAPSHOT METRICS ALWAYS CURRENT"
+        />
+      )}
 
       {/* Headline metrics — hairline-divided 4-up grid */}
       <motion.section variants={cascade} initial="hidden" animate="visible">
@@ -210,7 +246,7 @@ export default function AdminFinancialsPage() {
                 <div className="flex items-baseline justify-between border-b border-border pb-3">
                   <h2 className="text-[15px] font-semibold">{chart.title}</h2>
                   <p className="font-mono text-[11px] uppercase text-muted-foreground">
-                    Last 6 months
+                    {rangeCaption}
                   </p>
                 </div>
                 <AreaChart

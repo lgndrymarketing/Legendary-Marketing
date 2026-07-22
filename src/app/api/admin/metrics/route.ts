@@ -14,6 +14,12 @@ import { requireAdmin } from "@/lib/auth-utils";
  * GET /api/admin/metrics — the Financials command center. Admin-only (this is
  * agency P&L: revenue, costs, margin, MRR/ARR, LTV, churn).
  *
+ * Optional `?from=yyyy-mm-dd&to=yyyy-mm-dd` (to inclusive) window the FLOW
+ * metrics — revenue, costs, profit, new clients, top customers — and stretch
+ * the chart buckets across the window (capped at 24 months). Point-in-time
+ * metrics (MRR, ARR, active clients, churn, LTV, monthly burn) always
+ * reflect the current roster.
+ *
  * Row volumes are agency-sized (hundreds, not millions), so rows are pulled
  * once and aggregated in JS — one pass beats seven aggregate round-trips and
  * keeps every metric internally consistent with the same snapshot.
@@ -22,6 +28,14 @@ import { requireAdmin } from "@/lib/auth-utils";
  */
 
 const MONTHS_SHOWN = 6;
+const MAX_MONTHS = 24;
+
+/** Strict yyyy-mm-dd → UTC midnight, or null. */
+function parseDay(s: string | null): Date | null {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(s + "T00:00:00Z");
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 /** "YYYY-MM" bucket key for a date. */
 const monthKey = (d: Date) =>
@@ -35,9 +49,18 @@ const monthLabel = (d: Date) =>
     timeZone: "UTC",
   });
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await requireAdmin();
+
+    const params = new URL(req.url).searchParams;
+    const fromParam = parseDay(params.get("from"));
+    const toParam = parseDay(params.get("to"));
+    // Exclusive upper bound: the day after the inclusive `to`.
+    const toEx = toParam ? new Date(toParam.getTime() + 86_400_000) : null;
+    const windowed = fromParam !== null || toEx !== null;
+    const inWindow = (d: Date) =>
+      (!fromParam || d >= fromParam) && (!toEx || d < toEx);
 
     const [
       paymentRows,
@@ -93,15 +116,22 @@ export async function GET() {
           ),
       ]);
 
-    // Trailing month buckets, oldest → newest, current month last.
+    // Month buckets, oldest → newest. Default: trailing 6 months ending in
+    // the current month. Windowed: span the window's months (capped).
     const now = new Date();
-    const buckets = Array.from({ length: MONTHS_SHOWN }, (_, i) => {
+    const lastDay = toParam && toParam < now ? toParam : now;
+    const endMonth = { y: lastDay.getUTCFullYear(), m: lastDay.getUTCMonth() };
+    let monthsShown = MONTHS_SHOWN;
+    if (windowed && fromParam) {
+      const span =
+        (endMonth.y - fromParam.getUTCFullYear()) * 12 +
+        (endMonth.m - fromParam.getUTCMonth()) +
+        1;
+      monthsShown = Math.min(Math.max(span, 1), MAX_MONTHS);
+    }
+    const buckets = Array.from({ length: monthsShown }, (_, i) => {
       const d = new Date(
-        Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth() - (MONTHS_SHOWN - 1 - i),
-          1
-        )
+        Date.UTC(endMonth.y, endMonth.m - (monthsShown - 1 - i), 1)
       );
       return { key: monthKey(d), label: monthLabel(d), start: d };
     });
@@ -110,42 +140,61 @@ export async function GET() {
     const zeros = () => buckets.map(() => 0);
 
     // Revenue — completed project payments plus collected client payments
-    // (setup fees + retainers recorded on the roster).
-    const completed = paymentRows.filter((p) => p.status === "completed");
+    // (setup fees + retainers recorded on the roster). When a window is
+    // active, rows outside it are dropped BEFORE bucketing so mid-month
+    // custom ranges stay truthful.
+    const completed = paymentRows.filter(
+      (p) => p.status === "completed" && (!windowed || inWindow(new Date(p.createdAt)))
+    );
+    const collected = collectedRows.filter(
+      (p) => !windowed || inWindow(new Date(p.paidAt))
+    );
     const totalRevenue =
       completed.reduce((s, p) => s + p.amount, 0) +
-      collectedRows.reduce((s, p) => s + p.amount, 0);
+      collected.reduce((s, p) => s + p.amount, 0);
     const revenueSeries = zeros();
     for (const p of completed) {
       const i = bucketIndex.get(monthKey(new Date(p.createdAt)));
       if (i !== undefined) revenueSeries[i] += p.amount;
     }
-    for (const p of collectedRows) {
+    for (const p of collected) {
       const i = bucketIndex.get(monthKey(new Date(p.paidAt)));
       if (i !== undefined) revenueSeries[i] += p.amount;
     }
 
     // Costs — one-time expenses land in their month; monthly expenses recur
-    // every month from incurredAt onward.
+    // every month from incurredAt onward. Windowed totals count recurring
+    // expenses once per window month they were live in.
     const costsSeries = zeros();
     let totalCosts = 0;
     for (const e of expenseRows) {
       const incurred = new Date(e.incurredAt);
       if (e.cadence === "one_time") {
+        if (windowed && !inWindow(incurred)) continue;
         totalCosts += e.amount;
         const i = bucketIndex.get(monthKey(incurred));
         if (i !== undefined) costsSeries[i] += e.amount;
       } else {
-        // Months elapsed since incurred (inclusive of the current month).
-        const elapsed =
-          (now.getUTCFullYear() - incurred.getUTCFullYear()) * 12 +
-          (now.getUTCMonth() - incurred.getUTCMonth()) +
-          1;
-        totalCosts += e.amount * Math.max(elapsed, 1);
+        const incurredMonth = new Date(
+          Date.UTC(incurred.getUTCFullYear(), incurred.getUTCMonth(), 1)
+        );
+        let liveMonths = 0;
         buckets.forEach((b, i) => {
-          if (b.start >= new Date(Date.UTC(incurred.getUTCFullYear(), incurred.getUTCMonth(), 1)))
+          if (b.start >= incurredMonth) {
             costsSeries[i] += e.amount;
+            liveMonths++;
+          }
         });
+        if (windowed) {
+          totalCosts += e.amount * liveMonths;
+        } else {
+          // Months elapsed since incurred (inclusive of the current month).
+          const elapsed =
+            (now.getUTCFullYear() - incurred.getUTCFullYear()) * 12 +
+            (now.getUTCMonth() - incurred.getUTCMonth()) +
+            1;
+          totalCosts += e.amount * Math.max(elapsed, 1);
+        }
       }
     }
 
@@ -191,7 +240,7 @@ export async function GET() {
         : "Unknown";
       spendByName.set(name, (spendByName.get(name) ?? 0) + total);
     }
-    for (const p of collectedRows) {
+    for (const p of collected) {
       const name = p.companyName ?? "Unknown";
       spendByName.set(name, (spendByName.get(name) ?? 0) + p.amount);
     }
@@ -284,6 +333,7 @@ export async function GET() {
       topCustomers,
       packagesDistribution: finalPackages,
       windowStart: windowStart.toISOString(),
+      windowed,
     });
   } catch (error) {
     if (error instanceof NextResponse) return error;

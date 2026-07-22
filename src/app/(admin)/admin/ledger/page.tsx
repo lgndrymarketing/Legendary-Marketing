@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { PageHero } from "@/components/ui/firecrawl";
+import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
+import {
+  SearchPill,
+  SelectPill,
+  SortPill,
+  DateRangePill,
+  ALL_TIME,
+  inRange,
+  type DateRange,
+} from "@/components/ui/filters";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -15,7 +24,7 @@ import {
   Pencil,
   X,
   ArrowLeftRight,
-  Calendar,
+  Filter,
 } from "lucide-react";
 
 interface Partner {
@@ -63,23 +72,13 @@ const usd = (cents: number) =>
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
-/** Start-of-range for the date filter, or null for "all". */
-function rangeStart(range: string): Date | null {
-  const now = new Date();
-  if (range === "this_month")
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  if (range === "last_30")
-    return new Date(now.getTime() - 30 * 86_400_000);
-  if (range === "this_year")
-    return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-  return null;
-}
-
 export default function AdminLedgerPage() {
   const [data, setData] = useState<LedgerResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("date_desc");
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editForm, setEditForm] = useState({
     paymentType: "monthly_retainer",
@@ -155,13 +154,37 @@ export default function AdminLedgerPage() {
   const partners = data?.partners ?? [];
   const p1 = partners[0];
   const p2 = partners[1];
-  const dateStart = rangeStart(dateFilter);
-  const transactions = (data?.transactions ?? []).filter((t) => {
-    const matchesStatus =
-      statusFilter === "all" ? true : t.splitStatus === statusFilter;
-    const matchesDate = !dateStart || new Date(t.paidAt) >= dateStart;
-    return matchesStatus && matchesDate;
-  });
+  const allTransactions = useMemo(
+    () => data?.transactions ?? [],
+    [data?.transactions]
+  );
+  const transactions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = allTransactions.filter((t) => {
+      if (statusFilter !== "all" && t.splitStatus !== statusFilter)
+        return false;
+      if (!inRange(t.paidAt, range)) return false;
+      if (q) {
+        const hay = [t.companyName, t.method, t.receivedByName, t.notes]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const dir = sort.endsWith("_asc") ? 1 : -1;
+    rows.sort((a, b) =>
+      sort.startsWith("amount")
+        ? (a.amount - b.amount) * dir
+        : (new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime()) * dir
+    );
+    return rows;
+  }, [allTransactions, statusFilter, range, search, sort]);
+
+  const filtersActive =
+    search.trim() !== "" || statusFilter !== "all" || range.preset !== "all";
+  const filteredCut = transactions.reduce((s, t) => s + t.otherPartnerCut, 0);
 
   return (
     <div className="space-y-8">
@@ -223,30 +246,49 @@ export default function AdminLedgerPage() {
         ))}
       </motion.section>
 
-      {/* Filters — date range (left) + transaction status (right) */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative sm:w-72">
-          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <select
-            className="h-9 w-full rounded-full border border-border bg-background pl-9 pr-3 text-sm outline-none transition-colors focus:border-orange"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          >
-            <option value="all">All time</option>
-            <option value="this_month">This month</option>
-            <option value="last_30">Last 30 days</option>
-            <option value="this_year">This year</option>
-          </select>
+      {/* Filter row — search + status/sort pills, date range right-aligned */}
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <SearchPill
+            className="lg:w-64"
+            placeholder="Search client, method, notes…"
+            value={search}
+            onChange={setSearch}
+          />
+          <SelectPill
+            className="lg:w-48"
+            icon={Filter}
+            ariaLabel="Transaction status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All Transactions" },
+              { value: "pending", label: "Pending" },
+              { value: "settled", label: "Settled" },
+            ]}
+          />
+          <SortPill
+            className="lg:w-48"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "date_desc", label: "Newest first" },
+              { value: "date_asc", label: "Oldest first" },
+              { value: "amount_desc", label: "Amount: high → low" },
+              { value: "amount_asc", label: "Amount: low → high" },
+            ]}
+          />
+          <div className="lg:ml-auto">
+            <DateRangePill value={range} onChange={setRange} />
+          </div>
         </div>
-        <select
-          className="h-9 rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange sm:w-56"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">All Transactions</option>
-          <option value="pending">Pending</option>
-          <option value="settled">Settled</option>
-        </select>
+        {filtersActive && (
+          <BracketLabel
+            n={transactions.length}
+            m={allTransactions.length}
+            label={`FILTERED · ${usd(filteredCut)} PARTNER CUT`}
+          />
+        )}
       </div>
 
       {/* History */}
@@ -262,8 +304,12 @@ export default function AdminLedgerPage() {
         ) : transactions.length === 0 ? (
           <EmptyState
             icon={HandCoins}
-            title="No transactions yet"
-            description="Record client payments from the Clients & Payments page — each one lands here with its partner split."
+            title={filtersActive ? "No matching transactions" : "No transactions yet"}
+            description={
+              filtersActive
+                ? "No transactions match the current filters — widen the date range or clear the search."
+                : "Record client payments from the Clients & Payments page — each one lands here with its partner split."
+            }
           />
         ) : (
           <div className="mt-4 overflow-x-auto">

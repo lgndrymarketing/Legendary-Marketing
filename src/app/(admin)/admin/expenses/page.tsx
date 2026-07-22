@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PageHero, StatHeader } from "@/components/ui/firecrawl";
+import { PageHero, StatHeader, BracketLabel } from "@/components/ui/firecrawl";
+import {
+  SearchPill,
+  SelectPill,
+  SortPill,
+  DateRangePill,
+  ALL_TIME,
+  inRange,
+  type DateRange,
+} from "@/components/ui/filters";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -12,7 +21,7 @@ import { TrendCard, type TrendPoint } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence } from "motion/react";
-import { Receipt, Plus, Trash2, Pencil, X } from "lucide-react";
+import { Receipt, Plus, Trash2, Pencil, X, Filter } from "lucide-react";
 
 interface ExpenseRow {
   id: string;
@@ -68,6 +77,11 @@ export default function AdminExpensesPage() {
     cadence: "monthly",
     incurredAt: "",
   });
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [cadenceFilter, setCadenceFilter] = useState("all");
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
+  const [sort, setSort] = useState("date_desc");
 
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -165,13 +179,49 @@ export default function AdminExpensesPage() {
     load();
   }
 
+  // Filters + sort apply to the trend charts and the expense log; the
+  // summary tiles stay global (they are labeled every-month / all-time).
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = expenses.filter((e) => {
+      if (categoryFilter !== "all" && e.category !== categoryFilter)
+        return false;
+      if (cadenceFilter !== "all" && e.cadence !== cadenceFilter) return false;
+      if (!inRange(e.incurredAt, range)) return false;
+      if (q) {
+        const hay = [e.name, categoryLabel(e), e.notes]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const dir = sort.endsWith("_asc") ? 1 : -1;
+    rows.sort((a, b) =>
+      sort.startsWith("amount")
+        ? (a.amount - b.amount) * dir
+        : (new Date(a.incurredAt).getTime() -
+            new Date(b.incurredAt).getTime()) *
+          dir
+    );
+    return rows;
+  }, [expenses, search, categoryFilter, cadenceFilter, range, sort]);
+
+  const filtersActive =
+    search.trim() !== "" ||
+    categoryFilter !== "all" ||
+    cadenceFilter !== "all" ||
+    range.preset !== "all";
+  const filteredTotal = filtered.reduce((s, e) => s + e.amount, 0);
+
   // Cost points for the trend charts — one-time expenses land in their
   // month; monthly expenses recur every month from incurredAt onward.
   const costPoints: TrendPoint[] = [];
   const oneTimePoints: TrendPoint[] = [];
   {
     const now = new Date();
-    for (const e of expenses) {
+    for (const e of filtered) {
       if (e.cadence === "monthly") {
         const start = new Date(e.incurredAt);
         const startMonth = new Date(
@@ -229,8 +279,68 @@ export default function AdminExpensesPage() {
         />
       </div>
 
-      {/* Trends — monthly cost burn + one-time spend */}
+      {/* Filter row — search + category/cadence pills, date range right-
+          aligned. Drives the trends and the expense log below. */}
       {!loading && expenses.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <SearchPill
+              className="lg:w-64"
+              placeholder="Search expenses…"
+              value={search}
+              onChange={setSearch}
+            />
+            <SelectPill
+              className="lg:w-44"
+              icon={Filter}
+              ariaLabel="Category"
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              options={[
+                { value: "all", label: "All Categories" },
+                ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                { value: "other", label: "Custom" },
+              ]}
+            />
+            <SelectPill
+              className="lg:w-40"
+              icon={Filter}
+              ariaLabel="Cadence"
+              value={cadenceFilter}
+              onChange={setCadenceFilter}
+              options={[
+                { value: "all", label: "All Cadences" },
+                { value: "monthly", label: "Monthly" },
+                { value: "one_time", label: "One-time" },
+              ]}
+            />
+            <SortPill
+              className="lg:w-48"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { value: "date_desc", label: "Newest first" },
+                { value: "date_asc", label: "Oldest first" },
+                { value: "amount_desc", label: "Amount: high → low" },
+                { value: "amount_asc", label: "Amount: low → high" },
+              ]}
+            />
+            <div className="lg:ml-auto">
+              <DateRangePill value={range} onChange={setRange} />
+            </div>
+          </div>
+          {filtersActive && (
+            <BracketLabel
+              n={filtered.length}
+              m={expenses.length}
+              label={`FILTERED · ${usd(filteredTotal)} IN EXPENSES`}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Trends — monthly cost burn + one-time spend */}
+      {!loading && filtered.length > 0 && (
         <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           <TrendCard
             title="Total Costs"
@@ -375,11 +485,15 @@ export default function AdminExpensesPage() {
           <div className="pt-4">
             <TableSkeleton rows={5} />
           </div>
-        ) : expenses.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="No expenses recorded"
-            description="Track SaaS subscriptions, contractor pay, platform fees, and ad spend to see true profit on the Financials page."
+            title={filtersActive ? "No matching expenses" : "No expenses recorded"}
+            description={
+              filtersActive
+                ? "No expenses match the current filters — widen the date range or clear the search."
+                : "Track SaaS subscriptions, contractor pay, platform fees, and ad spend to see true profit on the Financials page."
+            }
           />
         ) : (
           <div className="overflow-x-auto">
@@ -400,7 +514,7 @@ export default function AdminExpensesPage() {
                 animate="visible"
                 className="divide-y divide-border"
               >
-                {expenses.map((expense) => (
+                {filtered.map((expense) => (
                   <motion.tr
                     key={expense.id}
                     variants={rowItem}

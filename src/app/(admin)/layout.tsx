@@ -7,7 +7,6 @@ import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 import {
   isStaff,
   canManageAgency,
-  canManageLeads,
   canViewAllProjects,
   ROLE_LABELS,
 } from "@/lib/permissions";
@@ -46,16 +45,6 @@ export default async function AdminLayout({
             label: "Clients",
             href: "/admin/clients",
             icon: "Users",
-            section: "Operations",
-          },
-        ]
-      : []),
-    ...(canManageLeads(user.role)
-      ? [
-          {
-            label: "Leads",
-            href: "/admin/leads",
-            icon: "Inbox",
             section: "Operations",
           },
         ]
@@ -118,11 +107,6 @@ export default async function AdminLayout({
     <AppShell
       navItems={navItems}
       roleLabel={ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? "Staff"}
-      cta={
-        canManageLeads(user.role)
-          ? { label: "Triage Leads", href: "/admin/leads" }
-          : undefined
-      }
       accountEmail={user.email}
     >
       {children}
