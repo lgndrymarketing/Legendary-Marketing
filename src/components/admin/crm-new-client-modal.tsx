@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
-import { INDUSTRIES } from "@/lib/crm";
+import { INDUSTRIES, SAAS_PLANS } from "@/lib/crm";
 
 const PACKAGES = [
   { value: "bronze", label: "Bronze" },
@@ -45,6 +45,7 @@ export function NewClientModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const today = () => new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     contactName: "",
     companyName: "",
@@ -53,6 +54,11 @@ export function NewClientModal({
     industryCustom: "",
     package: "",
     packageCustom: "",
+    saasPlan: "",
+    saasPlanCustom: "",
+    startDate: today(),
+    driveUrl: "",
+    landingPageUrl: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +72,11 @@ export function NewClientModal({
       industryCustom: "",
       package: "",
       packageCustom: "",
+      saasPlan: "",
+      saasPlanCustom: "",
+      startDate: today(),
+      driveUrl: "",
+      landingPageUrl: "",
     });
     setError(null);
   }
@@ -82,6 +93,10 @@ export function NewClientModal({
         ? form.industryCustom.trim() || "Custom"
         : form.industry || undefined;
     const pkg = form.package || undefined;
+    const saasPlan =
+      form.saasPlan === "Custom"
+        ? form.saasPlanCustom.trim() || "Custom"
+        : form.saasPlan || undefined;
     setSaving(true);
     try {
       const res = await fetch("/api/admin/clients", {
@@ -96,6 +111,14 @@ export function NewClientModal({
           ...(pkg === "custom" && {
             package: "custom",
             packageLabel: form.packageCustom.trim() || "Custom",
+          }),
+          ...(saasPlan && { saasPlan }),
+          ...(form.startDate && {
+            startDate: new Date(form.startDate + "T00:00:00Z").toISOString(),
+          }),
+          ...(form.driveUrl.trim() && { driveUrl: form.driveUrl.trim() }),
+          ...(form.landingPageUrl.trim() && {
+            landingPageUrl: form.landingPageUrl.trim(),
           }),
         }),
       });
@@ -230,7 +253,61 @@ export function NewClientModal({
                     />
                   )}
                 </Field>
+                <Field label="SaaS Plan">
+                  <select
+                    className={selectClass}
+                    value={form.saasPlan}
+                    onChange={(e) =>
+                      setForm({ ...form, saasPlan: e.target.value })
+                    }
+                  >
+                    <option value="">Select plan</option>
+                    {SAAS_PLANS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  {form.saasPlan === "Custom" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Custom plan name"
+                      value={form.saasPlanCustom}
+                      onChange={(e) =>
+                        setForm({ ...form, saasPlanCustom: e.target.value })
+                      }
+                    />
+                  )}
+                </Field>
+                <Field label="Date Started">
+                  <Input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(e) =>
+                      setForm({ ...form, startDate: e.target.value })
+                    }
+                  />
+                </Field>
               </div>
+
+              <Field label="Drive Link">
+                <Input
+                  placeholder="https://drive.google.com/..."
+                  value={form.driveUrl}
+                  onChange={(e) =>
+                    setForm({ ...form, driveUrl: e.target.value })
+                  }
+                />
+              </Field>
+              <Field label="Landing Page Link">
+                <Input
+                  placeholder="https://..."
+                  value={form.landingPageUrl}
+                  onChange={(e) =>
+                    setForm({ ...form, landingPageUrl: e.target.value })
+                  }
+                />
+              </Field>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
 

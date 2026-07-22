@@ -457,6 +457,12 @@ export const clientTaskStatusEnum = pgEnum("client_task_status", [
   "completed",
 ]);
 
+export const clientTaskPriorityEnum = pgEnum("client_task_priority", [
+  "low",
+  "medium",
+  "high",
+]);
+
 export const agencyClients = pgTable("agency_clients", {
   id: uuid("id").defaultRandom().primaryKey(),
   contactName: varchar("contact_name", { length: 255 }).notNull(),
@@ -507,6 +513,7 @@ export const clientTasks = pgTable("client_tasks", {
   // Which pipeline stage this task belongs to (null for ad-hoc custom tasks).
   stage: crmStageEnum("stage"),
   status: clientTaskStatusEnum("status").notNull().default("pending"),
+  priority: clientTaskPriorityEnum("priority").notNull().default("medium"),
   // Denormalized assignee name so the checklist reads correctly even if the
   // staff account is later removed; assigneeId is the live link.
   assigneeId: uuid("assignee_id").references(() => users.id, {
@@ -521,6 +528,39 @@ export const clientTasks = pgTable("client_tasks", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_client_tasks_client_id").on(table.clientId),
+]);
+
+// Weekly performance reports — the bidirectional reporting loop. The agency
+// enters leads + CPL from the ads manager (Data Entry page); the report lands
+// on the client's portal as "pending_client" until they add their closes and
+// revenue, which completes it and feeds the true-ROAS dashboard numbers.
+export const weeklyReportStatusEnum = pgEnum("weekly_report_status", [
+  "pending_client",
+  "completed",
+]);
+
+export const weeklyReports = pgTable("weekly_reports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id")
+    .references(() => agencyClients.id, { onDelete: "cascade" })
+    .notNull(),
+  weekStart: timestamp("week_start").notNull(),
+  weekEnd: timestamp("week_end").notNull(),
+  // Agency side (ads manager numbers). CPL and spend in cents.
+  leads: integer("leads").notNull().default(0),
+  cpl: integer("cpl").notNull().default(0),
+  totalSpend: integer("total_spend").notNull().default(0),
+  // Client side — filled from the portal when they complete the report.
+  closes: integer("closes"),
+  revenue: integer("revenue"),
+  status: weeklyReportStatusEnum("status").notNull().default("pending_client"),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_weekly_reports_client_id").on(table.clientId),
 ]);
 
 // Client payments — money actually collected from agency clients (setup fees

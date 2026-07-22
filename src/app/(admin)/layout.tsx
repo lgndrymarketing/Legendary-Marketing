@@ -50,6 +50,22 @@ export default async function AdminLayout({
           },
         ]
       : []),
+    ...(canViewAllProjects(user.role)
+      ? [
+          {
+            label: "Tasks",
+            href: "/admin/tasks",
+            icon: "ClipboardList",
+            section: "Operations",
+          },
+        ]
+      : []),
+    {
+      label: "Data Entry",
+      href: "/admin/data-entry",
+      icon: "ClipboardEdit",
+      section: "Operations",
+    },
     ...(canManageLeads(user.role)
       ? [
           {
@@ -118,11 +134,6 @@ export default async function AdminLayout({
     <AppShell
       navItems={navItems}
       roleLabel={ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? "Staff"}
-      cta={
-        canManageLeads(user.role)
-          ? { label: "Triage Leads", href: "/admin/leads" }
-          : undefined
-      }
       accountEmail={user.email}
     >
       {children}

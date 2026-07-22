@@ -46,32 +46,52 @@ export const DEPARTMENT_LABELS: Record<Department, string> = {
   ads: "Ads",
 };
 
+export type TaskPriority = "low" | "medium" | "high";
+
+export const PRIORITY_LABELS: Record<TaskPriority, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** SaaS subscription tiers tracked per client. "Custom" reveals a free-text
+ * input — the column itself is free-form. */
+export const SAAS_PLANS = [
+  "$69/mo",
+  "$97/mo",
+  "$297/mo",
+  "ConnectPro",
+  "Custom",
+];
+
 /**
  * The default onboarding checklist — 15 steps routed to the four departments.
  * `assignee` is the team member's first name; the API resolves it to a live
- * staff user id at creation time.
+ * staff user id at creation time. Launch-pipeline tasks default to high
+ * priority; the onboarding guide is the one medium-priority step.
  */
 export const DEFAULT_TASKS: {
   title: string;
   department: Department;
   stage: CrmStage;
   assignee: string;
+  priority: TaskPriority;
 }[] = [
-  { title: "Onboarding form", department: "csm", stage: "onboarding_form", assignee: "Roxanne" },
-  { title: "Onboarding guide", department: "csm", stage: "onboarding_guide", assignee: "Roxanne" },
-  { title: "CRM Access", department: "csm", stage: "crm_access", assignee: "Roxanne" },
-  { title: "Funnel build out", department: "funnel", stage: "funnel_build_out", assignee: "Matthias" },
-  { title: "Domain connected", department: "funnel", stage: "funnel_build_out", assignee: "Matthias" },
-  { title: "Automations build out", department: "automations", stage: "automations_build_out", assignee: "Jude" },
-  { title: "Forms & Surveys", department: "automations", stage: "automations_build_out", assignee: "Jude" },
-  { title: "A2P submitted", department: "automations", stage: "a2p_submitted", assignee: "Kyle" },
-  { title: "A2P website & form", department: "automations", stage: "a2p_submitted", assignee: "Kyle" },
-  { title: "A2P verified", department: "automations", stage: "a2p_verified", assignee: "Kyle" },
-  { title: "Ad creatives", department: "ads", stage: "ad_creatives", assignee: "Virginia" },
-  { title: "Launch form submitted", department: "csm", stage: "launch_form_submitted", assignee: "Roxanne" },
-  { title: "Launch call completed", department: "csm", stage: "launch_call_completed", assignee: "Roxanne" },
-  { title: "Ads campaign build out", department: "ads", stage: "ads_campaign_build_out", assignee: "Uri" },
-  { title: "Ads launched", department: "ads", stage: "ads_launched", assignee: "Uri" },
+  { title: "Onboarding form", department: "csm", stage: "onboarding_form", assignee: "Roxanne", priority: "high" },
+  { title: "Onboarding guide", department: "csm", stage: "onboarding_guide", assignee: "Roxanne", priority: "medium" },
+  { title: "CRM Access", department: "csm", stage: "crm_access", assignee: "Roxanne", priority: "high" },
+  { title: "Funnel build out", department: "funnel", stage: "funnel_build_out", assignee: "Matthias", priority: "high" },
+  { title: "Domain connected", department: "funnel", stage: "funnel_build_out", assignee: "Matthias", priority: "high" },
+  { title: "Automations build out", department: "automations", stage: "automations_build_out", assignee: "Jude", priority: "high" },
+  { title: "Forms & Surveys", department: "automations", stage: "automations_build_out", assignee: "Jude", priority: "high" },
+  { title: "A2P submitted", department: "automations", stage: "a2p_submitted", assignee: "Kyle", priority: "high" },
+  { title: "A2P website & form", department: "automations", stage: "a2p_submitted", assignee: "Kyle", priority: "high" },
+  { title: "A2P verified", department: "automations", stage: "a2p_verified", assignee: "Kyle", priority: "high" },
+  { title: "Ad creatives", department: "ads", stage: "ad_creatives", assignee: "Virginia", priority: "high" },
+  { title: "Launch form submitted", department: "csm", stage: "launch_form_submitted", assignee: "Roxanne", priority: "high" },
+  { title: "Launch call completed", department: "csm", stage: "launch_call_completed", assignee: "Roxanne", priority: "high" },
+  { title: "Ads campaign build out", department: "ads", stage: "ads_campaign_build_out", assignee: "Uri", priority: "high" },
+  { title: "Ads launched", department: "ads", stage: "ads_launched", assignee: "Uri", priority: "high" },
 ];
 
 export const INDUSTRIES = [

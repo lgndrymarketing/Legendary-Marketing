@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Plus, Trash2 } from "lucide-react";
-import { INDUSTRIES } from "@/lib/crm";
+import { INDUSTRIES, SAAS_PLANS } from "@/lib/crm";
 
 const PACKAGES = [
   { value: "bronze", label: "Bronze" },
@@ -15,8 +15,6 @@ const PACKAGES = [
   { value: "rev_split", label: "Rev Split" },
   { value: "custom", label: "Custom" },
 ];
-
-const SAAS_PLANS = ["Starter", "Growth", "Scale", "Agency", "Custom"];
 
 const STATUSES = [
   { value: "active", label: "Active" },
@@ -102,6 +100,7 @@ export function ClientDetailModal({
     package: "",
     packageCustom: "",
     saasPlan: "",
+    saasPlanCustom: "",
     startDate: "",
     driveUrl: "",
     landingPageUrl: "",
@@ -116,6 +115,7 @@ export function ClientDetailModal({
         const c: ClientData = data.client;
         const knownIndustry =
           c.businessType && INDUSTRIES.includes(c.businessType);
+        const knownPlan = c.saasPlan && SAAS_PLANS.includes(c.saasPlan);
         setForm({
           companyName: c.companyName,
           contactName: c.contactName,
@@ -129,7 +129,8 @@ export function ClientDetailModal({
             c.businessType && !knownIndustry ? c.businessType : "",
           package: c.package,
           packageCustom: c.package === "custom" ? c.packageLabel ?? "" : "",
-          saasPlan: c.saasPlan ?? "",
+          saasPlan: c.saasPlan ? (knownPlan ? c.saasPlan : "Custom") : "",
+          saasPlanCustom: c.saasPlan && !knownPlan ? c.saasPlan : "",
           startDate: c.startDate ? c.startDate.slice(0, 10) : "",
           driveUrl: c.driveUrl ?? "",
           landingPageUrl: c.landingPageUrl ?? "",
@@ -201,7 +202,10 @@ export function ClientDetailModal({
             form.package === "custom"
               ? form.packageCustom.trim() || "Custom"
               : null,
-          saasPlan: form.saasPlan || null,
+          saasPlan:
+            form.saasPlan === "Custom"
+              ? form.saasPlanCustom.trim() || "Custom"
+              : form.saasPlan || null,
           startDate: form.startDate
             ? new Date(form.startDate + "T00:00:00Z").toISOString()
             : undefined,
@@ -356,6 +360,16 @@ export function ClientDetailModal({
                         </option>
                       ))}
                     </select>
+                    {form.saasPlan === "Custom" && (
+                      <Input
+                        className="mt-2"
+                        placeholder="Custom plan name"
+                        value={form.saasPlanCustom}
+                        onChange={(e) =>
+                          setForm({ ...form, saasPlanCustom: e.target.value })
+                        }
+                      />
+                    )}
                   </Field>
                   <Field label="Date Started">
                     <Input

@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHero, StatHeader } from "@/components/ui/firecrawl";
+import { PageHero, StatHeader, BracketLabel } from "@/components/ui/firecrawl";
+import {
+  SearchPill,
+  SelectPill,
+  SortPill,
+  DateRangePill,
+  ALL_TIME,
+  inRange,
+  type DateRange,
+} from "@/components/ui/filters";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +23,7 @@ import {
 import { ClientRoster } from "@/components/admin/client-roster";
 import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem } from "@/lib/motion";
-import { CreditCard, Plus, Pencil, Trash2, Users } from "lucide-react";
+import { CreditCard, Filter, Plus, Pencil, Trash2, Users } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -38,6 +47,11 @@ export default function AdminPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EditablePayment | null>(null);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [range, setRange] = useState<DateRange>(ALL_TIME);
+  const [sort, setSort] = useState("date_desc");
 
   const load = useCallback(() => {
     fetch("/api/admin/ledger")
@@ -63,6 +77,39 @@ export default function AdminPaymentsPage() {
     await fetch(`/api/admin/client-payments/${t.id}`, { method: "DELETE" });
     load();
   }
+
+  // Filters + sort drive the trends and the history table; the summary
+  // tiles above stay global (they are labeled all-time / this-month).
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = transactions.filter((t) => {
+      if (typeFilter !== "all" && t.paymentType !== typeFilter) return false;
+      if (statusFilter !== "all" && t.splitStatus !== statusFilter) return false;
+      if (!inRange(t.paidAt, range)) return false;
+      if (q) {
+        const hay = [t.companyName, t.method, t.receivedByName, t.notes]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const dir = sort.endsWith("_asc") ? 1 : -1;
+    rows.sort((a, b) =>
+      sort.startsWith("amount")
+        ? (a.amount - b.amount) * dir
+        : (new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime()) * dir
+    );
+    return rows;
+  }, [transactions, search, typeFilter, statusFilter, range, sort]);
+
+  const filtersActive =
+    search.trim() !== "" ||
+    typeFilter !== "all" ||
+    statusFilter !== "all" ||
+    range.preset !== "all";
+  const filteredTotal = filtered.reduce((s, t) => s + t.amount, 0);
 
   const now = new Date();
   const totalCollected = transactions.reduce((s, t) => s + t.amount, 0);
@@ -135,12 +182,72 @@ export default function AdminPaymentsPage() {
           Recording a payment from a row refreshes the ledger below. */}
       <ClientRoster onChanged={load} />
 
-      {/* Trends — monthly collections + volume */}
+      {/* Filter row — search + type/status pills, date range right-aligned.
+          Drives the trends and the payment history below. */}
       {!loading && transactions.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <SearchPill
+              className="lg:w-64"
+              placeholder="Search client, method, notes…"
+              value={search}
+              onChange={setSearch}
+            />
+            <SelectPill
+              className="lg:w-44"
+              icon={Filter}
+              ariaLabel="Payment type"
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={[
+                { value: "all", label: "All Types" },
+                { value: "setup_fee", label: "Setup Fees" },
+                { value: "monthly_retainer", label: "Retainers" },
+              ]}
+            />
+            <SelectPill
+              className="lg:w-44"
+              icon={Filter}
+              ariaLabel="Split status"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "all", label: "All Splits" },
+                { value: "pending", label: "Pending Split" },
+                { value: "settled", label: "Settled Split" },
+              ]}
+            />
+            <SortPill
+              className="lg:w-48"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { value: "date_desc", label: "Newest first" },
+                { value: "date_asc", label: "Oldest first" },
+                { value: "amount_desc", label: "Amount: high → low" },
+                { value: "amount_asc", label: "Amount: low → high" },
+              ]}
+            />
+            <div className="lg:ml-auto">
+              <DateRangePill value={range} onChange={setRange} />
+            </div>
+          </div>
+          {filtersActive && (
+            <BracketLabel
+              n={filtered.length}
+              m={transactions.length}
+              label={`FILTERED · ${usd(filteredTotal)} COLLECTED`}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Trends — monthly collections + volume */}
+      {!loading && filtered.length > 0 && (
         <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           <TrendCard
             title="Collections"
-            points={transactions.map((t) => ({
+            points={filtered.map((t) => ({
               date: t.paidAt,
               value: t.amount,
             }))}
@@ -148,7 +255,7 @@ export default function AdminPaymentsPage() {
           />
           <TrendCard
             title="Payments Recorded"
-            points={transactions.map((t) => ({ date: t.paidAt, value: 1 }))}
+            points={filtered.map((t) => ({ date: t.paidAt, value: 1 }))}
             format={(v) => Math.round(v).toLocaleString("en-US")}
           />
         </section>
@@ -163,11 +270,15 @@ export default function AdminPaymentsPage() {
           <div className="pt-4">
             <TableSkeleton rows={6} />
           </div>
-        ) : transactions.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon={CreditCard}
-            title="No payments yet"
-            description="Record payments against roster clients — each one feeds revenue and the partner ledger automatically."
+            title={filtersActive ? "No matching payments" : "No payments yet"}
+            description={
+              filtersActive
+                ? "No payments match the current filters — widen the date range or clear the search."
+                : "Record payments against roster clients — each one feeds revenue and the partner ledger automatically."
+            }
           />
         ) : (
           <div className="overflow-x-auto">
@@ -190,7 +301,7 @@ export default function AdminPaymentsPage() {
                 animate="visible"
                 className="divide-y divide-border"
               >
-                {transactions.map((t) => (
+                {filtered.map((t) => (
                   <motion.tr
                     key={t.id}
                     variants={rowItem}
