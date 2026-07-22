@@ -1,25 +1,33 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { agencyClients, clientPayments, users } from "@/db/schema";
+import { agencyClients, clientPayments, expenses, users } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 
 /**
  * GET /api/admin/ledger — the partner ledger, computed from collected client
- * payments. Admin-only.
+ * payments MINUS business expenses, so partners split profit, not revenue.
+ * Admin-only.
  *
- * Model: net = amount - partnerCut (referral cut leaves before the split);
- * each partner earns net/2 on every payment. The receiver holds the other
- * partner's half until the split is marked settled, so:
- *   net balance = Σ over PENDING payments of (other partner's half),
- * signed by who received the money. Assumes the two-admin partnership the
- * agency actually runs; with 3+ admins the first two by creation are used.
+ * Model: per payment, net = amount - partnerCut (referral cut leaves before
+ * anything). Expenses (one-time, plus monthly recurring expanded per elapsed
+ * month — same math as the Financials page) are deducted from the pool:
+ *   profit = Σ net - totalExpenses
+ * Each partner earns profit/2. Outstanding splits scale with profit: every
+ * PENDING payment's owed half is net/2 × (profit / Σ net), clamped to [0,1],
+ * so expenses are automatically deducted from what changes hands. Settled
+ * rows keep their nominal half — they were paid out under the numbers of
+ * their day. The partnership is Uri and Duke: their admin accounts are
+ * matched by first name; if either is missing the first two admins by
+ * creation stand in so the ledger never goes blank.
  */
+
+const PARTNER_NAMES = ["uri", "duke"];
 export async function GET() {
   try {
     await requireAdmin();
 
-    const [admins, rows] = await Promise.all([
+    const [admins, rows, expenseRows] = await Promise.all([
       db
         .select({
           id: users.id,
@@ -48,6 +56,13 @@ export async function GET() {
         .leftJoin(agencyClients, eq(clientPayments.clientId, agencyClients.id))
         .orderBy(desc(clientPayments.paidAt))
         .limit(500),
+      db
+        .select({
+          amount: expenses.amount,
+          cadence: expenses.cadence,
+          incurredAt: expenses.incurredAt,
+        })
+        .from(expenses),
     ]);
 
     const name = (a: {
@@ -56,12 +71,47 @@ export async function GET() {
       email: string;
     }) => a.firstName || a.email.split("@")[0];
 
-    const partners = admins.map((a) => ({ id: a.id, name: name(a) }));
+    // The partnership is Uri & Duke — match their admin accounts by first
+    // name (in that order); fall back to the first two admins by creation.
+    const named = PARTNER_NAMES.map((n) =>
+      admins.find((a) => (a.firstName ?? "").toLowerCase() === n)
+    );
+    const partnerAdmins =
+      named[0] && named[1] ? (named as typeof admins) : admins.slice(0, 2);
+    const partners = partnerAdmins.map((a) => ({ id: a.id, name: name(a) }));
     const [p1, p2] = partners;
+
+    // Total costs — one-time expenses in full; monthly expenses recur every
+    // month from incurredAt through now (inclusive). Mirrors /admin/metrics.
+    const now = new Date();
+    let totalExpenses = 0;
+    for (const e of expenseRows) {
+      if (e.cadence === "monthly") {
+        const incurred = new Date(e.incurredAt);
+        const elapsed =
+          (now.getUTCFullYear() - incurred.getUTCFullYear()) * 12 +
+          (now.getUTCMonth() - incurred.getUTCMonth()) +
+          1;
+        totalExpenses += e.amount * Math.max(elapsed, 1);
+      } else {
+        totalExpenses += e.amount;
+      }
+    }
+
+    const totalNet = rows.reduce((s, r) => s + (r.amount - r.partnerCut), 0);
+    const profit = totalNet - totalExpenses;
+    // Share of each collected dollar that is actually profit to split.
+    const profitRatio =
+      totalNet > 0 ? Math.min(Math.max(profit / totalNet, 0), 1) : 0;
 
     const transactions = rows.map((r) => {
       const net = r.amount - r.partnerCut;
-      const half = Math.round(net / 2);
+      const nominalHalf = Math.round(net / 2);
+      // Pending splits pay out on profit; settled ones already changed hands.
+      const half =
+        r.splitStatus === "pending"
+          ? Math.round((net / 2) * profitRatio)
+          : nominalHalf;
       const receiver = partners.find((p) => p.id === r.receivedBy);
       const other = partners.find((p) => p.id !== r.receivedBy);
       return {
@@ -72,17 +122,16 @@ export async function GET() {
       };
     });
 
-    // Earnings: each partner earns half of every net, regardless of receiver.
-    const totalNet = rows.reduce((s, r) => s + (r.amount - r.partnerCut), 0);
-    const perPartnerEarned = Math.round(totalNet / 2);
+    // Earnings: each partner's share of PROFIT (can go negative when
+    // expenses outrun collections — shown truthfully, never floored).
+    const perPartnerEarned = Math.round(profit / 2);
 
-    // Net balance from pending splits only.
+    // Net balance from pending splits only, at profit-adjusted halves.
     let balance = 0; // positive → p1 received extra, owes p2
-    for (const r of rows) {
-      if (r.splitStatus !== "pending") continue;
-      const half = Math.round((r.amount - r.partnerCut) / 2);
-      if (r.receivedBy === p1?.id) balance += half;
-      else if (r.receivedBy === p2?.id) balance -= half;
+    for (const t of transactions) {
+      if (t.splitStatus !== "pending") continue;
+      if (t.receivedBy === p1?.id) balance += t.otherPartnerCut;
+      else if (t.receivedBy === p2?.id) balance -= t.otherPartnerCut;
     }
     const netBalance =
       !p1 || !p2 || balance === 0
@@ -95,6 +144,12 @@ export async function GET() {
       partners: partners.map((p) => ({ ...p, earned: perPartnerEarned })),
       netBalance,
       transactions,
+      summary: {
+        totalNet,
+        totalExpenses,
+        profit,
+        profitRatio,
+      },
     });
   } catch (error) {
     if (error instanceof NextResponse) return error;
