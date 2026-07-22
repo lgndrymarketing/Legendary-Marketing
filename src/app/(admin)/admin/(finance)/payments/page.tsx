@@ -34,6 +34,8 @@ interface Transaction {
   partnerCut: number;
   receivedBy: string | null;
   receivedByName: string;
+  /** Profit-adjusted half owed to the other partner (from the ledger API). */
+  otherPartnerCut: number;
   splitStatus: "pending" | "settled";
   paidAt: string;
   notes: string | null;
@@ -122,9 +124,10 @@ export default function AdminPaymentsPage() {
       );
     })
     .reduce((s, t) => s + t.amount, 0);
+  // Profit-adjusted halves from the ledger API — expenses already deducted.
   const pendingSplits = transactions
     .filter((t) => t.splitStatus === "pending")
-    .reduce((s, t) => s + Math.round((t.amount - t.partnerCut) / 2), 0);
+    .reduce((s, t) => s + t.otherPartnerCut, 0);
 
   return (
     <div className="space-y-10">
@@ -172,7 +175,7 @@ export default function AdminPaymentsPage() {
         <StatHeader
           className="px-5 py-6"
           title="Unsettled Splits"
-          caption="OWED BETWEEN PARTNERS"
+          caption="OWED BETWEEN PARTNERS · AFTER EXPENSES"
           value={pendingSplits}
           format={usd}
         />
