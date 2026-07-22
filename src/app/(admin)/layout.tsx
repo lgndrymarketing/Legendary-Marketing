@@ -50,6 +50,22 @@ export default async function AdminLayout({
           },
         ]
       : []),
+    ...(canViewAllProjects(user.role)
+      ? [
+          {
+            label: "Tasks",
+            href: "/admin/tasks",
+            icon: "ClipboardList",
+            section: "Operations",
+          },
+        ]
+      : []),
+    {
+      label: "Data Entry",
+      href: "/admin/data-entry",
+      icon: "ClipboardEdit",
+      section: "Operations",
+    },
     ...(canManageLeads(user.role)
       ? [
           {

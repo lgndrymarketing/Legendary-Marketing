@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { agencyClients, clientTasks, users } from "@/db/schema";
+import {
+  agencyClients,
+  clientTaskPriorityEnum,
+  clientTasks,
+  departmentEnum,
+  users,
+} from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
@@ -36,6 +42,8 @@ export async function GET(
 
 const createSchema = z.object({
   title: z.string().min(1).max(255),
+  department: z.enum(departmentEnum.enumValues).nullable().optional(),
+  priority: z.enum(clientTaskPriorityEnum.enumValues).optional(),
   assigneeId: z.string().uuid().nullable().optional(),
   dueDate: z.string().datetime().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
@@ -63,7 +71,8 @@ export async function POST(
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid task" }, { status: 400 });
     }
-    const { title, assigneeId, dueDate, notes } = parsed.data;
+    const { title, department, priority, assigneeId, dueDate, notes } =
+      parsed.data;
 
     let assigneeName: string | null = null;
     if (assigneeId) {
@@ -87,6 +96,8 @@ export async function POST(
       .values({
         clientId: id,
         title,
+        department: department ?? null,
+        priority: priority ?? "medium",
         assigneeId: assigneeId ?? null,
         assigneeName,
         dueDate: dueDate ? new Date(dueDate) : null,
