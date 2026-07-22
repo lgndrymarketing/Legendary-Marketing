@@ -43,7 +43,7 @@ export default async function ProjectsPage() {
     return (
       <div className="space-y-8">
         <PageHero
-          title="Campaigns"
+          title="Project"
           description="Your account is being set up. Please refresh in a moment."
         />
       </div>
@@ -68,8 +68,8 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-10">
       <PageHero
-        title="Campaigns"
-        description="Manage and track all your campaigns."
+        title="Project"
+        description="Track your build, launch pipeline, and ad campaigns."
         action={
           <NewCampaignButton />
         }

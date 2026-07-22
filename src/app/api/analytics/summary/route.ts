@@ -1,20 +1,26 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { analyticsEvents, adCampaigns, projects } from "@/db/schema";
-import { inArray, eq } from "drizzle-orm";
+import {
+  analyticsEvents,
+  adCampaigns,
+  agencyClients,
+  projects,
+  weeklyReports,
+} from "@/db/schema";
+import { and, asc, inArray, eq } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
- * GET /api/analytics/summary — the signed-in client's performance rollup
- * across all their campaigns: total leads, ad spend, tracked revenue, CPL,
- * ROAS, and 8 trailing weekly series.
+ * GET /api/analytics/summary — the signed-in client's performance rollup:
+ * total leads, ad spend, tracked revenue, CPL, ROAS, and weekly series.
  *
- * Metric conventions (agency-recorded via POST /api/analytics):
+ * Primary source: COMPLETED weekly reports (the bidirectional reporting
+ * loop — agency leads/CPL + client closes/revenue). When the client has no
+ * completed reports yet, falls back to the legacy analytics-event stream:
  *   event "lead"    — value = lead count (default 1)
  *   event "spend"   — value = ad spend in cents
  *   event "revenue" — value = attributed revenue in cents
- * When a client has no events yet, totals fall back to the per-campaign
- * counters on ad_campaigns (flat series).
+ * and finally to the per-campaign counters on ad_campaigns (flat series).
  */
 
 const WEEKS = 8;
@@ -22,6 +28,69 @@ const WEEKS = 8;
 export async function GET() {
   try {
     const user = await getAuthenticatedUser();
+
+    // Completed weekly reports first — the true-ROAS source of record.
+    const [ownClient] = await db
+      .select({ id: agencyClients.id })
+      .from(agencyClients)
+      .where(eq(agencyClients.userId, user.id));
+    if (ownClient) {
+      const reports = await db
+        .select({
+          weekEnd: weeklyReports.weekEnd,
+          leads: weeklyReports.leads,
+          cpl: weeklyReports.cpl,
+          totalSpend: weeklyReports.totalSpend,
+          revenue: weeklyReports.revenue,
+        })
+        .from(weeklyReports)
+        .where(
+          and(
+            eq(weeklyReports.clientId, ownClient.id),
+            eq(weeklyReports.status, "completed")
+          )
+        )
+        .orderBy(asc(weeklyReports.weekEnd));
+
+      if (reports.length > 0) {
+        const recent = reports.slice(-WEEKS);
+        const totalLeads = reports.reduce((s, r) => s + r.leads, 0);
+        const totalSpend = reports.reduce((s, r) => s + r.totalSpend, 0);
+        const totalRevenue = reports.reduce((s, r) => s + (r.revenue ?? 0), 0);
+        return NextResponse.json({
+          totals: {
+            totalLeads,
+            totalSpend,
+            totalRevenue,
+            avgCpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
+            avgRoas:
+              totalSpend > 0
+                ? Math.round((totalRevenue / totalSpend) * 100) / 100
+                : 0,
+          },
+          weeks: recent.map((r) =>
+            new Date(r.weekEnd).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              timeZone: "UTC",
+            })
+          ),
+          series: {
+            leads: recent.map((r) => r.leads),
+            cpl: recent.map((r) => r.cpl),
+            roas: recent.map((r) =>
+              r.totalSpend > 0
+                ? Math.round(((r.revenue ?? 0) / r.totalSpend) * 100) / 100
+                : 0
+            ),
+            spend: recent.map((r) => r.totalSpend),
+            revenue: recent.map((r) => r.revenue ?? 0),
+          },
+          campaigns: [],
+          hasData: true,
+        });
+      }
+    }
 
     const owned = await db
       .select({ id: projects.id })
