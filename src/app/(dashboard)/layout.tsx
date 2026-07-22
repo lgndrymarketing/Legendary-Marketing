@@ -27,6 +27,12 @@ const navItems: ShellNavItem[] = [
     section: "Workspace",
   },
   {
+    label: "Weekly Reports",
+    href: "/reports",
+    icon: "ClipboardCheck",
+    section: "Insights",
+  },
+  {
     label: "Analytics",
     href: "/analytics",
     icon: "BarChart3",
