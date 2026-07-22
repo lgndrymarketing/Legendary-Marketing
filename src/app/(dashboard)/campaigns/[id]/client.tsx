@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PhaseTracker, type Phase } from "@/components/dashboard/phase-tracker";
+import { LaunchPipeline } from "@/components/dashboard/launch-pipeline";
 import { FilePreviewCard } from "@/components/dashboard/file-preview";
 import { ProjectComments } from "@/components/dashboard/project-comments";
 import { NPSSurvey } from "@/components/dashboard/nps-survey";
@@ -226,6 +227,10 @@ export function ProjectDetailClient({
         <Tabs.Content value="progress">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-8">
+              {/* Launch pipeline — the same 12-stage journey the team tracks
+                  in the Client CRM, mirrored read-only for the client. */}
+              <LaunchPipeline />
+
               {/* Build Progress */}
               <section className="border-t border-border pt-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
