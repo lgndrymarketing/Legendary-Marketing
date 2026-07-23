@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
+import { pickPartners } from "@/lib/partners";
 import { z } from "zod";
 import { DEFAULT_TASKS } from "@/lib/crm";
 import { publishToChannel } from "@/lib/ably";
@@ -123,7 +124,10 @@ export async function GET() {
     return NextResponse.json({
       clients,
       portalUsers,
-      admins: admins.map((a) => ({
+      // Payment receivers = the ledger partners (Uri & Duke), not every
+      // admin — a payment received by a non-partner would silently fall
+      // out of the split math.
+      admins: pickPartners(admins).map((a) => ({
         id: a.id,
         name: a.firstName || a.email.split("@")[0],
       })),
