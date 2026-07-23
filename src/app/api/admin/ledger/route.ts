@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { agencyClients, clientPayments, expenses, users } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
+import { pickPartners } from "@/lib/partners";
 
 /**
  * GET /api/admin/ledger — the partner ledger, computed from collected client
@@ -17,12 +18,9 @@ import { requireAdmin } from "@/lib/auth-utils";
  * PENDING payment's owed half is net/2 × (profit / Σ net), clamped to [0,1],
  * so expenses are automatically deducted from what changes hands. Settled
  * rows keep their nominal half — they were paid out under the numbers of
- * their day. The partnership is Uri and Duke: their admin accounts are
- * matched by first name; if either is missing the first two admins by
- * creation stand in so the ledger never goes blank.
+ * their day. Partner selection (Uri & Duke by first name, dev/other admins
+ * excluded) lives in src/lib/partners.ts, shared with the receiver lists.
  */
-
-const PARTNER_NAMES = ["uri", "duke"];
 export async function GET() {
   try {
     await requireAdmin();
@@ -71,14 +69,10 @@ export async function GET() {
       email: string;
     }) => a.firstName || a.email.split("@")[0];
 
-    // The partnership is Uri & Duke — match their admin accounts by first
-    // name (in that order); fall back to the first two admins by creation.
-    const named = PARTNER_NAMES.map((n) =>
-      admins.find((a) => (a.firstName ?? "").toLowerCase() === n)
-    );
-    const partnerAdmins =
-      named[0] && named[1] ? (named as typeof admins) : admins.slice(0, 2);
-    const partners = partnerAdmins.map((a) => ({ id: a.id, name: name(a) }));
+    const partners = pickPartners(admins).map((a) => ({
+      id: a.id,
+      name: name(a),
+    }));
     const [p1, p2] = partners;
 
     // Total costs — one-time expenses in full; monthly expenses recur every
