@@ -287,7 +287,7 @@ function PendingReportForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-xl border border-orange/30 bg-accent/40 p-5"
+      className="beam-focus rounded-xl border border-orange/30 bg-accent/40 p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-semibold">

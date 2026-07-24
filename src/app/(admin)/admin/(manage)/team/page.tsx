@@ -8,7 +8,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { rowCascade, rowItem } from "@/lib/motion";
-import { UserCog, ShieldCheck, UserPlus, Pencil, X, Send } from "lucide-react";
+import {
+  UserCog,
+  ShieldCheck,
+  UserPlus,
+  Pencil,
+  X,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { UserRole } from "@/db/schema";
 
@@ -169,6 +177,41 @@ export default function AdminTeamPage() {
     }
   }
 
+  async function removeMember(u: TeamUser) {
+    const label = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email;
+    if (
+      !window.confirm(
+        `Remove ${label} from the team? Their checklist assignments keep their name; their login is revoked.`
+      )
+    )
+      return;
+    setUpdating(u.id);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/team", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: u.id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? "failed");
+      setNotice(
+        data?.clerkStatus === "failed"
+          ? `${label} removed — revoke their login in Clerk manually.`
+          : `${label} removed from the team.`
+      );
+      fetchTeam();
+    } catch (err) {
+      setNotice(
+        err instanceof Error && err.message !== "failed"
+          ? err.message
+          : "Could not remove the team member — try again."
+      );
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   async function resendInvite(u: TeamUser) {
     setUpdating(u.id);
     try {
@@ -306,6 +349,17 @@ export default function AdminTeamPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
+                        {member.role !== "admin" && (
+                          <button
+                            onClick={() => removeMember(member)}
+                            disabled={updating === member.id}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer disabled:opacity-50"
+                            aria-label={`Remove ${member.firstName ?? member.email}`}
+                            title="Remove from team"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </td>
                     </motion.tr>
                   );
@@ -332,7 +386,7 @@ export default function AdminTeamPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.98 }}
               onSubmit={saveMember}
-              className="relative w-full max-w-lg rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
+              className="beam-focus relative w-full max-w-lg rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
             >
               <div className="flex items-start justify-between pb-6">
                 <h2 className="text-2xl font-bold tracking-tight">
