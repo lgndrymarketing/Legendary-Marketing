@@ -252,3 +252,21 @@ body {
 .animate-slideUp {
   animation: slideUp 200ms ease-out;
 }
+
+/* ---------------------------------------------------------------------------
+   Native date/time inputs — iOS Safari renders them with its own chrome:
+   collapsed height when empty, centered value text, ignored borders. Strip
+   the UA appearance so they format like every other field on mobile. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 2.25rem;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+}
