@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BracketLabel } from "@/components/ui/firecrawl";
+import { Beam } from "@/components/ui/beam-focus";
 import { cn } from "@/lib/utils";
 import { Check, Circle, Rocket } from "lucide-react";
 
@@ -48,7 +49,12 @@ export function LaunchPipeline() {
 
   const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
 
+  // The beam marks a launch still in motion; it rests once every step is
+  // done, so a completed build goes quiet.
+  const inFlight = data.total > 0 && data.done < data.total;
+
   return (
+    <Beam active={inFlight}>
     <section className="animate-fade-up border-b border-border pb-8">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <div className="flex items-center gap-2">
@@ -115,5 +121,6 @@ export function LaunchPipeline() {
         ))}
       </div>
     </section>
+    </Beam>
   );
 }
