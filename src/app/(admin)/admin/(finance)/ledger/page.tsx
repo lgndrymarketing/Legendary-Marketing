@@ -61,13 +61,7 @@ interface LedgerResponse {
   };
 }
 
-const PAYMENT_METHODS = [
-  "Zelle",
-  "Cash App",
-  "PayPal",
-  "Stripe",
-  "Bank Transfer",
-];
+import { PAYMENT_METHODS } from "@/lib/payment-methods";
 
 const usd = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", {
@@ -492,7 +486,11 @@ export default function AdminLedgerPage() {
                       setEditForm({ ...editForm, method: e.target.value })
                     }
                   >
-                    {PAYMENT_METHODS.map((m) => (
+                    {/* Keep a legacy method selectable on old payments. */}
+                    {(PAYMENT_METHODS.includes(editForm.method)
+                      ? PAYMENT_METHODS
+                      : [editForm.method, ...PAYMENT_METHODS]
+                    ).map((m) => (
                       <option key={m} value={m}>
                         {m}
                       </option>
