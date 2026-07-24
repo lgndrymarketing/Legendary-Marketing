@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useInView, animate } from "motion/react";
 import { cn } from "@/lib/utils";
 import { easeOutExpo } from "@/lib/motion";
+import { Typewriter } from "@/components/remocn/typewriter";
 
 /** Oversized page header band with hairline close (Activity-Logs style). */
 export function PageHero({
@@ -17,11 +18,14 @@ export function PageHero({
   description,
   action,
   className,
+  typewriter = true,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
   className?: string;
+  /** Type the title out once on mount. Set false for a plain title. */
+  typewriter?: boolean;
 }) {
   return (
     <div className={cn("relative border-b border-border pb-8", className)}>
@@ -41,7 +45,17 @@ export function PageHero({
             transition={{ duration: 0.4, ease: easeOutExpo }}
             className="text-3xl font-bold tracking-tight sm:text-4xl"
           >
-            {title}
+            {typewriter ? (
+              <Typewriter
+                key={title}
+                text={title}
+                cursor
+                charsPerSecond={22}
+                speed={1}
+              />
+            ) : (
+              title
+            )}
           </motion.h1>
           {description && (
             <motion.p
