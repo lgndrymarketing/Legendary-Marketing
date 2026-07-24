@@ -22,6 +22,7 @@ import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AnimatePresence } from "motion/react";
 import { Receipt, Plus, Trash2, Pencil, X, Filter } from "lucide-react";
+import { FocusBeam } from "@/components/ui/beam-focus";
 
 interface ExpenseRow {
   id: string;
@@ -367,12 +368,13 @@ export default function AdminExpensesPage() {
           className="absolute inset-0 bg-background/60 backdrop-blur-xl"
           onClick={() => setFormOpen(false)}
         />
+        <FocusBeam className="relative w-full max-w-lg">
         <motion.form
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           onSubmit={submit}
-          className="beam-focus relative w-full max-w-lg rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
+          className="w-full rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
         >
           <div className="flex items-start justify-between pb-6">
             <h2 className="text-xl font-bold tracking-tight">
@@ -472,6 +474,7 @@ export default function AdminExpensesPage() {
             </Button>
           </div>
         </motion.form>
+        </FocusBeam>
         </div>
       )}
       </AnimatePresence>

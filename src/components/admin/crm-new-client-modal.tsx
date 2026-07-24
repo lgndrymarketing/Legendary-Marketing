@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
 import { INDUSTRIES, SAAS_PLANS } from "@/lib/crm";
+import { FocusBeam } from "@/components/ui/beam-focus";
 
 const PACKAGES = [
   { value: "bronze", label: "Bronze" },
@@ -147,12 +148,13 @@ export function NewClientModal({
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
           />
+          <FocusBeam className="relative w-full max-w-xl">
           <motion.form
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             onSubmit={submit}
-            className="beam-focus relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
+            className="max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
           >
             <div className="flex items-start justify-between pb-6">
               <h2 className="text-2xl font-bold tracking-tight">
@@ -322,6 +324,7 @@ export function NewClientModal({
               </Button>
             </div>
           </motion.form>
+          </FocusBeam>
         </div>
       )}
     </AnimatePresence>
