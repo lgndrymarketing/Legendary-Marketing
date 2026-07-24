@@ -56,7 +56,7 @@ interface LedgerResponse {
 }
 
 import { PAYMENT_METHODS } from "@/lib/payment-methods";
-import { FocusBeam } from "@/components/ui/beam-focus";
+import { FocusBeam, Beam } from "@/components/ui/beam-focus";
 
 const usd = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", {
@@ -199,7 +199,9 @@ export default function AdminLedgerPage() {
         animate="visible"
         className="grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
       >
-        <motion.div variants={cascadeItem} className="px-5 py-6">
+        <motion.div variants={cascadeItem}>
+          {/* Beam runs only while money is owed; rests once settled. */}
+          <Beam active={!!data?.netBalance} className="h-full px-5 py-6">
           <div className="flex items-center justify-between">
             <p className="micro-label">Net Balance</p>
             <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
@@ -224,6 +226,7 @@ export default function AdminLedgerPage() {
               </p>
             </>
           )}
+          </Beam>
         </motion.div>
         {partners.slice(0, 2).map((p) => (
           <motion.div key={p.id} variants={cascadeItem} className="px-5 py-6">

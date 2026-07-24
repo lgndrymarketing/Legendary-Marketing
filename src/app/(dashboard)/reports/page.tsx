@@ -11,7 +11,7 @@ import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { ClipboardCheck } from "lucide-react";
-import { FocusBeam } from "@/components/ui/beam-focus";
+import { Beam } from "@/components/ui/beam-focus";
 
 /**
  * Weekly Reports — the client half of the reporting loop. The agency enters
@@ -286,7 +286,7 @@ function PendingReportForm({
   }
 
   return (
-    <FocusBeam>
+    <Beam>
     <form
       onSubmit={submit}
       className="rounded-xl border border-orange/30 bg-accent/40 p-5"
@@ -331,6 +331,6 @@ function PendingReportForm({
       </div>
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
     </form>
-    </FocusBeam>
+    </Beam>
   );
 }

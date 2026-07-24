@@ -2,6 +2,7 @@ import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import Aurora from "@/components/ui/aurora";
+import { Beam } from "@/components/ui/beam-focus";
 
 export default function SignInPage() {
   return (
@@ -22,8 +23,10 @@ export default function SignInPage() {
         </Link>
         <p className="bracket-label">[ Client Portal ]</p>
 
-        {/* Clerk handles the form itself */}
-        <SignIn forceRedirectUrl="/post-login" signUpUrl="/sign-up" />
+        {/* Clerk handles the form itself; the beam is the one brand moment */}
+        <Beam>
+          <SignIn forceRedirectUrl="/post-login" signUpUrl="/sign-up" />
+        </Beam>
       </div>
     </div>
   );
