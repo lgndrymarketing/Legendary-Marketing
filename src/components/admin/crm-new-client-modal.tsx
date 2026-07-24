@@ -152,7 +152,7 @@ export function NewClientModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             onSubmit={submit}
-            className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
+            className="beam-focus relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border/70 bg-background p-6 shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] sm:p-8"
           >
             <div className="flex items-start justify-between pb-6">
               <h2 className="text-2xl font-bold tracking-tight">

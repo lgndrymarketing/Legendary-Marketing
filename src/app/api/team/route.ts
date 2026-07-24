@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
-import { users, userRoles } from "@/db/schema";
+import { users, userRoles, tasks, files, messages } from "@/db/schema";
 import { eq, ne, count } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth-utils";
@@ -190,6 +190,90 @@ export async function PATCH(req: Request) {
     console.error("Team update error:", error);
     return NextResponse.json(
       { error: "Failed to update team member" },
+      { status: 500 }
+    );
+  }
+}
+
+const deleteSchema = z.object({ userId: z.string().uuid() });
+
+/**
+ * DELETE /api/team — remove a team member. Guard rails:
+ * - You can't delete yourself.
+ * - Admins can't be deleted directly (demote first — the PATCH last-admin
+ *   guard then applies), which also protects the ledger partners and every
+ *   admin-owned financial record from cascading away.
+ * - Their authored records are reassigned to the acting admin before the
+ *   row is removed (messages, uploaded files, created tasks would otherwise
+ *   cascade-delete and erase client-facing history). Checklist assignments
+ *   fall back to the denormalized assignee name automatically.
+ * - Best-effort Clerk cleanup so the login stops working too.
+ */
+export async function DELETE(req: Request) {
+  try {
+    const admin = await requireAdmin();
+
+    const parsed = deleteSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+    const { userId } = parsed.data;
+
+    if (userId === admin.id) {
+      return NextResponse.json(
+        { error: "You can't remove yourself." },
+        { status: 400 }
+      );
+    }
+
+    const [target] = await db.select().from(users).where(eq(users.id, userId));
+    if (!target) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    if (target.role === "admin") {
+      return NextResponse.json(
+        { error: "Demote this admin to another role before removing them." },
+        { status: 400 }
+      );
+    }
+
+    // Keep client-facing history: hand authored records to the acting admin
+    // instead of letting the FK cascades erase them.
+    await db
+      .update(tasks)
+      .set({ createdBy: admin.id })
+      .where(eq(tasks.createdBy, userId));
+    await db
+      .update(files)
+      .set({ uploadedBy: admin.id })
+      .where(eq(files.uploadedBy, userId));
+    await db
+      .update(messages)
+      .set({ senderId: admin.id })
+      .where(eq(messages.senderId, userId));
+
+    await db.delete(users).where(eq(users.id, userId));
+
+    // Best-effort: kill the login too (real accounts only; invite
+    // placeholders never had one).
+    let clerkStatus: "removed" | "skipped" | "failed" = "skipped";
+    if (!target.clerkId.startsWith("invite:") && !target.clerkId.startsWith("seed_")) {
+      try {
+        const cc = await clerkClient();
+        await cc.users.deleteUser(target.clerkId);
+        clerkStatus = "removed";
+      } catch (err) {
+        console.error("Clerk user delete failed:", err);
+        clerkStatus = "failed";
+      }
+    }
+
+    return NextResponse.json({ ok: true, clerkStatus });
+  } catch (error) {
+    if (error instanceof NextResponse) return error;
+    console.error("Team delete error:", error);
+    return NextResponse.json(
+      { error: "Failed to remove team member" },
       { status: 500 }
     );
   }
