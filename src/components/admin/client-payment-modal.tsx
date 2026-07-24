@@ -306,8 +306,8 @@ export function ClientPaymentModal({
                     }
                   />
                   <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-                    Booked as its own one-time expense (category: Fees) and
-                    deducted from profit before partner splits.
+                    Booked as its own one-time expense (category: Fees) on
+                    the P&amp;L. Splits stay on the full collected amount.
                   </p>
                 </div>
               )}

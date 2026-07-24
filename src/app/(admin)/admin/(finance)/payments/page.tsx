@@ -124,7 +124,6 @@ export default function AdminPaymentsPage() {
       );
     })
     .reduce((s, t) => s + t.amount, 0);
-  // Profit-adjusted halves from the ledger API — expenses already deducted.
   const pendingSplits = transactions
     .filter((t) => t.splitStatus === "pending")
     .reduce((s, t) => s + t.otherPartnerCut, 0);
@@ -175,7 +174,7 @@ export default function AdminPaymentsPage() {
         <StatHeader
           className="px-5 py-6"
           title="Unsettled Splits"
-          caption="OWED BETWEEN PARTNERS · AFTER EXPENSES"
+          caption="OWED BETWEEN PARTNERS"
           value={pendingSplits}
           format={usd}
         />
