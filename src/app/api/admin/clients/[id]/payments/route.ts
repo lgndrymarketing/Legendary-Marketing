@@ -4,6 +4,7 @@ import {
   agencyClients,
   clientPayments,
   clientPaymentTypeEnum,
+  expenses,
   users,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,6 +17,9 @@ const recordSchema = z.object({
   receivedBy: z.string().uuid(),
   // Optional override in cents; defaults to the client's fee for the type.
   amount: z.number().int().positive().optional(),
+  // Processor fees in cents (payment-link payments) — booked as a one-time
+  // expense so they deduct from profit before partner splits.
+  fees: z.number().int().min(0).max(100_000_000).optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -44,7 +48,8 @@ export async function POST(
         { status: 400 }
       );
     }
-    const { paymentType, method, receivedBy, amount, notes } = parsed.data;
+    const { paymentType, method, receivedBy, amount, fees, notes } =
+      parsed.data;
 
     const [client] = await db
       .select()
@@ -89,6 +94,21 @@ export async function POST(
         createdBy: admin.id,
       })
       .returning();
+
+    // Processor fees become their own expense row (category "fees"), so
+    // each one shows individually on the Expenses page and the profit-based
+    // ledger deducts it before the partner split.
+    if (fees && fees > 0) {
+      await db.insert(expenses).values({
+        name: `${method} fee — ${client.companyName}`,
+        category: "fees",
+        amount: fees,
+        cadence: "one_time",
+        incurredAt: created.paidAt ?? new Date(),
+        notes: `Auto-recorded from ${method} payment ${created.id}`,
+        createdBy: admin.id,
+      });
+    }
 
     // A collected retainer pushes the next due date a month out and brings a
     // paused/overdue client back to Active (an overdue client is Active with a

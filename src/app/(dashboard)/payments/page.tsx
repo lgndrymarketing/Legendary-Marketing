@@ -33,13 +33,10 @@ interface PaymentRow {
 }
 
 const PAYMENT_METHODS = [
+  "Payment link",
   "Zelle",
-  "CashApp",
-  "Venmo",
-  "Wire",
-  "Card",
-  "Cash",
-  "Other",
+  "Apple Pay",
+  "Cash App",
 ];
 
 const usd = (cents: number) =>

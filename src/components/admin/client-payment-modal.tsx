@@ -5,16 +5,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { PAYMENT_METHODS, FEE_METHOD } from "@/lib/payment-methods";
 
-export const PAYMENT_METHODS = [
-  "Zelle",
-  "CashApp",
-  "Venmo",
-  "Wire",
-  "Card",
-  "Cash",
-  "Other",
-];
+export { PAYMENT_METHODS };
 
 export interface RosterClient {
   id: string;
@@ -65,9 +58,10 @@ export function ClientPaymentModal({
   const [form, setForm] = useState({
     clientId: "",
     paymentType: "monthly_retainer",
-    method: "Zelle",
+    method: PAYMENT_METHODS[0],
     receivedBy: "",
     amount: "",
+    fees: "",
     notes: "",
   });
 
@@ -84,9 +78,10 @@ export function ClientPaymentModal({
           ...f,
           clientId: payment ? "" : presetClientId ?? f.clientId,
           paymentType: payment?.paymentType ?? "monthly_retainer",
-          method: payment?.method ?? "Zelle",
+          method: payment?.method ?? PAYMENT_METHODS[0],
           receivedBy: payment?.receivedBy ?? data.admins?.[0]?.id ?? "",
           amount: payment ? String(payment.amount / 100) : "",
+          fees: "",
           notes: payment?.notes ?? "",
         }));
       })
@@ -119,6 +114,14 @@ export function ClientPaymentModal({
       setError("Enter a positive amount.");
       return;
     }
+    const feeCents =
+      form.method === FEE_METHOD && form.fees.trim()
+        ? Math.round(parseFloat(form.fees) * 100)
+        : undefined;
+    if (feeCents !== undefined && (!Number.isFinite(feeCents) || feeCents < 0)) {
+      setError("Enter the payment link fees (or leave blank).");
+      return;
+    }
     setSaving(true);
     try {
       const res = payment
@@ -141,6 +144,7 @@ export function ClientPaymentModal({
               method: form.method,
               receivedBy: form.receivedBy,
               ...(override !== undefined && { amount: override }),
+              ...(feeCents !== undefined && feeCents > 0 && { fees: feeCents }),
               notes: form.notes.trim() || undefined,
             }),
           });
@@ -287,6 +291,26 @@ export function ClientPaymentModal({
                   />
                 </div>
               </div>
+
+              {!payment && form.method === FEE_METHOD && (
+                <div>
+                  <span className="mb-1.5 block text-[13px] font-medium">
+                    Payment Link Fees ($)
+                  </span>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 12.40"
+                    value={form.fees}
+                    onChange={(e) =>
+                      setForm({ ...form, fees: e.target.value })
+                    }
+                  />
+                  <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                    Booked as its own one-time expense (category: Fees) and
+                    deducted from profit before partner splits.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <span className="mb-1.5 block text-[13px] font-medium">

@@ -50,13 +50,7 @@ interface AdminOption {
   name: string;
 }
 
-const PAYMENT_METHODS = [
-  "Zelle",
-  "Cash App",
-  "PayPal",
-  "Stripe",
-  "Bank Transfer",
-];
+import { PAYMENT_METHODS, FEE_METHOD } from "@/lib/payment-methods";
 
 /** Whole days until the due date; negative = overdue. */
 function daysLeft(due: string | null): number | null {
@@ -172,8 +166,9 @@ export function ClientRoster({
   const [paymentFor, setPaymentFor] = useState<ClientRow | null>(null);
   const [payForm, setPayForm] = useState({
     paymentType: "monthly_retainer",
-    method: "Zelle",
+    method: PAYMENT_METHODS[0],
     receivedBy: "",
+    fees: "",
   });
 
   const load = useCallback(() => {
@@ -328,12 +323,25 @@ export function ClientRoster({
       setError("Pick who received the payment.");
       return;
     }
+    const feeCents =
+      payForm.method === FEE_METHOD && payForm.fees.trim()
+        ? Math.round(parseFloat(payForm.fees) * 100)
+        : undefined;
+    if (feeCents !== undefined && (!Number.isFinite(feeCents) || feeCents < 0)) {
+      setError("Enter the payment link fees (or leave blank).");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/clients/${paymentFor.id}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payForm),
+        body: JSON.stringify({
+          paymentType: payForm.paymentType,
+          method: payForm.method,
+          receivedBy: payForm.receivedBy,
+          ...(feeCents !== undefined && feeCents > 0 && { fees: feeCents }),
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -564,8 +572,9 @@ export function ClientRoster({
                             setPaymentFor(client);
                             setPayForm({
                               paymentType: "monthly_retainer",
-                              method: "Zelle",
+                              method: PAYMENT_METHODS[0],
                               receivedBy: admins[0]?.id ?? "",
+                              fees: "",
                             });
                             setError(null);
                           }}
@@ -693,6 +702,25 @@ export function ClientRoster({
                   </select>
                 </Field>
               </div>
+
+              {payForm.method === FEE_METHOD && (
+                <div className="mt-4">
+                  <Field label="Payment Link Fees ($)">
+                    <Input
+                      inputMode="decimal"
+                      placeholder="e.g. 12.40"
+                      value={payForm.fees}
+                      onChange={(e) =>
+                        setPayForm({ ...payForm, fees: e.target.value })
+                      }
+                    />
+                  </Field>
+                  <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                    Booked as its own one-time expense (category: Fees) and
+                    deducted from profit before partner splits.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-4">
                 <Field label="Received By">
