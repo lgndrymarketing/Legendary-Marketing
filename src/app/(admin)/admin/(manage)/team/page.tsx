@@ -359,7 +359,7 @@ export default function AdminTeamPage() {
                       onChange={(e) =>
                         setForm({ ...form, firstName: e.target.value })
                       }
-                      placeholder="Roxanne"
+                      placeholder="Virginia"
                     />
                   </div>
                   <div>

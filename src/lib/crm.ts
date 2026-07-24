@@ -77,9 +77,9 @@ export const DEFAULT_TASKS: {
   assignee: string;
   priority: TaskPriority;
 }[] = [
-  { title: "Onboarding form", department: "csm", stage: "onboarding_form", assignee: "Roxanne", priority: "high" },
-  { title: "Onboarding guide", department: "csm", stage: "onboarding_guide", assignee: "Roxanne", priority: "medium" },
-  { title: "CRM Access", department: "csm", stage: "crm_access", assignee: "Roxanne", priority: "high" },
+  { title: "Onboarding form", department: "csm", stage: "onboarding_form", assignee: "Virginia", priority: "high" },
+  { title: "Onboarding guide", department: "csm", stage: "onboarding_guide", assignee: "Virginia", priority: "medium" },
+  { title: "CRM Access", department: "csm", stage: "crm_access", assignee: "Virginia", priority: "high" },
   { title: "Funnel build out", department: "funnel", stage: "funnel_build_out", assignee: "Matthias", priority: "high" },
   { title: "Domain connected", department: "funnel", stage: "funnel_build_out", assignee: "Matthias", priority: "high" },
   { title: "Automations build out", department: "automations", stage: "automations_build_out", assignee: "Jude", priority: "high" },
@@ -88,8 +88,8 @@ export const DEFAULT_TASKS: {
   { title: "A2P website & form", department: "automations", stage: "a2p_submitted", assignee: "Kyle", priority: "high" },
   { title: "A2P verified", department: "automations", stage: "a2p_verified", assignee: "Kyle", priority: "high" },
   { title: "Ad creatives", department: "ads", stage: "ad_creatives", assignee: "Virginia", priority: "high" },
-  { title: "Launch form submitted", department: "csm", stage: "launch_form_submitted", assignee: "Roxanne", priority: "high" },
-  { title: "Launch call completed", department: "csm", stage: "launch_call_completed", assignee: "Roxanne", priority: "high" },
+  { title: "Launch form submitted", department: "csm", stage: "launch_form_submitted", assignee: "Virginia", priority: "high" },
+  { title: "Launch call completed", department: "csm", stage: "launch_call_completed", assignee: "Virginia", priority: "high" },
   { title: "Ads campaign build out", department: "ads", stage: "ads_campaign_build_out", assignee: "Uri", priority: "high" },
   { title: "Ads launched", department: "ads", stage: "ads_launched", assignee: "Uri", priority: "high" },
 ];
