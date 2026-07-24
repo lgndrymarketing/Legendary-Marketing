@@ -5,8 +5,8 @@
  *
  * "Payment link" carries processor fees — the record-payment forms surface
  * a fees input for it, and each fee is auto-booked as its own one-time
- * expense (category "fees"), which the profit-based partner ledger then
- * deducts before any split.
+ * expense (category "fees") on the P&L. Partner splits are NOT reduced by
+ * expenses — they run on the full collected amount, by request.
  */
 
 export const PAYMENT_METHODS = [

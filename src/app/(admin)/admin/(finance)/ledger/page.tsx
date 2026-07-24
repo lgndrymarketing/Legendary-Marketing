@@ -53,12 +53,6 @@ interface LedgerResponse {
   partners: Partner[];
   netBalance: { from: string; to: string; amount: number } | null;
   transactions: Transaction[];
-  summary: {
-    totalNet: number;
-    totalExpenses: number;
-    profit: number;
-    profitRatio: number;
-  };
 }
 
 import { PAYMENT_METHODS } from "@/lib/payment-methods";
@@ -192,29 +186,10 @@ export default function AdminLedgerPage() {
         title="Partner Ledger"
         description={
           p1 && p2
-            ? `Track payments between ${p1.name} and ${p2.name} automatically — splits come out of profit, after expenses.`
-            : "Partner splits on profit, tracked automatically from client payments minus expenses."
+            ? `Track payments between ${p1.name} and ${p2.name} automatically.`
+            : "Partner splits, tracked automatically from recorded client payments."
         }
       />
-
-      {/* Profit equation — expenses come off the top before any split */}
-      {data?.summary && (
-        <p className="bracket-label flex flex-wrap items-center gap-2">
-          <span className="h-3.5 w-[3px] rounded-full bg-orange" />
-          <span>
-            [ PROFIT POOL ] · COLLECTIONS {usd(data.summary.totalNet)} − EXPENSES{" "}
-            {usd(data.summary.totalExpenses)} ={" "}
-            <b
-              className={cn(
-                data.summary.profit >= 0 ? "text-success" : "text-destructive"
-              )}
-            >
-              {usd(data.summary.profit)}
-            </b>{" "}
-            TO SPLIT
-          </span>
-        </p>
-      )}
 
       {/* Balance + earnings — hairline-divided 3-up */}
       <motion.section
@@ -235,7 +210,7 @@ export default function AdminLedgerPage() {
                 {usd(data.netBalance.amount)}
               </p>
               <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                Unsettled transactions · profit-adjusted
+                Based on unsettled transactions
               </p>
             </>
           ) : (
@@ -244,7 +219,7 @@ export default function AdminLedgerPage() {
                 All settled up!
               </p>
               <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                Unsettled transactions · profit-adjusted
+                Based on unsettled transactions
               </p>
             </>
           )}
@@ -255,16 +230,11 @@ export default function AdminLedgerPage() {
               <p className="micro-label">{p.name} Total Earned</p>
               <HandCoins className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p
-              className={cn(
-                "mt-2 text-2xl font-bold tracking-tight",
-                p.earned < 0 && "text-destructive"
-              )}
-            >
+            <p className="mt-2 text-2xl font-bold tracking-tight">
               {usd(p.earned)}
             </p>
             <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-              Half of profit, after expenses
+              Half of all net collections
             </p>
           </motion.div>
         ))}
