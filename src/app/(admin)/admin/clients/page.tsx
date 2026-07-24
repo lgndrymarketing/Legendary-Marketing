@@ -112,21 +112,17 @@ export default function ClientCrmPage() {
   }
 
   function ViewPortalButton({ c }: { c: Client }) {
-    if (!c.projectId) {
-      return (
-        <span
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground/50"
-          title="No portal linked yet"
-        >
-          <ExternalLink className="h-4 w-4" />
-          View Portal
-        </span>
-      );
-    }
+    // Always available — the portal preview mirrors their pipeline and
+    // reports whether or not a portal login has been accepted yet.
     return (
       <Link
-        href={`/admin/campaigns/${c.projectId}`}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5"
+        href={`/admin/clients/${c.id}/portal`}
+        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5"
+        title={
+          c.portalEmail
+            ? `View the portal as ${c.portalEmail}`
+            : "View the portal this client will see"
+        }
       >
         <ExternalLink className="h-4 w-4" />
         View Portal
@@ -253,16 +249,14 @@ export default function ClientCrmPage() {
                           >
                             <Settings2 className="h-4 w-4" />
                           </button>
-                          {c.projectId && (
-                            <Link
-                              href={`/admin/campaigns/${c.projectId}`}
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                              aria-label="View portal"
-                              title="View portal"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Link>
-                          )}
+                          <Link
+                            href={`/admin/clients/${c.id}/portal`}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            aria-label={`View ${c.companyName}'s portal`}
+                            title="View portal"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -340,7 +334,7 @@ export default function ClientCrmPage() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setEditId(c.id)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+                        className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
                       >
                         <Settings2 className="h-4 w-4" />
                         Edit Details

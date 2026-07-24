@@ -2,24 +2,30 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, FolderKanban, MessageSquare, FileText, Loader2, AlertCircle } from "lucide-react";
+import { Search, X, FolderKanban, MessageSquare, FileText, Loader2, AlertCircle, Users, ClipboardList, Inbox } from "lucide-react";
 
 interface SearchResult {
   id: string;
-  type: "project" | "message" | "file";
+  type: "client" | "project" | "task" | "lead" | "message" | "file";
   title: string;
   subtitle: string;
   href: string;
 }
 
 const typeIcons = {
+  client: Users,
   project: FolderKanban,
+  task: ClipboardList,
+  lead: Inbox,
   message: MessageSquare,
   file: FileText,
 };
 
 const typeLabels: Record<SearchResult["type"], string> = {
+  client: "Clients",
   project: "Campaigns",
+  task: "Tasks",
+  lead: "Leads",
   message: "Messages",
   file: "Files",
 };
@@ -195,7 +201,7 @@ export function GlobalSearch() {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search campaigns, messages, files..."
+                placeholder="Search clients, tasks, campaigns, messages…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent py-3.5 text-sm outline-none placeholder:text-muted-foreground"
@@ -270,7 +276,7 @@ export function GlobalSearch() {
               {/* Empty state */}
               {!query.trim() && !error && (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  Type to search across campaigns, messages, and files
+                  Type to search across clients, tasks, campaigns, messages, and files
                 </div>
               )}
             </div>
