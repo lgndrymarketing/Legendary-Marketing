@@ -155,13 +155,20 @@ export async function POST(request: Request) {
     }
     const { startDate, nextDueDate, email, ...rest } = parsed.data;
 
+    // First retainer comes due one month after the start date unless an
+    // explicit due date was provided; each recorded retainer then advances
+    // it another month.
+    const start = startDate ? new Date(startDate) : new Date();
+    const firstDue = new Date(start);
+    firstDue.setUTCMonth(firstDue.getUTCMonth() + 1);
+
     const [created] = await db
       .insert(agencyClients)
       .values({
         ...rest,
         email: email ?? null,
-        startDate: startDate ? new Date(startDate) : new Date(),
-        nextDueDate: nextDueDate ? new Date(nextDueDate) : null,
+        startDate: start,
+        nextDueDate: nextDueDate ? new Date(nextDueDate) : firstDue,
         createdBy: admin.id,
       })
       .returning();
