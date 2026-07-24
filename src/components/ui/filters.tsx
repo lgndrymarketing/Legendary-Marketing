@@ -413,11 +413,13 @@ export function DateRangePill({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-50 mt-2 w-max max-w-[92vw] overflow-auto rounded-2xl border border-border bg-background shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)]"
+            className="z-50 rounded-2xl border border-border bg-background shadow-[0_1px_3px_rgba(15,16,16,0.06),0_24px_60px_-16px_rgba(15,16,16,0.3)] max-sm:fixed max-sm:inset-x-3 max-sm:top-20 max-sm:max-h-[80vh] max-sm:overflow-y-auto sm:absolute sm:right-0 sm:mt-2 sm:w-max sm:max-w-[92vw] sm:overflow-auto"
           >
-            <div className="flex">
+            {/* Phones: presets become a chip row above a single month.
+                sm+: preset rail beside dual months. */}
+            <div className="flex flex-col sm:flex-row">
               {/* Preset rail */}
-              <div className="w-40 shrink-0 border-r border-border p-2">
+              <div className="flex gap-1 overflow-x-auto border-b border-border p-2 sm:w-40 sm:shrink-0 sm:flex-col sm:gap-0 sm:overflow-visible sm:border-b-0 sm:border-r">
                 {DATE_PRESETS.map((p) => {
                   const active = draft.preset === p.value;
                   return (
@@ -430,7 +432,7 @@ export function DateRangePill({
                         setOpen(false);
                       }}
                       className={cn(
-                        "block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer",
+                        "shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer sm:block sm:w-full sm:text-left",
                         active
                           ? "bg-accent font-medium text-orange"
                           : "hover:bg-muted"
@@ -443,8 +445,8 @@ export function DateRangePill({
               </div>
 
               {/* Calendars */}
-              <div className="p-4">
-                <div className="relative flex gap-8">
+              <div className="p-4 max-sm:mx-auto max-sm:w-full max-sm:max-w-[19rem]">
+                <div className="relative flex justify-center gap-8 sm:justify-start">
                   <button
                     type="button"
                     onClick={() => setAnchor((a) => ymAdd(a, -1))}
@@ -478,7 +480,7 @@ export function DateRangePill({
                 </div>
 
                 {/* Footer */}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
                   <p className="font-mono text-[11px] text-muted-foreground">
                     {draft.preset === "custom" && draft.from
                       ? `${fmtDay(draft.from)} → ${
