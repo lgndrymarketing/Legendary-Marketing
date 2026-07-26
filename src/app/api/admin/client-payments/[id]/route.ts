@@ -17,6 +17,7 @@ const updateSchema = z
     amount: z.number().int().positive().optional(),
     receivedBy: z.string().uuid().optional(),
     splitStatus: z.enum(splitStatusEnum.enumValues).optional(),
+    paidAt: z.string().datetime().optional(),
     notes: z.string().max(2000).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" });
@@ -55,12 +56,16 @@ export async function PATCH(
       }
     }
 
+    const { paidAt, ...rest } = parsed.data;
+
     const [updated] = await db
       .update(clientPayments)
       .set({
-        ...parsed.data,
-        ...(parsed.data.splitStatus === "settled" && { settledAt: new Date() }),
-        ...(parsed.data.splitStatus === "pending" && { settledAt: null }),
+        ...rest,
+        // paidAt arrives as an ISO string; the column is a timestamp.
+        ...(paidAt && { paidAt: new Date(paidAt) }),
+        ...(rest.splitStatus === "settled" && { settledAt: new Date() }),
+        ...(rest.splitStatus === "pending" && { settledAt: null }),
       })
       .where(eq(clientPayments.id, id))
       .returning();

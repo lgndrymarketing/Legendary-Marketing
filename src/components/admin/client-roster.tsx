@@ -169,6 +169,7 @@ export function ClientRoster({
     method: PAYMENT_METHODS[0],
     receivedBy: "",
     fees: "",
+    paidAt: new Date().toISOString().slice(0, 10),
   });
 
   const load = useCallback(() => {
@@ -341,6 +342,9 @@ export function ClientRoster({
           method: payForm.method,
           receivedBy: payForm.receivedBy,
           ...(feeCents !== undefined && feeCents > 0 && { fees: feeCents }),
+          ...(payForm.paidAt && {
+            paidAt: new Date(payForm.paidAt + "T00:00:00Z").toISOString(),
+          }),
         }),
       });
       if (!res.ok) {
@@ -575,6 +579,7 @@ export function ClientRoster({
                               method: PAYMENT_METHODS[0],
                               receivedBy: admins[0]?.id ?? "",
                               fees: "",
+                              paidAt: new Date().toISOString().slice(0, 10),
                             });
                             setError(null);
                           }}
@@ -721,6 +726,19 @@ export function ClientRoster({
                   </p>
                 </div>
               )}
+
+              <div className="mt-4">
+                <Field label="Date Received">
+                  <Input
+                    type="date"
+                    value={payForm.paidAt}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, paidAt: e.target.value })
+                    }
+                  />
+                </Field>
+              </div>
 
               <div className="mt-4">
                 <Field label="Received By">
