@@ -23,10 +23,19 @@ export default function SignInPage() {
         </Link>
         <p className="bracket-label">[ Client Portal ]</p>
 
-        {/* Clerk handles the form itself; the beam is the one brand moment */}
+        {/* Clerk handles the form itself; the beam is the one brand moment.
+            No sign-up link — the portal is invitation-only (staff add
+            clients and team members, Clerk emails the invite). */}
         <Beam>
-          <SignIn forceRedirectUrl="/post-login" signUpUrl="/sign-up" />
+          <SignIn
+            forceRedirectUrl="/post-login"
+            appearance={{ elements: { footerAction: "hidden" } }}
+          />
         </Beam>
+        <p className="max-w-xs text-center font-mono text-[11px] leading-relaxed text-muted-foreground">
+          Access is by invitation. If your agency hasn&apos;t sent one yet,
+          reach out and they&apos;ll add you.
+        </p>
       </div>
     </div>
   );

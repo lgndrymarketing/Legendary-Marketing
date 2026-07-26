@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import {
   agencyClients,
@@ -26,6 +27,8 @@ const updateSchema = z
     driveUrl: z.string().max(1000).nullable().optional(),
     landingPageUrl: z.string().max(1000).nullable().optional(),
     stage: z.enum(crmStageEnum.enumValues).optional(),
+    /** Email a fresh portal invite (used when the login email changes). */
+    resendInvite: z.boolean().optional(),
     setupFee: z.number().int().min(0).optional(),
     monthlyFee: z.number().int().min(0).optional(),
     partnerCut: z.number().int().min(0).optional(),
@@ -160,7 +163,17 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    const { startDate, nextDueDate, ...rest } = parsed.data;
+    const { startDate, nextDueDate, resendInvite, ...rest } = parsed.data;
+
+    const [existing] = await db
+      .select({ email: agencyClients.email })
+      .from(agencyClients)
+      .where(eq(agencyClients.id, id));
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const emailChanged =
+      rest.email !== undefined && rest.email !== existing.email;
 
     const [updated] = await db
       .update(agencyClients)
@@ -178,10 +191,28 @@ export async function PATCH(
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    // A new login email needs a fresh invite — the old address's invitation
+    // no longer maps to this client. Best-effort: never fail the save.
+    let inviteStatus: "sent" | "failed" | undefined;
+    if (updated.email && (resendInvite || emailChanged)) {
+      inviteStatus = "failed";
+      try {
+        const cc = await clerkClient();
+        await cc.invitations.createInvitation({
+          emailAddress: updated.email,
+          ignoreExisting: true,
+        });
+        inviteStatus = "sent";
+      } catch (err) {
+        console.error("Client invite failed:", err);
+      }
+    }
+
     try {
       await publishToChannel("admin:crm", "update", { type: "client_updated" });
     } catch {}
-    return NextResponse.json(updated);
+    return NextResponse.json({ ...updated, inviteStatus });
   } catch (error) {
     if (error instanceof NextResponse) return error;
     console.error("Client update error:", error);

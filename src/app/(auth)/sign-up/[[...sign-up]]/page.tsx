@@ -1,10 +1,26 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/ui/logo";
 import Aurora from "@/components/ui/aurora";
 import { Beam } from "@/components/ui/beam-focus";
 
-export default function SignUpPage() {
+/**
+ * Invitation-only sign-up. The portal is not open for public registration —
+ * staff add clients and team members, and Clerk emails them an invite. That
+ * invite link carries a `__clerk_ticket`, which is the ONLY way this page
+ * renders; anyone else is sent to sign-in. (The route has to stay alive:
+ * accepting an invitation and setting a password happens here.)
+ */
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const ticket = params.__clerk_ticket;
+  if (!ticket) redirect("/sign-in");
+
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
       {/* Subtle aurora glow pinned to the upper portion of the page */}
@@ -21,11 +37,15 @@ export default function SignUpPage() {
         <Link href="/" className="flex flex-col items-center gap-3">
           <Logo size={72} />
         </Link>
-        <p className="bracket-label">[ Client Portal ]</p>
+        <p className="bracket-label">[ Accept Your Invite ]</p>
 
         {/* Clerk handles the form itself */}
         <Beam>
-          <SignUp forceRedirectUrl="/onboarding" signInUrl="/sign-in" />
+          <SignUp
+            forceRedirectUrl="/post-login"
+            signInUrl="/sign-in"
+            appearance={{ elements: { footerAction: "hidden" } }}
+          />
         </Beam>
       </div>
     </div>
