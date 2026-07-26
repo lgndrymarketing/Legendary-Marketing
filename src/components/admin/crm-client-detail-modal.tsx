@@ -54,6 +54,7 @@ interface ClientData {
   package: string;
   packageLabel: string | null;
   saasPlan: string | null;
+  email: string | null;
   status: string;
   startDate: string;
   driveUrl: string | null;
@@ -95,6 +96,7 @@ export function ClientDetailModal({
   const [form, setForm] = useState({
     companyName: "",
     contactName: "",
+    email: "",
     status: "active",
     industry: "",
     industryCustom: "",
@@ -120,6 +122,7 @@ export function ClientDetailModal({
         setForm({
           companyName: c.companyName,
           contactName: c.contactName,
+          email: c.email ?? "",
           status: c.status,
           industry: c.businessType
             ? knownIndustry
@@ -196,6 +199,7 @@ export function ClientDetailModal({
         body: JSON.stringify({
           companyName: form.companyName.trim(),
           contactName: form.contactName.trim(),
+          email: form.email.trim() || null,
           status: form.status,
           businessType: industry,
           package: form.package || undefined,
@@ -279,6 +283,20 @@ export function ClientDetailModal({
                         setForm({ ...form, contactName: e.target.value })
                       }
                     />
+                  </Field>
+                  <Field label="Login Email">
+                    <Input
+                      type="email"
+                      placeholder="client@example.com"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                    />
+                    <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                      Changing this emails a fresh portal invite to the new
+                      address.
+                    </p>
                   </Field>
                   <Field label="Status">
                     <select
