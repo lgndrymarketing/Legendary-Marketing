@@ -20,6 +20,8 @@ const recordSchema = z.object({
   // Processor fees in cents (payment-link payments) — booked as a one-time
   // expense so they deduct from profit before partner splits.
   fees: z.number().int().min(0).max(100_000_000).optional(),
+  // When the money actually landed; defaults to now.
+  paidAt: z.string().datetime().optional(),
   notes: z.string().max(2000).optional(),
 });
 
@@ -48,7 +50,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    const { paymentType, method, receivedBy, amount, fees, notes } =
+    const { paymentType, method, receivedBy, amount, fees, notes, paidAt } =
       parsed.data;
 
     const [client] = await db
@@ -91,6 +93,7 @@ export async function POST(
         partnerCut: Math.min(client.partnerCut, finalAmount),
         receivedBy,
         notes,
+        ...(paidAt && { paidAt: new Date(paidAt) }),
         createdBy: admin.id,
       })
       .returning();

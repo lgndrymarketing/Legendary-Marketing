@@ -19,6 +19,7 @@ export interface RosterClient {
 
 export interface EditablePayment {
   id: string;
+  paidAt?: string;
   paymentType: "setup_fee" | "monthly_retainer";
   method: string;
   amount: number;
@@ -28,6 +29,8 @@ export interface EditablePayment {
 
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
+
+const today = () => new Date().toISOString().slice(0, 10);
 
 const usd = (cents: number) =>
   `$${Math.round(cents / 100).toLocaleString("en-US")}`;
@@ -63,6 +66,7 @@ export function ClientPaymentModal({
     receivedBy: "",
     amount: "",
     fees: "",
+    paidAt: today(),
     notes: "",
   });
 
@@ -83,6 +87,7 @@ export function ClientPaymentModal({
           receivedBy: payment?.receivedBy ?? data.admins?.[0]?.id ?? "",
           amount: payment ? String(payment.amount / 100) : "",
           fees: "",
+          paidAt: payment?.paidAt ? payment.paidAt.slice(0, 10) : today(),
           notes: payment?.notes ?? "",
         }));
       })
@@ -134,6 +139,9 @@ export function ClientPaymentModal({
               method: form.method,
               receivedBy: form.receivedBy,
               ...(override !== undefined && { amount: override }),
+              ...(form.paidAt && {
+                paidAt: new Date(form.paidAt + "T00:00:00Z").toISOString(),
+              }),
               notes: form.notes.trim() || null,
             }),
           })
@@ -146,6 +154,9 @@ export function ClientPaymentModal({
               receivedBy: form.receivedBy,
               ...(override !== undefined && { amount: override }),
               ...(feeCents !== undefined && feeCents > 0 && { fees: feeCents }),
+              ...(form.paidAt && {
+                paidAt: new Date(form.paidAt + "T00:00:00Z").toISOString(),
+              }),
               notes: form.notes.trim() || undefined,
             }),
           });
