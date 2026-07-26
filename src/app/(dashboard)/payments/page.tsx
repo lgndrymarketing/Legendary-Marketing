@@ -158,7 +158,8 @@ export default function ClientPaymentsPage() {
                 {new Date(client.startDate).toLocaleDateString("en-US", {
                   month: "short",
                   year: "numeric",
-                })}
+                timeZone: "UTC",
+})}
               </p>
             </motion.div>
             <motion.div variants={cascadeItem} className="px-5 py-6">
@@ -182,7 +183,8 @@ export default function ClientPaymentsPage() {
                   ? new Date(client.nextDueDate).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
-                    })
+                    timeZone: "UTC",
+})
                   : "—"}
               </p>
               {daysLeft !== null && (
@@ -255,7 +257,8 @@ export default function ClientPaymentsPage() {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
-                          })}
+                          timeZone: "UTC",
+})}
                         </td>
                         <td className="py-3 pr-4">
                           {p.paymentType === "setup_fee"

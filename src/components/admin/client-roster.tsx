@@ -522,7 +522,12 @@ export function ClientRoster({
                       <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(client.startDate).toLocaleDateString(
                           "en-US",
-                          { month: "short", day: "numeric", year: "numeric" }
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            timeZone: "UTC",
+                          }
                         )}
                       </td>
                       <td
@@ -540,6 +545,7 @@ export function ClientRoster({
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
+                                timeZone: "UTC",
                               }
                             )
                           : "—"}

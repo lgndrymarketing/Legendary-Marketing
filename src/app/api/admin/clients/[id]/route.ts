@@ -9,6 +9,7 @@ import {
   crmStageEnum,
   projects,
   revisionRequests,
+  users,
 } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
@@ -165,8 +166,10 @@ export async function PATCH(
     }
     const { startDate, nextDueDate, resendInvite, ...rest } = parsed.data;
 
+    if (rest.email) rest.email = rest.email.trim().toLowerCase();
+
     const [existing] = await db
-      .select({ email: agencyClients.email })
+      .select({ email: agencyClients.email, userId: agencyClients.userId })
       .from(agencyClients)
       .where(eq(agencyClients.id, id));
     if (!existing) {
@@ -190,6 +193,23 @@ export async function PATCH(
 
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Re-point the portal link at the new address. The Clerk webhook only
+    // links when userId IS NULL, so without this an already-onboarded
+    // client keeps the OLD account and the new address lands in an empty
+    // portal forever.
+    if (emailChanged && updated.email) {
+      const [existingUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, updated.email));
+      // Point at the account that owns the new address, or clear the link
+      // so the webhook can attach it when they accept the fresh invite.
+      await db
+        .update(agencyClients)
+        .set({ userId: existingUser?.id ?? null, updatedAt: new Date() })
+        .where(eq(agencyClients.id, id));
     }
 
     // A new login email needs a fresh invite — the old address's invitation
