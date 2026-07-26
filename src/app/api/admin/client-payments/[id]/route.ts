@@ -7,7 +7,7 @@ import {
   users,
   expenses,
 } from "@/db/schema";
-import { eq, ilike } from "drizzle-orm";
+import { and, eq, ilike } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
 
@@ -116,7 +116,12 @@ export async function DELETE(
     // otherwise the fee lingers on the P&L for money that was never taken.
     await db
       .delete(expenses)
-      .where(ilike(expenses.notes, `%payment ${id}%`));
+      .where(
+        and(
+          eq(expenses.category, "fees"),
+          ilike(expenses.notes, `Auto-recorded from % payment ${id}`)
+        )
+      );
 
     const [deleted] = await db
       .delete(clientPayments)

@@ -178,6 +178,25 @@ export async function PATCH(
     const emailChanged =
       rest.email !== undefined && rest.email !== existing.email;
 
+    // Same guard as creation: a staff/admin address can't double as a client
+    // login (Clerk won't mint a second account, so the invite no-ops), and
+    // linking the CRM record to a staff user would hand them the portal.
+    if (emailChanged && rest.email) {
+      const [clash] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.email, rest.email));
+      if (clash && clash.role !== "client") {
+        return NextResponse.json(
+          {
+            error:
+              "That email already belongs to a team account. Use the client's own email so their portal invite works.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const [updated] = await db
       .update(agencyClients)
       .set({
@@ -201,14 +220,20 @@ export async function PATCH(
     // portal forever.
     if (emailChanged && updated.email) {
       const [existingUser] = await db
-        .select({ id: users.id })
+        .select({ id: users.id, role: users.role })
         .from(users)
         .where(eq(users.email, updated.email));
       // Point at the account that owns the new address, or clear the link
       // so the webhook can attach it when they accept the fresh invite.
       await db
         .update(agencyClients)
-        .set({ userId: existingUser?.id ?? null, updatedAt: new Date() })
+        .set({
+          userId:
+            existingUser && existingUser.role === "client"
+              ? existingUser.id
+              : null,
+          updatedAt: new Date(),
+        })
         .where(eq(agencyClients.id, id));
     }
 

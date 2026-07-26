@@ -73,29 +73,40 @@ export async function GET() {
       // Only attribute the other half when the receiver IS a partner —
       // otherwise `find(p => p.id !== receivedBy)` would name p1 for a
       // payment they never received.
-      const other = receiver
-        ? partners.find((p) => p.id !== r.receivedBy)
-        : undefined;
+      // With only one partner configured there's nobody to split with —
+      // the sole partner keeps everything (never zero out their earnings).
+      const solo = partners.length < 2;
+      const other =
+        receiver && !solo
+          ? partners.find((p) => p.id !== r.receivedBy)
+          : undefined;
       // Floor the transfer so the receiver keeps the odd cent; the two
       // halves then sum back to net exactly.
       const half = other ? Math.floor(net / 2) : 0;
+      const counts = !!receiver;
       return {
         ...r,
         receivedByName: receiver?.name ?? "—",
         otherPartnerName: other?.name ?? "—",
         otherPartnerCut: half,
-        /** False when the receiver isn't a ledger partner — excluded from the split. */
-        inSplit: !!other,
+        /** False when the receiver isn't a ledger partner — excluded from earnings. */
+        inSplit: counts,
       };
     });
 
     // Earnings: each partner earns half of every net collection — the full
     // pre-expense amount.
     // Earnings only count payments that actually belong to the partnership.
-    const totalNet = transactions
-      .filter((t) => t.inSplit)
-      .reduce((s, r) => s + Math.max(0, r.amount - r.partnerCut), 0);
-    const perPartnerEarned = Math.floor(totalNet / 2);
+    const counted = transactions.filter((t) => t.inSplit);
+    const totalNet = counted.reduce(
+      (s, r) => s + Math.max(0, r.amount - r.partnerCut),
+      0,
+    );
+    // Sum the per-row halves so the cards reconcile exactly with the table
+    // (Σ floor ≠ floor Σ on odd cents); the receiver keeps the remainder.
+    const transferred = counted.reduce((s, t) => s + t.otherPartnerCut, 0);
+    const perPartnerEarned =
+      partners.length < 2 ? totalNet : totalNet - transferred;
 
     // Net balance from pending splits only.
     let balance = 0; // positive → p1 received extra, owes p2
@@ -108,8 +119,8 @@ export async function GET() {
       !p1 || !p2 || balance === 0
         ? null
         : balance > 0
-        ? { from: p1.name, to: p2.name, amount: balance }
-        : { from: p2.name, to: p1.name, amount: -balance };
+          ? { from: p1.name, to: p2.name, amount: balance }
+          : { from: p2.name, to: p1.name, amount: -balance };
 
     return NextResponse.json({
       partners: partners.map((p) => ({ ...p, earned: perPartnerEarned })),
@@ -121,7 +132,7 @@ export async function GET() {
     console.error("Ledger fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch ledger" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -52,6 +52,14 @@ interface AdminOption {
 
 import { PAYMENT_METHODS, FEE_METHOD } from "@/lib/payment-methods";
 
+/** Local calendar date — UTC would read as tomorrow for evening US users. */
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+};
+
 /** Whole days until the due date; negative = overdue. */
 function daysLeft(due: string | null): number | null {
   if (!due) return null;
@@ -91,8 +99,8 @@ const statusClass = (s: string) =>
   s === "active"
     ? "text-success"
     : s === "paused"
-    ? "text-warning"
-    : "text-destructive";
+      ? "text-warning"
+      : "text-destructive";
 
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
@@ -169,7 +177,7 @@ export function ClientRoster({
     method: PAYMENT_METHODS[0],
     receivedBy: "",
     fees: "",
-    paidAt: new Date().toISOString().slice(0, 10),
+    paidAt: today(),
   });
 
   const load = useCallback(() => {
@@ -288,7 +296,10 @@ export function ClientRoster({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "failed");
+      }
 
       // "Setup fee already paid" → log the setup payment against the new
       // client, which auto-generates the 50/50 partner split on the ledger.
@@ -328,7 +339,10 @@ export function ClientRoster({
       payForm.method === FEE_METHOD && payForm.fees.trim()
         ? Math.round(parseFloat(payForm.fees) * 100)
         : undefined;
-    if (feeCents !== undefined && (!Number.isFinite(feeCents) || feeCents < 0)) {
+    if (
+      feeCents !== undefined &&
+      (!Number.isFinite(feeCents) || feeCents < 0)
+    ) {
       setError("Enter the payment link fees (or leave blank).");
       return;
     }
@@ -357,7 +371,7 @@ export function ClientRoster({
       setError(
         err instanceof Error && err.message !== "failed"
           ? err.message
-          : "Could not record the payment — try again."
+          : "Could not record the payment — try again.",
       );
     } finally {
       setSaving(false);
@@ -377,7 +391,7 @@ export function ClientRoster({
   async function removeClient(c: ClientRow) {
     if (
       !window.confirm(
-        `Delete ${c.companyName}? Their payment history goes with them.`
+        `Delete ${c.companyName}? Their payment history goes with them.`,
       )
     )
       return;
@@ -445,7 +459,9 @@ export function ClientRoster({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left align-top">
-                  <th className="micro-label py-3 pr-4">Client &amp; Company</th>
+                  <th className="micro-label py-3 pr-4">
+                    Client &amp; Company
+                  </th>
                   <th className="micro-label py-3 pr-4">Package</th>
                   <th className="py-3 pr-4">
                     <span className="micro-label block">Setup</span>
@@ -497,7 +513,7 @@ export function ClientRoster({
                         <span
                           className={cn(
                             "rounded-full px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide",
-                            packageBadge[client.package]
+                            packageBadge[client.package],
                           )}
                         >
                           {client.package === "custom" && client.packageLabel
@@ -527,7 +543,7 @@ export function ClientRoster({
                             day: "numeric",
                             year: "numeric",
                             timeZone: "UTC",
-                          }
+                          },
                         )}
                       </td>
                       <td
@@ -535,7 +551,7 @@ export function ClientRoster({
                           "py-3 pr-4 font-mono text-xs whitespace-nowrap",
                           isOverdue
                             ? "font-semibold text-destructive"
-                            : "text-muted-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         {client.nextDueDate
@@ -546,7 +562,7 @@ export function ClientRoster({
                                 day: "numeric",
                                 year: "numeric",
                                 timeZone: "UTC",
-                              }
+                              },
                             )
                           : "—"}
                       </td>
@@ -555,14 +571,14 @@ export function ClientRoster({
                           "py-3 pr-4 font-mono text-xs whitespace-nowrap",
                           isOverdue
                             ? "font-semibold text-destructive"
-                            : "text-muted-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         {dl === null
                           ? "—"
                           : dl < 0
-                          ? `${-dl} day${dl === -1 ? "" : "s"} overdue`
-                          : `${dl} days`}
+                            ? `${-dl} day${dl === -1 ? "" : "s"} overdue`
+                            : `${dl} days`}
                       </td>
                       <td className="py-3 pr-4">
                         <span
@@ -570,7 +586,7 @@ export function ClientRoster({
                             "font-mono text-[11px] font-semibold uppercase tracking-wide",
                             isOverdue
                               ? "text-destructive"
-                              : statusClass(client.status)
+                              : statusClass(client.status),
                           )}
                         >
                           {isOverdue ? "Overdue" : client.status}
@@ -585,7 +601,7 @@ export function ClientRoster({
                               method: PAYMENT_METHODS[0],
                               receivedBy: admins[0]?.id ?? "",
                               fees: "",
-                              paidAt: new Date().toISOString().slice(0, 10),
+                              paidAt: today(),
                             });
                             setError(null);
                           }}
@@ -610,7 +626,7 @@ export function ClientRoster({
                               "rounded-md p-1.5 text-muted-foreground transition-colors cursor-pointer",
                               client.status === "paused"
                                 ? "hover:bg-success/10 hover:text-success"
-                                : "hover:bg-warning/10 hover:text-warning"
+                                : "hover:bg-warning/10 hover:text-warning",
                             )}
                             aria-label={
                               client.status === "paused"
@@ -727,8 +743,8 @@ export function ClientRoster({
                     />
                   </Field>
                   <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-                    Booked as its own one-time expense (category: Fees) on
-                    the P&amp;L. Splits stay on the full collected amount.
+                    Booked as its own one-time expense (category: Fees) on the
+                    P&amp;L. Splits stay on the full collected amount.
                   </p>
                 </div>
               )}
@@ -738,7 +754,7 @@ export function ClientRoster({
                   <Input
                     type="date"
                     value={payForm.paidAt}
-                    max={new Date().toISOString().slice(0, 10)}
+                    max={today()}
                     onChange={(e) =>
                       setPayForm({ ...payForm, paidAt: e.target.value })
                     }
@@ -1049,9 +1065,8 @@ export function ClientRoster({
                     <option value="">Not linked</option>
                     {portalUsers.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {[u.firstName, u.lastName]
-                          .filter(Boolean)
-                          .join(" ") || u.email}
+                        {[u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                          u.email}
                       </option>
                     ))}
                   </select>

@@ -169,8 +169,12 @@ export async function POST(req: Request) {
         .update(users)
         .set({
           email: (
-            data.email_addresses as Array<{ email_address: string }>
-          )?.[0]?.email_address,
+            (
+              data.email_addresses as Array<{ email_address: string }>
+            )?.[0]?.email_address ?? ""
+          )
+            .trim()
+            .toLowerCase(),
           firstName: data.first_name as string | undefined,
           lastName: data.last_name as string | undefined,
           imageUrl: data.image_url as string | undefined,
