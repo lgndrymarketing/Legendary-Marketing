@@ -109,10 +109,14 @@ export const INDUSTRIES = [
  */
 export function stageFromTasks(
   tasks: { stage: string | null; status: string; order: number }[]
-): CrmStage {
+): CrmStage | null {
   const ordered = [...tasks]
     .filter((t) => t.stage && CRM_STAGES.includes(t.stage as CrmStage))
     .sort((a, b) => a.order - b.order);
+  // No stage-bearing tasks (all custom, or the checklist was cleared) tells
+  // us nothing — returning the final stage here would falsely mark a brand
+  // new client "Ads launched". Callers keep the persisted stage instead.
+  if (ordered.length === 0) return null;
   const nextIncomplete = ordered.find((t) => t.status !== "completed");
   if (nextIncomplete) return nextIncomplete.stage as CrmStage;
   return CRM_STAGES[CRM_STAGES.length - 1];

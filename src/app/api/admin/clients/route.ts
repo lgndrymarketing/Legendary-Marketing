@@ -9,12 +9,13 @@ import {
   projects,
   users,
 } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { pickPartners } from "@/lib/partners";
 import { z } from "zod";
 import { DEFAULT_TASKS } from "@/lib/crm";
 import { publishToChannel } from "@/lib/ably";
+import { addMonthsUTC } from "@/lib/dates";
 
 /**
  * Agency client roster + Client CRM. Admin-only.
@@ -153,14 +154,33 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const { startDate, nextDueDate, email, ...rest } = parsed.data;
+    const { startDate, nextDueDate, email: rawEmail, ...rest } = parsed.data;
+    const email = rawEmail?.trim().toLowerCase();
+
+    // A staff/admin address can't double as a client login: Clerk won't
+    // create a second account for it, so the invite silently no-ops and the
+    // client never gets a portal.
+    if (email) {
+      const [clash] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.email, email));
+      if (clash && clash.role !== "client") {
+        return NextResponse.json(
+          {
+            error:
+              "That email already belongs to a team account. Use the client's own email so their portal invite works.",
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     // First retainer comes due one month after the start date unless an
     // explicit due date was provided; each recorded retainer then advances
     // it another month.
     const start = startDate ? new Date(startDate) : new Date();
-    const firstDue = new Date(start);
-    firstDue.setUTCMonth(firstDue.getUTCMonth() + 1);
+    const firstDue = addMonthsUTC(start, 1);
 
     const [created] = await db
       .insert(agencyClients)
@@ -175,9 +195,13 @@ export async function POST(request: Request) {
 
     // Seed the default onboarding checklist, routing each task to the live
     // staff member by first name.
+    // Staff only, oldest first — never resolve a checklist assignee to a
+    // client account, and stay deterministic when names collide.
     const staff = await db
       .select({ id: users.id, firstName: users.firstName })
-      .from(users);
+      .from(users)
+      .where(inArray(users.role, ["admin", "project_manager", "va"]))
+      .orderBy(users.createdAt);
     const idByName = new Map(
       staff
         .filter((s) => s.firstName)

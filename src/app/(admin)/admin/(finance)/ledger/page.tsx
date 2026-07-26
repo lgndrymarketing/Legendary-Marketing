@@ -345,6 +345,7 @@ export default function AdminLedgerPage() {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: "UTC",
                       })}
                     </td>
                     <td className="py-3 pr-4 font-medium">

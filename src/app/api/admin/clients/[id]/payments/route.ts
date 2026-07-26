@@ -10,6 +10,7 @@ import {
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
+import { addMonthsUTC } from "@/lib/dates";
 
 const recordSchema = z.object({
   paymentType: z.enum(clientPaymentTypeEnum.enumValues),
@@ -121,8 +122,7 @@ export async function POST(
         client.nextDueDate && new Date(client.nextDueDate) > new Date()
           ? new Date(client.nextDueDate)
           : new Date();
-      const next = new Date(base);
-      next.setUTCMonth(next.getUTCMonth() + 1);
+      const next = addMonthsUTC(base, 1);
       await db
         .update(agencyClients)
         .set({

@@ -5,8 +5,9 @@ import {
   clientPaymentTypeEnum,
   splitStatusEnum,
   users,
+  expenses,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
 
@@ -58,12 +59,26 @@ export async function PATCH(
 
     const { paidAt, ...rest } = parsed.data;
 
+    // Lowering the amount must re-clamp the snapshotted referral cut, or the
+    // net (and every split derived from it) goes negative.
+    let partnerCutFix: number | undefined;
+    if (rest.amount !== undefined) {
+      const [current] = await db
+        .select({ partnerCut: clientPayments.partnerCut })
+        .from(clientPayments)
+        .where(eq(clientPayments.id, id));
+      if (current && current.partnerCut > rest.amount) {
+        partnerCutFix = rest.amount;
+      }
+    }
+
     const [updated] = await db
       .update(clientPayments)
       .set({
         ...rest,
         // paidAt arrives as an ISO string; the column is a timestamp.
         ...(paidAt && { paidAt: new Date(paidAt) }),
+        ...(partnerCutFix !== undefined && { partnerCut: partnerCutFix }),
         ...(rest.splitStatus === "settled" && { settledAt: new Date() }),
         ...(rest.splitStatus === "pending" && { settledAt: null }),
       })
@@ -96,6 +111,12 @@ export async function DELETE(
     if (!z.string().uuid().safeParse(id).success) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
+
+    // Remove the auto-booked processor-fee expense alongside the payment,
+    // otherwise the fee lingers on the P&L for money that was never taken.
+    await db
+      .delete(expenses)
+      .where(ilike(expenses.notes, `%payment ${id}%`));
 
     const [deleted] = await db
       .delete(clientPayments)

@@ -64,10 +64,15 @@ export async function POST(req: Request) {
     const { type, data } = payload;
 
     if (type === "user.created") {
-      const email =
+      // Clerk may send mixed case; every write path stores lowercase, so
+      // normalize before matching or the link silently misses.
+      const email = (
         (
           data.email_addresses as Array<{ email_address: string }>
-        )?.[0]?.email_address ?? "";
+        )?.[0]?.email_address ?? ""
+      )
+        .trim()
+        .toLowerCase();
       const firstName = data.first_name as string | undefined;
       const lastName = data.last_name as string | undefined;
 

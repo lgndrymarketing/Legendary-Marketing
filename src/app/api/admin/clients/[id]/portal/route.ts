@@ -111,9 +111,12 @@ export async function GET(
     }
 
     // Same pipeline model the client's LaunchPipeline renders.
-    const currentStage = tasks.length
-      ? stageFromTasks(tasks)
-      : (client.stage as CrmStage);
+    // Prefer the checklist-derived stage, but fall back to the persisted
+    // one (an admin may have dragged the card on the board) so this mirror
+    // agrees with what the client's own dashboard shows.
+    const currentStage =
+      (tasks.length ? stageFromTasks(tasks) : null) ??
+      (client.stage as CrmStage);
     const currentIndex = CRM_STAGES.indexOf(currentStage);
     const stages = CRM_STAGES.map((key, i) => ({
       key,

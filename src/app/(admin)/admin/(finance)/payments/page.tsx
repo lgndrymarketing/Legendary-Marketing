@@ -314,6 +314,7 @@ export default function AdminPaymentsPage() {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: "UTC",
                       })}
                     </td>
                     <td className="py-3 pr-4 font-medium">
@@ -340,6 +341,7 @@ export default function AdminPaymentsPage() {
                         onClick={() => {
                           setEditing({
                             id: t.id,
+                            paidAt: t.paidAt,
                             paymentType: t.paymentType,
                             method: t.method,
                             amount: t.amount,

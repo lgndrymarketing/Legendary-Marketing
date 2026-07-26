@@ -147,9 +147,9 @@ export function rangeBounds(range: DateRange): {
     case "today":
       return { from: dayStart(0), to: null };
     case "last_7":
-      return { from: dayStart(7), to: null };
+      return { from: dayStart(6), to: null };
     case "last_30":
-      return { from: dayStart(30), to: null };
+      return { from: dayStart(29), to: null };
     case "this_month":
       return { from: monthStart(0), to: null };
     case "last_month":

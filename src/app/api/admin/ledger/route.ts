@@ -66,22 +66,36 @@ export async function GET() {
     const [p1, p2] = partners;
 
     const transactions = rows.map((r) => {
-      const net = r.amount - r.partnerCut;
-      const half = Math.round(net / 2);
+      // Guard against a negative net if partnerCut was left above a lowered
+      // amount on an older row.
+      const net = Math.max(0, r.amount - r.partnerCut);
       const receiver = partners.find((p) => p.id === r.receivedBy);
-      const other = partners.find((p) => p.id !== r.receivedBy);
+      // Only attribute the other half when the receiver IS a partner —
+      // otherwise `find(p => p.id !== receivedBy)` would name p1 for a
+      // payment they never received.
+      const other = receiver
+        ? partners.find((p) => p.id !== r.receivedBy)
+        : undefined;
+      // Floor the transfer so the receiver keeps the odd cent; the two
+      // halves then sum back to net exactly.
+      const half = other ? Math.floor(net / 2) : 0;
       return {
         ...r,
         receivedByName: receiver?.name ?? "—",
         otherPartnerName: other?.name ?? "—",
         otherPartnerCut: half,
+        /** False when the receiver isn't a ledger partner — excluded from the split. */
+        inSplit: !!other,
       };
     });
 
     // Earnings: each partner earns half of every net collection — the full
     // pre-expense amount.
-    const totalNet = rows.reduce((s, r) => s + (r.amount - r.partnerCut), 0);
-    const perPartnerEarned = Math.round(totalNet / 2);
+    // Earnings only count payments that actually belong to the partnership.
+    const totalNet = transactions
+      .filter((t) => t.inSplit)
+      .reduce((s, r) => s + Math.max(0, r.amount - r.partnerCut), 0);
+    const perPartnerEarned = Math.floor(totalNet / 2);
 
     // Net balance from pending splits only.
     let balance = 0; // positive → p1 received extra, owes p2

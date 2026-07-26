@@ -46,6 +46,7 @@ async function resyncStage(clientId: string) {
     .orderBy(asc(clientTasks.order));
   if (!tasks.length) return;
   const stage = stageFromTasks(tasks);
+  if (!stage) return; // only custom/unstaged tasks — keep the current stage
   await db
     .update(agencyClients)
     .set({ stage, updatedAt: new Date() })
