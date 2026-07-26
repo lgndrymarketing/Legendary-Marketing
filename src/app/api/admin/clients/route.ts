@@ -202,11 +202,13 @@ export async function POST(request: Request) {
       .from(users)
       .where(inArray(users.role, ["admin", "project_manager", "va"]))
       .orderBy(users.createdAt);
-    const idByName = new Map(
-      staff
-        .filter((s) => s.firstName)
-        .map((s) => [s.firstName as string, s.id])
-    );
+    // Oldest wins on duplicate first names (Map would otherwise keep the last).
+    const idByName = new Map<string, string>();
+    for (const m of staff) {
+      if (m.firstName && !idByName.has(m.firstName)) {
+        idByName.set(m.firstName, m.id);
+      }
+    }
     await db.insert(clientTasks).values(
       DEFAULT_TASKS.map((t, i) => ({
         clientId: created.id,

@@ -30,9 +30,14 @@ export interface EditablePayment {
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
-/** Today in UTC — matches how dates are stored (00:00Z) so the picker
- * never defaults to "tomorrow" for evening US users. */
-const today = () => new Date().toISOString().slice(0, 10);
+/** Today as the admin sees it on their own calendar. Using the UTC date
+ * here would default to *tomorrow* for US users after ~5pm. */
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+};
 
 const usd = (cents: number) =>
   `$${Math.round(cents / 100).toLocaleString("en-US")}`;

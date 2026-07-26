@@ -32,12 +32,7 @@ interface PaymentRow {
   paidAt: string;
 }
 
-const PAYMENT_METHODS = [
-  "Payment link",
-  "Zelle",
-  "Apple Pay",
-  "Cash App",
-];
+const PAYMENT_METHODS = ["Payment link", "Zelle", "Apple Pay", "Cash App"];
 
 const usd = (cents: number) =>
   `$${Math.round(cents / 100).toLocaleString("en-US")}`;
@@ -99,7 +94,7 @@ export default function ClientPaymentsPage() {
 
   const daysLeft = client?.nextDueDate
     ? Math.ceil(
-        (new Date(client.nextDueDate).getTime() - Date.now()) / 86_400_000
+        (new Date(client.nextDueDate).getTime() - Date.now()) / 86_400_000,
       )
     : null;
   const overdue = daysLeft !== null && daysLeft < 0;
@@ -158,6 +153,7 @@ export default function ClientPaymentsPage() {
                 {new Date(client.startDate).toLocaleDateString("en-US", {
                   month: "short",
                   year: "numeric",
+                  timeZone: "UTC",
                 })}
               </p>
             </motion.div>
@@ -175,13 +171,14 @@ export default function ClientPaymentsPage() {
               <p
                 className={cn(
                   "mt-2 text-2xl font-bold tracking-tight",
-                  overdue && "text-destructive"
+                  overdue && "text-destructive",
                 )}
               >
                 {client.nextDueDate
                   ? new Date(client.nextDueDate).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
+                      timeZone: "UTC",
                     })
                   : "—"}
               </p>
@@ -191,7 +188,7 @@ export default function ClientPaymentsPage() {
                     "mt-1 font-mono text-[11px]",
                     overdue
                       ? "font-semibold text-destructive"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {overdue
@@ -255,6 +252,7 @@ export default function ClientPaymentsPage() {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
+                            timeZone: "UTC",
                           })}
                         </td>
                         <td className="py-3 pr-4">

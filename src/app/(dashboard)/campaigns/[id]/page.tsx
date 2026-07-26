@@ -37,10 +37,7 @@ export default async function ProjectDetailPage({
   if (!dbUser) return null;
 
   // Fetch project
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.id, id));
+  const [project] = await db.select().from(projects).where(eq(projects.id, id));
 
   if (!project) notFound();
 
@@ -50,18 +47,9 @@ export default async function ProjectDetailPage({
 
   // Fetch related data in parallel
   const [phases, projectFiles, projectInvoices] = await Promise.all([
-    db
-      .select()
-      .from(projectPhases)
-      .where(eq(projectPhases.projectId, id)),
-    db
-      .select()
-      .from(filesTable)
-      .where(eq(filesTable.projectId, id)),
-    db
-      .select()
-      .from(invoices)
-      .where(eq(invoices.projectId, id)),
+    db.select().from(projectPhases).where(eq(projectPhases.projectId, id)),
+    db.select().from(filesTable).where(eq(filesTable.projectId, id)),
+    db.select().from(invoices).where(eq(invoices.projectId, id)),
   ]);
 
   const sortedPhases = phases
@@ -90,11 +78,16 @@ export default async function ProjectDetailPage({
           year: "numeric",
           month: "long",
           day: "numeric",
+          timeZone: "UTC",
         }),
         status: invoice.status as "paid" | "pending" | "overdue",
         projectName: project.name,
-        clientName: `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim() || dbUser.email,
-        items: (invoice.items as Array<{ description: string; amount: string }>) || [],
+        clientName:
+          `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim() ||
+          dbUser.email,
+        items:
+          (invoice.items as Array<{ description: string; amount: string }>) ||
+          [],
         subtotal: formatCurrency(invoice.subtotal),
         tax: formatCurrency(invoice.tax),
         total: formatCurrency(invoice.total),
