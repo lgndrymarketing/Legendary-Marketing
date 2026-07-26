@@ -30,6 +30,8 @@ export interface EditablePayment {
 const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
+/** Today in UTC — matches how dates are stored (00:00Z) so the picker
+ * never defaults to "tomorrow" for evening US users. */
 const today = () => new Date().toISOString().slice(0, 10);
 
 const usd = (cents: number) =>

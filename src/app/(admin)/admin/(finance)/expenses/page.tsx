@@ -549,6 +549,7 @@ export default function AdminExpensesPage() {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: "UTC",
                       })}
                     </td>
                     <td className="py-3 text-right whitespace-nowrap">
