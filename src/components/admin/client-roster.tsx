@@ -51,6 +51,7 @@ interface AdminOption {
 }
 
 import { PAYMENT_METHODS, FEE_METHOD } from "@/lib/payment-methods";
+import { SortPill } from "@/components/ui/filters";
 
 /** Local calendar date — UTC would read as tomorrow for evening US users. */
 const today = () => {
@@ -171,6 +172,9 @@ export function ClientRoster({
   const [admins, setAdmins] = useState<AdminOption[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  // Default to the collections view the agency works from: overdue first,
+  // then whoever is due soonest.
+  const [sort, setSort] = useState("due_soon");
   const [paymentFor, setPaymentFor] = useState<ClientRow | null>(null);
   const [payForm, setPayForm] = useState({
     paymentType: "monthly_retainer",
@@ -399,19 +403,47 @@ export function ClientRoster({
     changed();
   }
 
-  const visible = clients.filter((c) => {
-    const q = query.trim().toLowerCase();
-    const matchesQuery =
-      !q ||
-      c.companyName.toLowerCase().includes(q) ||
-      c.contactName.toLowerCase().includes(q);
-    const dl = daysLeft(c.nextDueDate);
-    const isOverdue = c.status === "active" && dl !== null && dl < 0;
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "overdue" ? isOverdue : c.status === statusFilter);
-    return matchesQuery && matchesStatus;
-  });
+  const visible = clients
+    .filter((c) => {
+      const q = query.trim().toLowerCase();
+      const matchesQuery =
+        !q ||
+        c.companyName.toLowerCase().includes(q) ||
+        c.contactName.toLowerCase().includes(q);
+      const dl = daysLeft(c.nextDueDate);
+      const isOverdue = c.status === "active" && dl !== null && dl < 0;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "overdue" ? isOverdue : c.status === statusFilter);
+      return matchesQuery && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sort) {
+        case "due_late":
+        case "due_soon": {
+          // Clients with no due date sink to the bottom either way.
+          const da = a.nextDueDate ? new Date(a.nextDueDate).getTime() : null;
+          const db_ = b.nextDueDate ? new Date(b.nextDueDate).getTime() : null;
+          if (da === null && db_ === null) return 0;
+          if (da === null) return 1;
+          if (db_ === null) return -1;
+          // Ascending = most overdue first, then 1 day left before 10.
+          return sort === "due_soon" ? da - db_ : db_ - da;
+        }
+        case "mrr_high":
+          return b.monthlyFee - a.monthlyFee;
+        case "mrr_low":
+          return a.monthlyFee - b.monthlyFee;
+        case "name":
+          return a.companyName.localeCompare(b.companyName);
+        case "newest":
+          return (
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          );
+        default:
+          return 0;
+      }
+    });
 
   const setupTotal = visible.reduce((s, c) => s + c.setupFee, 0);
   const mrrTotal = visible
@@ -435,6 +467,7 @@ export function ClientRoster({
             </div>
             <select
               className="h-9 rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange"
+              aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -444,6 +477,19 @@ export function ClientRoster({
               <option value="paused">Paused</option>
               <option value="churned">Churned</option>
             </select>
+            <SortPill
+              className="w-52"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { value: "due_soon", label: "Due date: soonest first" },
+                { value: "due_late", label: "Due date: latest first" },
+                { value: "mrr_high", label: "MRR: high → low" },
+                { value: "mrr_low", label: "MRR: low → high" },
+                { value: "name", label: "Company A–Z" },
+                { value: "newest", label: "Newest clients" },
+              ]}
+            />
           </div>
         </div>
         {loading ? (
