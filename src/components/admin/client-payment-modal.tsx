@@ -310,6 +310,23 @@ export function ClientPaymentModal({
                     }
                   />
                 </div>
+                <div>
+                  <span className="mb-1.5 block text-[13px] font-medium">
+                    Date Received
+                  </span>
+                  <Input
+                    type="date"
+                    value={form.paidAt}
+                    max={today()}
+                    onChange={(e) =>
+                      setForm({ ...form, paidAt: e.target.value })
+                    }
+                  />
+                  <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+                    Back-date it and the payment lands in that week&apos;s
+                    revenue, not today&apos;s.
+                  </p>
+                </div>
               </div>
 
               {!payment && form.method === FEE_METHOD && (
