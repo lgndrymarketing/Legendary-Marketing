@@ -44,6 +44,9 @@ const clientSchema = z.object({
   status: z.enum(clientStatusEnum.enumValues).default("active"),
   userId: z.string().uuid().nullable().optional(),
   notes: z.string().max(2000).optional(),
+  /** Email the portal invite now. Off by default — admins send it
+   * deliberately from the client's detail panel when they're ready. */
+  sendInvite: z.boolean().default(false),
 });
 
 export async function GET() {
@@ -154,7 +157,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const { startDate, nextDueDate, email: rawEmail, ...rest } = parsed.data;
+    const {
+      startDate,
+      nextDueDate,
+      email: rawEmail,
+      sendInvite,
+      ...rest
+    } = parsed.data;
     const email = rawEmail?.trim().toLowerCase();
 
     // A staff/admin address can't double as a client login: Clerk won't
@@ -222,9 +231,11 @@ export async function POST(request: Request) {
       }))
     );
 
-    // Email a portal invitation (best-effort — never block client creation).
+    // Portal invitations are NOT automatic: the agency onboards a client in
+    // the CRM first and emails the invite when they're actually ready for
+    // the client to log in.
     let inviteStatus: "sent" | "skipped" | "failed" = "skipped";
-    if (email) {
+    if (email && sendInvite) {
       try {
         const cc = await clerkClient();
         await cc.invitations.createInvitation({

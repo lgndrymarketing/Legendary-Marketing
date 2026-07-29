@@ -1,0 +1,1 @@
+ALTER TYPE "public"."client_package" ADD VALUE 'mentorship' BEFORE 'custom';
