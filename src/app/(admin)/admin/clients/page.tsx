@@ -45,6 +45,7 @@ const PACKAGE_LABELS: Record<string, string> = {
   gold: "Gold",
   diamond: "Diamond",
   rev_split: "Rev Split",
+  mentorship: "Mentorship",
   custom: "Custom",
 };
 

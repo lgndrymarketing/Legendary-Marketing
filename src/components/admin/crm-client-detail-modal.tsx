@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Send } from "lucide-react";
 import { INDUSTRIES, SAAS_PLANS } from "@/lib/crm";
 import { FocusBeam } from "@/components/ui/beam-focus";
 
@@ -14,6 +14,7 @@ const PACKAGES = [
   { value: "gold", label: "Gold" },
   { value: "diamond", label: "Diamond" },
   { value: "rev_split", label: "Rev Split" },
+  { value: "mentorship", label: "Mentorship" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -93,6 +94,8 @@ export function ClientDetailModal({
   const [requests, setRequests] = useState<Req[]>([]);
   const [saving, setSaving] = useState(false);
   const [newTask, setNewTask] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteNote, setInviteNote] = useState<string | null>(null);
   const [form, setForm] = useState({
     companyName: "",
     contactName: "",
@@ -182,6 +185,40 @@ export function ClientDetailModal({
     if (res.ok) {
       setNewTask("");
       load();
+    }
+  }
+
+  /** Email this client their portal invite on demand — invites are never
+   * sent automatically, so the agency controls the timing. */
+  async function sendInvite() {
+    if (!clientId || !form.email.trim()) return;
+    setInviting(true);
+    setInviteNote(null);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          resendInvite: true,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? "failed");
+      setInviteNote(
+        data?.inviteStatus === "sent"
+          ? `Invite emailed to ${form.email.trim()}.`
+          : "Saved, but the invite couldn't be sent — check Clerk config."
+      );
+      onSaved();
+    } catch (err) {
+      setInviteNote(
+        err instanceof Error && err.message !== "failed"
+          ? err.message
+          : "Could not send the invite — try again."
+      );
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -293,10 +330,26 @@ export function ClientDetailModal({
                         setForm({ ...form, email: e.target.value })
                       }
                     />
-                    <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-                      Changing this emails a fresh portal invite to the new
-                      address.
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={sendInvite}
+                        disabled={inviting || !form.email.trim()}
+                      >
+                        <Send className="mr-1.5 h-3.5 w-3.5" />
+                        {inviting ? "Sending…" : "Send Portal Invite"}
+                      </Button>
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        Invites are only sent when you click.
+                      </span>
+                    </div>
+                    {inviteNote && (
+                      <p className="mt-1.5 font-mono text-[10px] text-orange">
+                        {inviteNote}
+                      </p>
+                    )}
                   </Field>
                   <Field label="Status">
                     <select

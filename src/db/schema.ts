@@ -416,6 +416,7 @@ export const clientPackageEnum = pgEnum("client_package", [
   "gold",
   "diamond",
   "rev_split",
+  "mentorship",
   "custom",
 ]);
 

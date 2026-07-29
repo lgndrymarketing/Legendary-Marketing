@@ -25,7 +25,14 @@ interface ClientRow {
   contactName: string;
   companyName: string;
   businessType: string | null;
-  package: "bronze" | "silver" | "gold" | "diamond" | "custom";
+  package:
+    | "bronze"
+    | "silver"
+    | "gold"
+    | "diamond"
+    | "rev_split"
+    | "mentorship"
+    | "custom";
   packageLabel: string | null;
   setupFee: number;
   monthlyFee: number;
@@ -82,7 +89,15 @@ const BUSINESS_TYPES = [
   "Custom…",
 ];
 
-const PACKAGES = ["bronze", "silver", "gold", "diamond", "custom"] as const;
+const PACKAGES = [
+  "bronze",
+  "silver",
+  "gold",
+  "diamond",
+  "rev_split",
+  "mentorship",
+  "custom",
+] as const;
 const STATUSES = ["active", "paused", "churned"] as const;
 
 const usd = (cents: number) =>
@@ -93,6 +108,8 @@ const packageBadge: Record<ClientRow["package"], string> = {
   silver: "border border-border bg-background text-muted-foreground",
   gold: "bg-orange/10 text-orange",
   diamond: "bg-foreground text-background",
+  rev_split: "border border-border bg-background text-foreground",
+  mentorship: "bg-accent text-orange",
   custom: "border border-dashed border-border bg-background text-foreground",
 };
 

@@ -14,6 +14,7 @@ const PACKAGES = [
   { value: "gold", label: "Gold" },
   { value: "diamond", label: "Diamond" },
   { value: "rev_split", label: "Rev Split" },
+  { value: "mentorship", label: "Mentorship" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -60,6 +61,7 @@ export function NewClientModal({
     startDate: today(),
     driveUrl: "",
     landingPageUrl: "",
+    sendInvite: false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +80,7 @@ export function NewClientModal({
       startDate: today(),
       driveUrl: "",
       landingPageUrl: "",
+      sendInvite: false,
     });
     setError(null);
   }
@@ -121,6 +124,7 @@ export function NewClientModal({
           ...(form.landingPageUrl.trim() && {
             landingPageUrl: form.landingPageUrl.trim(),
           }),
+          sendInvite: form.sendInvite,
         }),
       });
       if (!res.ok) {
@@ -197,8 +201,8 @@ export function NewClientModal({
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
                 <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-                  We&apos;ll email them a secure invite to set their own
-                  password and access the portal.
+                  Saved now, but nothing is emailed unless you tick the box
+                  below. You can send the invite later from Client Details.
                 </p>
               </Field>
 
@@ -311,6 +315,24 @@ export function NewClientModal({
                 />
               </Field>
 
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 accent-[var(--color-orange)]"
+                  checked={form.sendInvite}
+                  onChange={(e) =>
+                    setForm({ ...form, sendInvite: e.target.checked })
+                  }
+                />
+                <span>
+                  <span className="font-medium">Email the portal invite now</span>
+                  <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
+                    Leave off to onboard them internally first — invite when
+                    you&apos;re ready for them to log in.
+                  </span>
+                </span>
+              </label>
+
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button
@@ -320,7 +342,11 @@ export function NewClientModal({
                 disabled={saving}
               >
                 <Plus className="mr-1.5 h-4 w-4" />
-                {saving ? "Creating…" : "Create Client & Portal"}
+                {saving
+                  ? "Creating…"
+                  : form.sendInvite
+                    ? "Create Client & Send Invite"
+                    : "Create Client"}
               </Button>
             </div>
           </motion.form>
