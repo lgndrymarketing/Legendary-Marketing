@@ -97,23 +97,18 @@ pnpm cap:android      # open Android Studio
 
 Point a build at staging with `CAP_SERVER_URL=https://staging… pnpm cap:sync`.
 
-### Push notifications
+### Notifications
 
-Every `createNotification()` also pushes to the user's phones. Devices
-register through `POST /api/device-tokens` on launch (`device_tokens` table).
-Delivery goes via Firebase Cloud Messaging (FCM covers Android directly and
-iOS through APNs).
+The shell ships with **no push notifications** and requests no notification
+permission — it talks to no third party at all. Clients see the existing
+in-app notification centre, same as the web.
 
-Set `FIREBASE_SERVICE_ACCOUNT` to the service-account JSON to enable it.
-Without it, `sendPush()` no-ops and in-app notifications behave as before.
-
-1. Firebase project → add iOS and Android apps (bundle id
-   `com.lgndrymarketing.portal`)
-2. Upload the APNs auth key (Apple Developer → Keys) to Firebase → Cloud
-   Messaging, so iOS pushes work
-3. Drop `google-services.json` into `android/app/` and
-   `GoogleService-Info.plist` into `ios/App/App/`
-4. Add the service-account JSON as `FIREBASE_SERVICE_ACCOUNT` in Vercel
+Adding lock-screen push later is additive and needs no servers: push is sent
+inline from the API route that already creates the notification (a Vercel
+serverless function), so there is nothing to run and nothing to schedule.
+The only piece that must come from outside is the delivery service itself —
+Apple's APNs for iOS, Google's FCM for Android — because only Apple and
+Google can reach a device's lock screen.
 
 ### Before submitting
 

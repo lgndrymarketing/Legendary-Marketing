@@ -1,6 +1,9 @@
 /**
  * Native bridge for the iOS/Android shell.
  *
+ * No push notifications: the shell asks for no notification permission and
+ * talks to no third party. Adding push later is additive — see README.
+ *
  * Everything here is a no-op on the web. The Capacitor plugins are loaded
  * with dynamic `import()` *inside* the native guard, so the browser bundle
  * never pulls them in and the web app behaves exactly as it did before this
@@ -22,47 +25,6 @@ export function nativePlatform(): string {
   const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } })
     .Capacitor;
   return cap?.getPlatform?.() ?? "web";
-}
-
-/**
- * Register for push and hand the device token to our API so the existing
- * notification system can reach the phone. Permission is requested on first
- * launch; a denial is remembered by the OS and simply means no pushes.
- */
-async function initPush(): Promise<void> {
-  const { PushNotifications } = await import("@capacitor/push-notifications");
-
-  const perm = await PushNotifications.requestPermissions();
-  if (perm.receive !== "granted") return;
-
-  await PushNotifications.addListener("registration", async (token) => {
-    try {
-      await fetch("/api/device-tokens", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.value, platform: nativePlatform() }),
-      });
-    } catch {
-      // Offline or signed out — the token re-registers on next launch.
-    }
-  });
-
-  await PushNotifications.addListener("registrationError", (err) => {
-    console.error("Push registration failed:", err);
-  });
-
-  // Tapping a notification deep-links to whatever the payload points at.
-  await PushNotifications.addListener(
-    "pushNotificationActionPerformed",
-    (action) => {
-      const url = action.notification.data?.url;
-      if (typeof url === "string" && url.startsWith("/")) {
-        window.location.assign(url);
-      }
-    }
-  );
-
-  await PushNotifications.register();
 }
 
 /** Android hardware back button: go back in history, else leave the app. */
@@ -97,7 +59,7 @@ export async function initNative(): Promise<void> {
   if (started || !isNative()) return;
   started = true;
   document.documentElement.dataset.native = nativePlatform();
-  await Promise.allSettled([initChrome(), initBackButton(), initPush()]);
+  await Promise.allSettled([initChrome(), initBackButton()]);
 }
 
 /**

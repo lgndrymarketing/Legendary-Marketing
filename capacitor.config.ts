@@ -46,9 +46,6 @@ const config: CapacitorConfig = {
       showSpinner: false,
       androidScaleType: "CENTER_CROP",
     },
-    PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"],
-    },
     Keyboard: {
       resize: KeyboardResize.Native,
     },
