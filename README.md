@@ -97,25 +97,36 @@ pnpm cap:android      # open Android Studio
 
 Point a build at staging with `CAP_SERVER_URL=https://staging… pnpm cap:sync`.
 
-### Notifications
+### Notifications & offline (no third parties)
 
-The shell ships with **no push notifications** and requests no notification
-permission — it talks to no third party at all. Clients see the existing
-in-app notification centre, same as the web.
+Notifications are **local**: the phone schedules and fires them itself from
+data the app already has. There is no push service, no Firebase, no APNs
+certificate, and nothing to run on our side — Supabase remains the only
+datastore.
 
-Adding lock-screen push later is additive and needs no servers: push is sent
-inline from the API route that already creates the notification (a Vercel
-serverless function), so there is nothing to run and nothing to schedule.
-The only piece that must come from outside is the delivery service itself —
-Apple's APNs for iOS, Google's FCM for Android — because only Apple and
-Google can reach a device's lock screen.
+`src/lib/native-reminders.ts` schedules, on each launch:
+- a morning nudge while a weekly report is awaiting the client's numbers
+- a heads-up 3 days before a retainer is due, and again if it goes past due
+
+These fire with the app closed and the device offline, because the OS owns
+the schedule. Re-syncing replaces the previous schedule (stable ids), so
+counts and dates never go stale.
+
+`src/lib/native-offline.ts` caches the last successful weekly-report and
+billing payloads to device storage and shows an offline banner when signal
+drops, so the portal still shows the client's latest numbers on a plane.
+Also provides haptics and the native share sheet.
+
+All of it no-ops on the web, and none of the plugin code reaches the
+browser bundle (dynamic `import()` behind `isNative()`).
 
 ### Before submitting
 
 - **Apple Developer** $99/yr, **Google Play** $25 one-time
 - Enable **Sign in with Apple** in Clerk if any social login is offered —
   Apple rejects without it
-- Guideline 4.2: push notifications are the native capability that keeps
-  this from reading as a "thin web wrapper"
+- Guideline 4.2: the local reminders, offline mode, haptics and share sheet
+  are the native capability that keeps this from reading as a "thin web
+  wrapper". None of them require a third-party service
 - Keep payments out of the app. Agency services are real-world services and
   exempt from IAP; an in-app card flow would invite a 30% argument

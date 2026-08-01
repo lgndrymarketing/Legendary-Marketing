@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
+import { NativeSync } from "@/components/providers/native-sync";
 
 const navItems: ShellNavItem[] = [
   {
@@ -71,6 +72,8 @@ export default async function DashboardLayout({
       cta={{ label: "New Campaign", href: "/dashboard?new=1" }}
       accountEmail={user?.emailAddresses[0]?.emailAddress}
     >
+      {/* Native-only: offline banner + on-device reminder scheduling. */}
+      <NativeSync />
       {children}
     </AppShell>
   );

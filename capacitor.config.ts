@@ -49,6 +49,11 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: KeyboardResize.Native,
     },
+    // On-device reminders (no push service involved).
+    LocalNotifications: {
+      smallIcon: "ic_stat_icon",
+      iconColor: "#F54A00",
+    },
   },
 };
 
