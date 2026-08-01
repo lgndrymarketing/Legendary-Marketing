@@ -1,5 +1,7 @@
 import { db } from "@/db";
-import { notifications } from "@/db/schema";
+import { notifications, deviceTokens } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { sendPush } from "@/lib/push";
 
 /** Notification types accepted by the `notifications.type` enum. */
 export type NotificationType =
@@ -42,6 +44,27 @@ export async function createNotification(
       body: input.body,
       actionUrl: input.actionUrl,
     });
+
+    // Mirror to the user's phones, if they have the app. Best-effort and
+    // fire-and-forget: push must never break the in-app notification.
+    try {
+      const devices = await db
+        .select({ token: deviceTokens.token })
+        .from(deviceTokens)
+        .where(eq(deviceTokens.userId, input.userId));
+      if (devices.length) {
+        await sendPush(
+          devices.map((d) => d.token),
+          {
+            title: input.title,
+            body: input.body ?? "",
+            url: input.actionUrl,
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Push mirror failed:", err);
+    }
   } catch (error) {
     console.error("createNotification failed (non-fatal):", error);
   }

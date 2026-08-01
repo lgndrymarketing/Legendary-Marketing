@@ -270,3 +270,24 @@ input[type="time"]::-webkit-date-and-time-value,
 input[type="datetime-local"]::-webkit-date-and-time-value {
   text-align: left;
 }
+
+/* ---------------------------------------------------------------------------
+   Native shell (iOS/Android). These only apply when the Capacitor bridge
+   sets data-native on <html>, so the web app is untouched. */
+:root[data-native] body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* No rubber-band scroll behind the fixed shell. */
+  overscroll-behavior-y: none;
+}
+:root[data-native] {
+  /* Native apps shouldn't offer text selection / callouts on chrome. */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+:root[data-native] input,
+:root[data-native] textarea {
+  /* ...but typing still needs selection. */
+  -webkit-user-select: text;
+  user-select: text;
+}

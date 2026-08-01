@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { NativeProvider } from "@/components/providers/native-provider";
 import { brand } from "@/lib/brand";
 import "./globals.css";
 
@@ -47,7 +48,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <NativeProvider />{children}</ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

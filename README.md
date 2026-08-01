@@ -77,3 +77,50 @@ managed from the admin project view; clients see a read-only version), with
   `/api/ably/token`; `src/hooks/use-ably-channel.ts` powers live messaging.
 
 See `.env.local.example` for the full list of required environment variables.
+
+## iOS & Android apps
+
+The native apps are a Capacitor shell around this same Next.js app
+(`capacitor.config.ts`). `server.url` points the webview at the deployed
+site, so SSR, API routes, Clerk auth and Ably realtime all work unchanged —
+there is no second copy of the UI, and shipping to the web ships to both
+stores. Everything native lives behind `isNative()` in `src/lib/native.ts`
+and no-ops in the browser.
+
+```bash
+pnpm cap:add:ios      # once — generates ./ios
+pnpm cap:add:android  # once — generates ./android
+pnpm cap:sync         # after changing capacitor.config.ts or plugins
+pnpm cap:ios          # open Xcode
+pnpm cap:android      # open Android Studio
+```
+
+Point a build at staging with `CAP_SERVER_URL=https://staging… pnpm cap:sync`.
+
+### Push notifications
+
+Every `createNotification()` also pushes to the user's phones. Devices
+register through `POST /api/device-tokens` on launch (`device_tokens` table).
+Delivery goes via Firebase Cloud Messaging (FCM covers Android directly and
+iOS through APNs).
+
+Set `FIREBASE_SERVICE_ACCOUNT` to the service-account JSON to enable it.
+Without it, `sendPush()` no-ops and in-app notifications behave as before.
+
+1. Firebase project → add iOS and Android apps (bundle id
+   `com.lgndrymarketing.portal`)
+2. Upload the APNs auth key (Apple Developer → Keys) to Firebase → Cloud
+   Messaging, so iOS pushes work
+3. Drop `google-services.json` into `android/app/` and
+   `GoogleService-Info.plist` into `ios/App/App/`
+4. Add the service-account JSON as `FIREBASE_SERVICE_ACCOUNT` in Vercel
+
+### Before submitting
+
+- **Apple Developer** $99/yr, **Google Play** $25 one-time
+- Enable **Sign in with Apple** in Clerk if any social login is offered —
+  Apple rejects without it
+- Guideline 4.2: push notifications are the native capability that keeps
+  this from reading as a "thin web wrapper"
+- Keep payments out of the app. Agency services are real-world services and
+  exempt from IAP; an in-app card flow would invite a 30% argument

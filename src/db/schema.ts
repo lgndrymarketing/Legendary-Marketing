@@ -564,6 +564,23 @@ export const weeklyReports = pgTable("weekly_reports", {
   index("idx_weekly_reports_client_id").on(table.clientId),
 ]);
 
+// Push device tokens for the iOS/Android shell. One row per device per
+// user; the same physical device re-registers on each launch, so the token
+// is the natural key and re-registration just refreshes lastSeenAt.
+export const deviceTokens = pgTable("device_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  token: text("token").notNull().unique(),
+  // "ios" | "android"
+  platform: varchar("platform", { length: 20 }).notNull(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_device_tokens_user_id").on(table.userId),
+]);
+
 // Client payments — money actually collected from agency clients (setup fees
 // and monthly retainers). Each payment carries who physically received it and
 // drives the partner ledger: net = amount - partnerCut, split 50/50, and the
