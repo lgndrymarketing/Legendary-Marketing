@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  // Store reviewers must reach this without an account.
+  "/privacy",
 ]);
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {

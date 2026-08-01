@@ -27,6 +27,24 @@ export function nativePlatform(): string {
   return cap?.getPlatform?.() ?? "web";
 }
 
+/**
+ * Universal/App links: when the OS hands us a lgndrymarketing.app URL
+ * (an emailed invite, a shared report), route to it in-app rather than
+ * bouncing the user to Safari.
+ */
+async function initDeepLinks(): Promise<void> {
+  const { App } = await import("@capacitor/app");
+  await App.addListener("appUrlOpen", ({ url }) => {
+    try {
+      const target = new URL(url);
+      if (!target.hostname.endsWith("lgndrymarketing.app")) return;
+      window.location.assign(target.pathname + target.search);
+    } catch {
+      // Malformed URL — ignore rather than crash the launch.
+    }
+  });
+}
+
 /** Android hardware back button: go back in history, else leave the app. */
 async function initBackButton(): Promise<void> {
   const { App } = await import("@capacitor/app");
@@ -59,7 +77,7 @@ export async function initNative(): Promise<void> {
   if (started || !isNative()) return;
   started = true;
   document.documentElement.dataset.native = nativePlatform();
-  await Promise.allSettled([initChrome(), initBackButton()]);
+  await Promise.allSettled([initChrome(), initBackButton(), initDeepLinks()]);
 }
 
 /**

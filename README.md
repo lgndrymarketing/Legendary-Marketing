@@ -88,6 +88,7 @@ stores. Everything native lives behind `isNative()` in `src/lib/native.ts`
 and no-ops in the browser.
 
 ```bash
+pnpm cap:assets       # once — generates every native icon/splash size
 pnpm cap:add:ios      # once — generates ./ios
 pnpm cap:add:android  # once — generates ./android
 pnpm cap:sync         # after changing capacitor.config.ts or plugins
@@ -123,6 +124,13 @@ browser bundle (dynamic `import()` behind `isNative()`).
 ### Before submitting
 
 - **Apple Developer** $99/yr, **Google Play** $25 one-time
+- Privacy policy URL for both store listings:
+  `https://lgndrymarketing.app/privacy` (public, no auth — reviewers must
+  reach it)
+- Deep links: add the Associated Domains entitlement
+  (`applinks:lgndrymarketing.app`) in Xcode and an intent filter in
+  AndroidManifest, then host `.well-known/apple-app-site-association` and
+  `assetlinks.json`. The in-app handler is already wired.
 - Enable **Sign in with Apple** in Clerk if any social login is offered —
   Apple rejects without it
 - Guideline 4.2: the local reminders, offline mode, haptics and share sheet

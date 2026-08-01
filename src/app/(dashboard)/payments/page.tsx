@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageHero } from "@/components/ui/firecrawl";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,6 +11,7 @@ import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CreditCard, Send, X, CheckCircle2 } from "lucide-react";
+import { useOfflineData } from "@/hooks/use-offline-data";
 
 interface BillingClient {
   id: string;
@@ -41,9 +42,13 @@ const selectClass =
   "h-10 w-full rounded-full border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
 export default function ClientPaymentsPage() {
-  const [client, setClient] = useState<BillingClient | null>(null);
-  const [history, setHistory] = useState<PaymentRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Offline-aware (native only): falls back to the device's cached copy.
+  const { data, loading, stale, cachedAt } = useOfflineData<{
+    client: BillingClient | null;
+    history: PaymentRow[];
+  }>("billing", "/api/client/billing");
+  const client = data?.client ?? null;
+  const history = data?.history ?? [];
   const [payOpen, setPayOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,21 +58,6 @@ export default function ClientPaymentsPage() {
     method: "Zelle",
     note: "",
   });
-
-  const load = useCallback(() => {
-    fetch("/api/client/billing")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && !data.error && !data.empty) {
-          setClient(data.client);
-          setHistory(data.history ?? []);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(load, [load]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +94,21 @@ export default function ClientPaymentsPage() {
 
   return (
     <div className="space-y-10">
+      {stale && (
+        <p className="mb-2 rounded-lg bg-warning/10 px-4 py-2 font-mono text-[11px] text-warning">
+          Offline — last synced{" "}
+          {cachedAt
+            ? new Date(cachedAt).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })
+            : "earlier"}
+          .
+        </p>
+      )}
+
       <PageHero
         title="Payments"
         description="Your plan, upcoming payments, and payment history."

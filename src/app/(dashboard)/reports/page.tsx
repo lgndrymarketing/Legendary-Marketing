@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,6 +11,7 @@ import { TrendCard } from "@/components/ui/monthly-trend";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { ClipboardCheck } from "lucide-react";
+import { useOfflineData } from "@/hooks/use-offline-data";
 import { Beam } from "@/components/ui/beam-focus";
 
 /**
@@ -46,20 +47,19 @@ const fmtDay = (s: string) =>
   });
 
 export default function ClientReportsPage() {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(() => {
-    fetch("/api/client/weekly-reports")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && Array.isArray(data.reports)) setReports(data.reports);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(load, [load]);
+  // Falls back to the device's cached copy when offline (native only);
+  // on the web this is a plain fetch.
+  const {
+    data,
+    loading,
+    stale,
+    cachedAt,
+    reload: load,
+  } = useOfflineData<{ reports: Report[] }>(
+    "reports",
+    "/api/client/weekly-reports"
+  );
+  const reports = data?.reports ?? [];
 
   const pending = reports.filter((r) => r.status === "pending_client");
   const completed = reports.filter((r) => r.status === "completed");
@@ -92,6 +92,21 @@ export default function ClientReportsPage() {
 
   return (
     <div className="space-y-10">
+      {stale && (
+        <p className="rounded-lg bg-warning/10 px-4 py-2 font-mono text-[11px] text-warning">
+          Offline — last synced{" "}
+          {cachedAt
+            ? new Date(cachedAt).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })
+            : "earlier"}
+          . Submitting will resume when you reconnect.
+        </p>
+      )}
+
       <PageHero
         title="Weekly Reports"
         description="Your ad results week by week — add your closes and revenue to see true return on ad spend."

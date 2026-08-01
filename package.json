@@ -15,7 +15,8 @@
     "cap:ios": "cap open ios",
     "cap:android": "cap open android",
     "cap:add:ios": "cap add ios",
-    "cap:add:android": "cap add android"
+    "cap:add:android": "cap add android",
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#0F1010' --splashBackgroundColor '#FFFFFF' --splashBackgroundColorDark '#0F1010'"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.0",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
     "@tailwindcss/postcss": "^4",
