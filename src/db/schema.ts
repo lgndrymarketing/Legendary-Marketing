@@ -480,6 +480,9 @@ export const agencyClients = pgTable("agency_clients", {
   startDate: timestamp("start_date").defaultNow().notNull(),
   nextDueDate: timestamp("next_due_date"),
   status: clientStatusEnum("status").notNull().default("active"),
+  // When this client churned — set on the status change so churn can be
+  // reported for a date range rather than only lifetime-to-date.
+  churnedAt: timestamp("churned_at"),
   // Current position in the 12-stage launch pipeline (Client CRM board).
   stage: crmStageEnum("stage").notNull().default("onboarding_form"),
   // SaaS plan the client is on (free-form, separate from their package tier).

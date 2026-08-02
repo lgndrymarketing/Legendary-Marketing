@@ -169,7 +169,11 @@ export async function PATCH(
     if (rest.email) rest.email = rest.email.trim().toLowerCase();
 
     const [existing] = await db
-      .select({ email: agencyClients.email, userId: agencyClients.userId })
+      .select({
+        email: agencyClients.email,
+        userId: agencyClients.userId,
+        status: agencyClients.status,
+      })
       .from(agencyClients)
       .where(eq(agencyClients.id, id));
     if (!existing) {
@@ -201,6 +205,11 @@ export async function PATCH(
       .update(agencyClients)
       .set({
         ...rest,
+        // Stamp/clear the churn date so churn can be reported per period.
+        ...(rest.status !== undefined &&
+          rest.status !== existing.status && {
+            churnedAt: rest.status === "churned" ? new Date() : null,
+          }),
         ...(startDate !== undefined && { startDate: new Date(startDate) }),
         ...(nextDueDate !== undefined && {
           nextDueDate: nextDueDate ? new Date(nextDueDate) : null,
