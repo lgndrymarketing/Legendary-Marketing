@@ -28,7 +28,9 @@ interface Metrics {
     arr: number;
     activeClients: number;
     newClientsThisPeriod: number;
-    avgLtv: number;
+    avgLtv: number | null;
+    arpu: number;
+    expectedLifetimeMonths: number | null;
     avgMonthsRetained: number;
     churnRate: number;
     clientsLost: number;
@@ -117,6 +119,8 @@ export default function AdminFinancialsPage() {
     caption: string;
     value: number;
     format: (v: number) => string;
+    /** Rendered verbatim instead of counting up (for "no answer" states). */
+    display?: string;
     accent?: string;
   }[] = t
     ? [
@@ -154,9 +158,14 @@ export default function AdminFinancialsPage() {
           format: (v) => Math.round(v).toLocaleString("en-US"),
         },
         {
+          // ARPU per month ÷ churn rate. Undefined when nobody has churned.
           label: "Avg LTV",
-          caption: `~${t.avgMonthsRetained.toFixed(1)} months avg stay`,
-          value: t.avgLtv,
+          caption:
+            t.avgLtv === null
+              ? `${usd(t.arpu)}/mo ARPU · no churn yet`
+              : `${usd(t.arpu)}/mo ARPU ÷ ${pct(t.churnRate)} churn · ~${t.expectedLifetimeMonths?.toFixed(1)} mo`,
+          value: t.avgLtv ?? 0,
+          display: t.avgLtv === null ? "—" : undefined,
           format: usd,
         },
         {
@@ -198,7 +207,7 @@ export default function AdminFinancialsPage() {
       {range.preset !== "all" && (
         <BracketLabel
           n={rangeLabel(range)}
-          label="FLOW METRICS WINDOWED · SNAPSHOT METRICS ALWAYS CURRENT"
+          label="FLOW METRICS + CHURN WINDOWED · MRR/ARR ALWAYS CURRENT"
         />
       )}
 
@@ -225,7 +234,9 @@ export default function AdminFinancialsPage() {
                       tile.accent
                     )}
                   >
-                    <CountUp value={tile.value} format={tile.format} />
+                    {tile.display ?? (
+                      <CountUp value={tile.value} format={tile.format} />
+                    )}
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                     {tile.caption}

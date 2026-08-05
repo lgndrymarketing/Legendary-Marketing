@@ -28,6 +28,7 @@ import { CreditCard, Filter, Plus, Pencil, Trash2, Users } from "lucide-react";
 interface Transaction {
   id: string;
   companyName: string | null;
+  contactName: string | null;
   paymentType: "setup_fee" | "monthly_retainer";
   method: string;
   amount: number;
@@ -72,7 +73,7 @@ export default function AdminPaymentsPage() {
   async function remove(t: Transaction) {
     if (
       !window.confirm(
-        `Delete this ${usd(t.amount)} payment from ${t.companyName ?? "client"}?`
+        `Delete this ${usd(t.amount)} payment from ${t.contactName ?? t.companyName ?? "client"}?`
       )
     )
       return;
@@ -89,7 +90,13 @@ export default function AdminPaymentsPage() {
       if (statusFilter !== "all" && t.splitStatus !== statusFilter) return false;
       if (!inRange(t.paidAt, range)) return false;
       if (q) {
-        const hay = [t.companyName, t.method, t.receivedByName, t.notes]
+        const hay = [
+          t.contactName,
+          t.companyName,
+          t.method,
+          t.receivedByName,
+          t.notes,
+        ]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -318,7 +325,7 @@ export default function AdminPaymentsPage() {
                       })}
                     </td>
                     <td className="py-3 pr-4 font-medium">
-                      {t.companyName ?? "—"}
+                      {t.contactName ?? t.companyName ?? "—"}
                     </td>
                     <td className="py-3 pr-4 font-mono text-[11px] uppercase text-muted-foreground whitespace-nowrap">
                       {t.paymentType === "setup_fee" ? "Setup" : "Retainer"}

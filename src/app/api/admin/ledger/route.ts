@@ -38,6 +38,7 @@ export async function GET() {
           id: clientPayments.id,
           clientId: clientPayments.clientId,
           companyName: agencyClients.companyName,
+          contactName: agencyClients.contactName,
           paymentType: clientPayments.paymentType,
           method: clientPayments.method,
           amount: clientPayments.amount,

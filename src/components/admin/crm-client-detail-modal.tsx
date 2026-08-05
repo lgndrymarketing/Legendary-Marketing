@@ -58,6 +58,7 @@ interface ClientData {
   email: string | null;
   status: string;
   startDate: string;
+  ghlAccountName: string | null;
   driveUrl: string | null;
   landingPageUrl: string | null;
 }
@@ -108,6 +109,7 @@ export function ClientDetailModal({
     saasPlan: "",
     saasPlanCustom: "",
     startDate: "",
+    ghlAccountName: "",
     driveUrl: "",
     landingPageUrl: "",
   });
@@ -139,6 +141,7 @@ export function ClientDetailModal({
           saasPlan: c.saasPlan ? (knownPlan ? c.saasPlan : "Custom") : "",
           saasPlanCustom: c.saasPlan && !knownPlan ? c.saasPlan : "",
           startDate: c.startDate ? c.startDate.slice(0, 10) : "",
+          ghlAccountName: c.ghlAccountName ?? "",
           driveUrl: c.driveUrl ?? "",
           landingPageUrl: c.landingPageUrl ?? "",
         });
@@ -251,6 +254,7 @@ export function ClientDetailModal({
           startDate: form.startDate
             ? new Date(form.startDate + "T00:00:00Z").toISOString()
             : undefined,
+          ghlAccountName: form.ghlAccountName.trim() || null,
           driveUrl: form.driveUrl.trim() || null,
           landingPageUrl: form.landingPageUrl.trim() || null,
         }),
@@ -456,6 +460,15 @@ export function ClientDetailModal({
                 </div>
 
                 <div className="mt-4 space-y-4">
+                  <Field label="GHL Account Name">
+                    <Input
+                      placeholder="Their sub-account name in GoHighLevel"
+                      value={form.ghlAccountName}
+                      onChange={(e) =>
+                        setForm({ ...form, ghlAccountName: e.target.value })
+                      }
+                    />
+                  </Field>
                   <Field label="Google Drive Link">
                     <Input
                       placeholder="https://drive.google.com/..."

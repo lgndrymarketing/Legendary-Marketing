@@ -487,6 +487,10 @@ export const agencyClients = pgTable("agency_clients", {
   stage: crmStageEnum("stage").notNull().default("onboarding_form"),
   // SaaS plan the client is on (free-form, separate from their package tier).
   saasPlan: varchar("saas_plan", { length: 100 }),
+  // The client's sub-account name in GoHighLevel. Sub-accounts are often
+  // named nothing like the company, so the team records it here to find the
+  // right account without hunting through the GHL agency view.
+  ghlAccountName: varchar("ghl_account_name", { length: 255 }),
   // Login email for the portal invite (kept even before the account exists).
   email: varchar("email", { length: 255 }),
   // Shared asset links surfaced on the client portal.

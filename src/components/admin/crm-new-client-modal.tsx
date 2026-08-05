@@ -59,6 +59,7 @@ export function NewClientModal({
     saasPlan: "",
     saasPlanCustom: "",
     startDate: today(),
+    ghlAccountName: "",
     driveUrl: "",
     landingPageUrl: "",
     sendInvite: false,
@@ -78,6 +79,7 @@ export function NewClientModal({
       saasPlan: "",
       saasPlanCustom: "",
       startDate: today(),
+      ghlAccountName: "",
       driveUrl: "",
       landingPageUrl: "",
       sendInvite: false,
@@ -119,6 +121,9 @@ export function NewClientModal({
           ...(saasPlan && { saasPlan }),
           ...(form.startDate && {
             startDate: new Date(form.startDate + "T00:00:00Z").toISOString(),
+          }),
+          ...(form.ghlAccountName.trim() && {
+            ghlAccountName: form.ghlAccountName.trim(),
           }),
           ...(form.driveUrl.trim() && { driveUrl: form.driveUrl.trim() }),
           ...(form.landingPageUrl.trim() && {
@@ -296,6 +301,15 @@ export function NewClientModal({
                 </Field>
               </div>
 
+              <Field label="GHL Account Name">
+                <Input
+                  placeholder="Their sub-account name in GoHighLevel"
+                  value={form.ghlAccountName}
+                  onChange={(e) =>
+                    setForm({ ...form, ghlAccountName: e.target.value })
+                  }
+                />
+              </Field>
               <Field label="Drive Link">
                 <Input
                   placeholder="https://drive.google.com/..."

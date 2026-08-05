@@ -24,6 +24,7 @@ const updateSchema = z
     package: z.enum(clientPackageEnum.enumValues).optional(),
     packageLabel: z.string().max(100).nullable().optional(),
     saasPlan: z.string().max(100).nullable().optional(),
+    ghlAccountName: z.string().max(255).nullable().optional(),
     email: z.string().email().nullable().optional(),
     driveUrl: z.string().max(1000).nullable().optional(),
     landingPageUrl: z.string().max(1000).nullable().optional(),

@@ -33,6 +33,7 @@ const clientSchema = z.object({
   package: z.enum(clientPackageEnum.enumValues).optional(),
   packageLabel: z.string().max(100).nullable().optional(),
   saasPlan: z.string().max(100).nullable().optional(),
+  ghlAccountName: z.string().max(255).nullable().optional(),
   driveUrl: z.string().max(1000).nullable().optional(),
   landingPageUrl: z.string().max(1000).nullable().optional(),
   email: z.string().email().optional(),

@@ -207,12 +207,6 @@ export async function GET(req: Request) {
     const totalProfit = totalRevenue - totalCosts;
     const profitMargin = totalRevenue > 0 ? totalProfit / totalRevenue : 0;
 
-    // LTV — total collected revenue divided by the number of roster clients
-    // (matches the "grand total of all payments / total clients" definition).
-    const avgLtv =
-      rosterRows.length > 0
-        ? Math.round(totalRevenue / rosterRows.length)
-        : 0;
     const avgMonthsRetained =
       rosterRows.length > 0
         ? rosterRows.reduce(
@@ -333,6 +327,20 @@ export async function GET(req: Request) {
       }));
     }
 
+    // LTV = ARPU per month ÷ churn rate. ARPU is MRR over the active roster,
+    // and the churn rate is the same one shown on the tile beside it, so the
+    // two always reconcile. With no churn the formula has no answer (an
+    // infinite lifetime) — report null and let the UI show a dash rather than
+    // inventing a number.
+    const arpu =
+      finalActiveClients > 0
+        ? Math.round(finalMrr / finalActiveClients)
+        : 0;
+    const avgLtv =
+      finalChurnRate > 0 ? Math.round(arpu / finalChurnRate) : null;
+    const expectedLifetimeMonths =
+      finalChurnRate > 0 ? 1 / finalChurnRate : null;
+
     return NextResponse.json({
       totals: {
         totalRevenue,
@@ -345,6 +353,8 @@ export async function GET(req: Request) {
         activeClients: finalActiveClients,
         newClientsThisPeriod: finalNewClientsThisPeriod,
         avgLtv,
+        arpu,
+        expectedLifetimeMonths,
         avgMonthsRetained,
         churnRate: finalChurnRate,
         clientsLost: finalClientsLost,
