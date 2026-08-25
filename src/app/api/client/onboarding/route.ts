@@ -61,6 +61,10 @@ export async function GET() {
     return NextResponse.json({
       stage: client.stage,
       stageLabel: STAGE_LABELS[client.stage as CrmStage],
+      // Position in the pipeline — the client's project status IS where the
+      // team has them in the admin stage list.
+      stageIndex: CRM_STAGES.indexOf(client.stage as CrmStage) + 1,
+      stageTotal: CRM_STAGES.length,
       total,
       done,
       stages,

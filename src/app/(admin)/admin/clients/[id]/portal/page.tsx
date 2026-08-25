@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { PageHero, BracketLabel, MetricRing } from "@/components/ui/firecrawl";
@@ -17,7 +17,10 @@ import {
   ClipboardCheck,
   ExternalLink,
   FolderKanban,
+  Link2 as LinkIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface PortalView {
   client: {
@@ -95,7 +98,7 @@ export default function ClientPortalPreviewPage({
   const [data, setData] = useState<PortalView | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetch(`/api/admin/clients/${id}/portal`)
       .then((res) => (res.ok ? res.json() : null))
       .then((d) => {
@@ -104,6 +107,8 @@ export default function ClientPortalPreviewPage({
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(load, [load]);
 
   if (loading) {
     return (
@@ -161,32 +166,7 @@ export default function ClientPortalPreviewPage({
         <PageHero
           title={client.companyName}
           description={`Exactly what ${client.contactName} sees in their portal.`}
-          action={
-            <div className="flex flex-wrap gap-2">
-              {client.driveUrl && (
-                <a
-                  href={client.driveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Drive
-                </a>
-              )}
-              {client.landingPageUrl && (
-                <a
-                  href={client.landingPageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Landing Page
-                </a>
-              )}
-            </div>
-          }
+
         />
       </div>
 
@@ -203,6 +183,16 @@ export default function ClientPortalPreviewPage({
           </span>
         </div>
       </Beam>
+
+      {/* Project assets — the only editable thing on this page. These two
+          links are what the client sees on their Project page, so they are
+          set from the same screen the team checks their portal on. */}
+      <ProjectAssetsEditor
+        clientId={client.id}
+        driveUrl={client.driveUrl}
+        landingPageUrl={client.landingPageUrl}
+        onSaved={load}
+      />
 
       {/* Their performance tiles */}
       <motion.section
@@ -386,6 +376,144 @@ export default function ClientPortalPreviewPage({
           )}
         </section>
       )}
+    </div>
+  );
+}
+
+/** Attach the client's Drive folder and landing page. These land on the
+ * client's Project page assets rail, so the team can fill them in from the
+ * same screen where they check what the client sees. */
+function ProjectAssetsEditor({
+  clientId,
+  driveUrl,
+  landingPageUrl,
+  onSaved,
+}: {
+  clientId: string;
+  driveUrl: string | null;
+  landingPageUrl: string | null;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    driveUrl: driveUrl ?? "",
+    landingPageUrl: landingPageUrl ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  // Re-seed when the parent reloads (another admin may have changed them).
+  useEffect(() => {
+    setForm({ driveUrl: driveUrl ?? "", landingPageUrl: landingPageUrl ?? "" });
+  }, [driveUrl, landingPageUrl]);
+
+  const dirty =
+    form.driveUrl.trim() !== (driveUrl ?? "") ||
+    form.landingPageUrl.trim() !== (landingPageUrl ?? "");
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setStatus("idle");
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driveUrl: form.driveUrl.trim() || null,
+          landingPageUrl: form.landingPageUrl.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setStatus("saved");
+      onSaved();
+    } catch {
+      setStatus("error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+        <LinkIcon className="h-4 w-4 text-orange" />
+        <h2 className="text-[15px] font-semibold">Project Assets</h2>
+        <span className="ml-auto font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          Shown on their Project page
+        </span>
+      </div>
+      <form onSubmit={save} className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <AssetField
+          label="Google Drive Folder"
+          placeholder="https://drive.google.com/..."
+          value={form.driveUrl}
+          onChange={(v) => setForm({ ...form, driveUrl: v })}
+          saved={driveUrl}
+        />
+        <AssetField
+          label="Landing Page"
+          placeholder="https://..."
+          value={form.landingPageUrl}
+          onChange={(v) => setForm({ ...form, landingPageUrl: v })}
+          saved={landingPageUrl}
+        />
+        <div className="flex items-center gap-3 sm:col-span-2">
+          <Button type="submit" size="sm" disabled={saving || !dirty}>
+            {saving ? "Saving…" : "Save Links"}
+          </Button>
+          {status === "saved" && !dirty && (
+            <span className="font-mono text-[11px] uppercase text-success">
+              Saved — live on their portal
+            </span>
+          )}
+          {status === "error" && (
+            <span className="text-sm text-destructive">
+              Could not save — try again.
+            </span>
+          )}
+        </div>
+      </form>
+    </section>
+  );
+}
+
+/** One asset input, with an open-link shortcut for whatever is saved. */
+function AssetField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  saved,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  saved: string | null;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline gap-2">
+        <span className="text-[13px] font-semibold">{label}</span>
+        {saved && (
+          <a
+            href={saved}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase text-orange hover:underline"
+          >
+            Open
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+      <Input
+        type="url"
+        inputMode="url"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

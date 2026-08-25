@@ -26,6 +26,8 @@ interface Onboarding {
   total: number;
   done: number;
   stageLabel: string;
+  stageIndex: number;
+  stageTotal: number;
   tasks: Task[];
   assets: {
     driveUrl: string | null;
@@ -84,6 +86,8 @@ export function OnboardingTimeline() {
   if (!data) return null;
 
   const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
+  // The first step the team hasn't finished — what the client is waiting on.
+  const nextStep = data.tasks.find((t) => t.status !== "completed");
 
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_18rem] lg:items-start">
@@ -96,6 +100,13 @@ export function OnboardingTimeline() {
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Your journey to launching successful campaigns.
+            </p>
+            {/* Project status = the stage the team has them at in the CRM. */}
+            <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-orange">
+              {data.stageLabel}
+              <span className="font-normal text-muted-foreground">
+                Stage {data.stageIndex} / {data.stageTotal}
+              </span>
             </p>
           </div>
           <div className="text-right">
@@ -197,8 +208,10 @@ export function OnboardingTimeline() {
         </div>
 
         <div className="mt-5 border-t border-border pt-5">
-          <p className="micro-label">Current Stage</p>
-          <p className="mt-1.5 text-sm font-semibold">{data.stageLabel}</p>
+          <p className="micro-label">Up Next</p>
+          <p className="mt-1.5 text-sm font-semibold">
+            {nextStep ? nextStep.title : "Every step is done"}
+          </p>
           <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
             {data.done} of {data.total} steps done
           </p>
