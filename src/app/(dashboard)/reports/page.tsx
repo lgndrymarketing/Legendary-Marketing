@@ -82,6 +82,9 @@ export default function ClientReportsPage() {
   const totalLeads = completed.reduce((s, r) => s + r.leads, 0);
   const totalSpend = completed.reduce((s, r) => s + r.totalSpend, 0);
   const totalRevenue = completed.reduce((s, r) => s + (r.revenue ?? 0), 0);
+  const totalCloses = completed.reduce((s, r) => s + (r.closes ?? 0), 0);
+  const avgTicket =
+    totalCloses > 0 ? Math.round(totalRevenue / totalCloses) : 0;
   const avgCpl = totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0;
   const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
 
@@ -89,6 +92,7 @@ export default function ClientReportsPage() {
     { label: "Total Leads", value: totalLeads.toLocaleString("en-US") },
     { label: "Avg CPL", value: usd(avgCpl) },
     { label: "Total Ad Spend", value: usd(totalSpend) },
+    { label: "Avg Ticket", value: usd(avgTicket) },
     { label: "Total Revenue", value: usd(totalRevenue), accent: "text-success" },
     { label: "ROAS", value: `${roas.toFixed(2)}x`, accent: "text-orange" },
   ];
@@ -106,7 +110,7 @@ export default function ClientReportsPage() {
           variants={cascade}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 divide-border border-b border-border sm:grid-cols-5 sm:divide-x"
+          className="grid grid-cols-2 divide-border border-b border-border sm:grid-cols-6 sm:divide-x"
         >
           {tiles.map((t) => (
             <motion.div key={t.label} variants={cascadeItem} className="px-5 py-6">
@@ -174,6 +178,9 @@ export default function ClientReportsPage() {
                     <th className="micro-label py-3 pr-4">Week</th>
                     <th className="micro-label py-3 pr-4 text-right">Leads</th>
                     <th className="micro-label py-3 pr-4 text-right">Closed</th>
+                    <th className="micro-label py-3 pr-4 text-right">
+                      Avg Ticket
+                    </th>
                     <th className="micro-label py-3 pr-4 text-right">Revenue</th>
                     <th className="micro-label py-3 pr-4 text-right">ROAS</th>
                     <th className="micro-label py-3">Status</th>
@@ -213,6 +220,12 @@ export default function ClientReportsPage() {
                         <td className="py-3 pr-4 text-right font-mono">
                           {r.closes !== null
                             ? r.closes.toLocaleString("en-US")
+                            : "—"}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-mono">
+                          {/* What one closed deal was worth this week. */}
+                          {r.revenue !== null && r.closes
+                            ? usd(Math.round(r.revenue / r.closes))
                             : "—"}
                         </td>
                         <td className="py-3 pr-4 text-right font-mono">
@@ -270,6 +283,17 @@ function SubmitResults({
   const [revenue, setRevenue] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Average ticket implied by what they've typed so far.
+  const closesPreview = parseInt(closes, 10);
+  const revenuePreview = parseFloat(revenue);
+  const ticketPreview =
+    Number.isFinite(closesPreview) &&
+    closesPreview > 0 &&
+    Number.isFinite(revenuePreview) &&
+    revenuePreview > 0
+      ? Math.round((revenuePreview * 100) / closesPreview)
+      : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -358,6 +382,12 @@ function SubmitResults({
               onChange={(e) => setRevenue(e.target.value)}
             />
           </div>
+
+          {ticketPreview !== null && (
+            <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              That&apos;s {usd(ticketPreview)} per client closed
+            </p>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

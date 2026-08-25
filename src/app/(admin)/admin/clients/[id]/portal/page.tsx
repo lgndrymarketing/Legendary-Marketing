@@ -276,6 +276,9 @@ export default function ClientPortalPreviewPage({
                   <th className="micro-label py-3 pr-4 text-right">Leads</th>
                   <th className="micro-label py-3 pr-4 text-right">CPL</th>
                   <th className="micro-label py-3 pr-4 text-right">Spend</th>
+                  <th className="micro-label py-3 pr-4 text-right">
+                    Avg Ticket
+                  </th>
                   <th className="micro-label py-3 pr-4 text-right">Revenue</th>
                   <th className="micro-label py-3">Status</th>
                 </tr>
@@ -294,6 +297,12 @@ export default function ClientPortalPreviewPage({
                     </td>
                     <td className="py-3 pr-4 text-right font-mono">
                       {usd(r.totalSpend)}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-mono">
+                      {/* What one closed deal was worth that week. */}
+                      {r.revenue !== null && r.closes
+                        ? usd(Math.round(r.revenue / r.closes))
+                        : "—"}
                     </td>
                     <td className="py-3 pr-4 text-right font-mono">
                       {r.revenue !== null ? (
