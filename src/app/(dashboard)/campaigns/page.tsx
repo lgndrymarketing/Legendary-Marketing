@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { NewCampaignButton } from "@/components/dashboard/new-campaign-modal";
 import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
 import { PhaseTrackerHorizontal, type Phase } from "@/components/dashboard/phase-tracker";
+import { OnboardingTimeline } from "@/components/dashboard/onboarding-timeline";
 import { ArrowRight, FolderKanban } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { db } from "@/db";
-import { projects, projectPhases, users } from "@/db/schema";
+import { agencyClients, projects, projectPhases, users } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { serviceLabels } from "@/lib/services";
 
@@ -56,6 +57,13 @@ export default async function ProjectsPage() {
     .from(projects)
     .where(eq(projects.userId, dbUser.id));
 
+  // Whether the team has a roster record for them — if so the Onboarding
+  // Timeline carries this page and the "no campaigns" prompt is just noise.
+  const [rosterRecord] = await db
+    .select({ id: agencyClients.id })
+    .from(agencyClients)
+    .where(eq(agencyClients.userId, dbUser.id));
+
   const projectIds = userProjects.map((p) => p.id);
   const allPhases =
     projectIds.length > 0
@@ -75,17 +83,21 @@ export default async function ProjectsPage() {
         }
       />
 
+      {/* Onboarding Timeline + assets — the build the team is running for
+          this client. Renders nothing until they have a roster record. */}
+      <OnboardingTimeline />
+
       {userProjects.length === 0 ? (
-        <div className="animate-fade-up rounded-xl border border-border">
-          <EmptyState
-            icon={FolderKanban}
-            title="No campaigns yet"
-            description="Start your first campaign and we'll build something great together."
-            action={
-              <NewCampaignButton />
-            }
-          />
-        </div>
+        rosterRecord ? null : (
+          <div className="animate-fade-up rounded-xl border border-border">
+            <EmptyState
+              icon={FolderKanban}
+              title="No campaigns yet"
+              description="Start your first campaign and we'll build something great together."
+              action={<NewCampaignButton />}
+            />
+          </div>
+        )
       ) : (
         <div className="animate-fade-up divide-y divide-border border-b border-border">
           {userProjects.map((project) => {
