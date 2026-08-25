@@ -270,3 +270,23 @@ input[type="time"]::-webkit-date-and-time-value,
 input[type="datetime-local"]::-webkit-date-and-time-value {
   text-align: left;
 }
+
+/* ---------------------------------------------------------------------------
+   Clerk — belt and braces over the appearance prop.
+
+   The widget's colors come from ClerkProvider's `variables` (see
+   components/providers/clerk-provider.tsx). These rules only cover what the
+   prop can't reliably reach: the sign-up link, which keeps rendering on the
+   sign-in card even when `footerAction` is hidden. Access is by invitation —
+   staff add clients and Clerk emails them — so a public sign-up route is a
+   dead end for anyone who follows it.
+
+   Class names are Clerk's own `cl-` prefixed hooks. If a future version
+   renames them these rules go inert rather than breaking the page, which is
+   why the colors stay in the appearance prop and only this lives here. */
+.cl-footerAction,
+.cl-footerActionLink,
+.cl-signIn-start .cl-footer,
+.cl-footerAction__signUp {
+  display: none !important;
+}

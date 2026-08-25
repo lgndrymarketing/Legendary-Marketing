@@ -44,7 +44,12 @@ export default async function SignUpPage({
           <SignUp
             forceRedirectUrl="/post-login"
             signInUrl="/sign-in"
-            appearance={{ elements: { footerAction: "hidden" } }}
+            appearance={{
+              elements: {
+                footerAction: { display: "none" },
+                footerActionLink: { display: "none" },
+              },
+            }}
           />
         </Beam>
       </div>

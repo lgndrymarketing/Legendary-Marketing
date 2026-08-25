@@ -29,7 +29,12 @@ export default function SignInPage() {
         <Beam>
           <SignIn
             forceRedirectUrl="/post-login"
-            appearance={{ elements: { footerAction: "hidden" } }}
+            appearance={{
+              elements: {
+                footerAction: { display: "none" },
+                footerActionLink: { display: "none" },
+              },
+            }}
           />
         </Beam>
         <p className="max-w-xs text-center font-mono text-[11px] leading-relaxed text-muted-foreground">
