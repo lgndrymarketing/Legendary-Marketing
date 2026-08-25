@@ -21,6 +21,12 @@ const navItems: ShellNavItem[] = [
     section: "Workspace",
   },
   {
+    label: "Requests",
+    href: "/requests",
+    icon: "MessageSquarePlus",
+    section: "Workspace",
+  },
+  {
     label: "Weekly Report",
     href: "/reports",
     icon: "ClipboardCheck",

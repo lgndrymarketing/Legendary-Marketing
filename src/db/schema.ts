@@ -203,6 +203,38 @@ export const revisionRequests = pgTable("revision_requests", {
   index("idx_revisions_project_id").on(table.projectId),
 ]);
 
+// Client requests — the portal's Requests & Feedback surface. Unlike a
+// revision request these are not tied to a project: most clients are on a
+// retainer with no self-serve project row, and they still need a way to ask
+// the team for something.
+export const clientRequestStatusEnum = pgEnum("client_request_status", [
+  "open",
+  "in_progress",
+  "resolved",
+]);
+
+export const clientRequests = pgTable("client_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  // The roster record they belong to, when their portal login is linked.
+  // Kept so the team can read requests from the client's detail panel.
+  clientId: uuid("client_id").references(() => agencyClients.id, {
+    onDelete: "cascade",
+  }),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  details: text("details").notNull(),
+  status: clientRequestStatusEnum("status").notNull().default("open"),
+  // The team's reply, shown back to the client on their request.
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_requests_user_id").on(table.userId),
+  index("idx_client_requests_client_id").on(table.clientId),
+]);
+
 // Notifications
 export const notificationTypeEnum = pgEnum("notification_type", [
   "phase_update",
@@ -682,6 +714,8 @@ export type ProjectPhase = typeof projectPhases.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type File = typeof files.$inferSelect;
 export type RevisionRequest = typeof revisionRequests.$inferSelect;
+export type ClientRequest = typeof clientRequests.$inferSelect;
+export type NewClientRequest = typeof clientRequests.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type OnboardingSubmission = typeof onboardingSubmissions.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;

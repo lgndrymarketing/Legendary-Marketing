@@ -47,6 +47,22 @@ interface Req {
   createdAt: string;
 }
 
+/** A Requests & Feedback item raised from the client portal. */
+interface Feedback {
+  id: string;
+  subject: string;
+  details: string;
+  status: "open" | "in_progress" | "resolved";
+  adminNotes: string | null;
+  createdAt: string;
+}
+
+const FEEDBACK_STATUS = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "resolved", label: "Resolved" },
+];
+
 interface ClientData {
   id: string;
   contactName: string;
@@ -93,6 +109,7 @@ export function ClientDetailModal({
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [requests, setRequests] = useState<Req[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [saving, setSaving] = useState(false);
   const [newTask, setNewTask] = useState("");
   const [inviting, setInviting] = useState(false);
@@ -147,6 +164,7 @@ export function ClientDetailModal({
         });
         setTasks(data.tasks ?? []);
         setRequests(data.requests ?? []);
+        setFeedback(data.feedback ?? []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -553,30 +571,44 @@ export function ClientDetailModal({
                   )}
                 </div>
 
-                {/* Client requests */}
+                {/* Requests & Feedback raised from their portal */}
                 <h3 className="mt-8 border-b border-border pb-3 text-lg font-bold tracking-tight">
-                  Client Requests
+                  Requests &amp; Feedback
                 </h3>
-                {requests.length === 0 ? (
+                {feedback.length === 0 ? (
                   <p className="py-4 text-sm italic text-muted-foreground">
                     No requests from this client.
                   </p>
                 ) : (
-                  <ul className="mt-4 space-y-2">
-                    {requests.map((r) => (
-                      <li
-                        key={r.id}
-                        className="rounded-xl border border-border px-4 py-3 text-sm"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="min-w-0 flex-1">{r.description}</p>
-                          <span className="shrink-0 font-mono text-[11px] uppercase text-muted-foreground">
-                            {r.status}
-                          </span>
-                        </div>
-                      </li>
+                  <ul className="mt-4 space-y-3">
+                    {feedback.map((f) => (
+                      <FeedbackRow key={f.id} item={f} onSaved={load} />
                     ))}
                   </ul>
+                )}
+
+                {/* Legacy revision requests raised against a project */}
+                {requests.length > 0 && (
+                  <>
+                    <h3 className="mt-8 border-b border-border pb-3 text-lg font-bold tracking-tight">
+                      Revision Requests
+                    </h3>
+                    <ul className="mt-4 space-y-2">
+                      {requests.map((r) => (
+                        <li
+                          key={r.id}
+                          className="rounded-xl border border-border px-4 py-3 text-sm"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="min-w-0 flex-1">{r.description}</p>
+                            <span className="shrink-0 font-mono text-[11px] uppercase text-muted-foreground">
+                              {r.status}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
 
                 <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
@@ -599,5 +631,89 @@ export function ClientDetailModal({
         </div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** One portal request: status, the team's reply, and what the client wrote. */
+function FeedbackRow({
+  item,
+  onSaved,
+}: {
+  item: Feedback;
+  onSaved: () => void;
+}) {
+  const [status, setStatus] = useState(item.status);
+  const [reply, setReply] = useState(item.adminNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const dirty = status !== item.status || reply !== (item.adminNotes ?? "");
+
+  async function save() {
+    setSaving(true);
+    try {
+      await fetch(`/api/admin/client-requests/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, adminNotes: reply.trim() || null }),
+      });
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <li className="rounded-xl border border-border px-4 py-3 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="min-w-0 flex-1 text-left cursor-pointer"
+        >
+          <p className="font-medium">{item.subject}</p>
+          <p className="mt-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+            {new Date(item.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </button>
+        <select
+          className="h-8 shrink-0 rounded-full border border-border bg-background px-2.5 font-mono text-[11px] font-semibold uppercase tracking-wide outline-none transition-colors focus:border-orange"
+          aria-label={`Status for ${item.subject}`}
+          value={status}
+          onChange={(e) => setStatus(e.target.value as Feedback["status"])}
+        >
+          {FEEDBACK_STATUS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {open && (
+        <p className="mt-3 whitespace-pre-wrap border-l-2 border-border pl-3 text-[13px] text-muted-foreground">
+          {item.details}
+        </p>
+      )}
+
+      <textarea
+        rows={2}
+        placeholder="Reply to the client…"
+        className="mt-3 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-[13px] outline-none transition-colors placeholder:text-muted-foreground focus:border-orange"
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+      />
+      {dirty && (
+        <div className="mt-2 flex justify-end">
+          <Button type="button" size="sm" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save & Notify"}
+          </Button>
+        </div>
+      )}
+    </li>
   );
 }

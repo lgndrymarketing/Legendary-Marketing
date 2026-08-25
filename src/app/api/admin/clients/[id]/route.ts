@@ -5,13 +5,14 @@ import {
   agencyClients,
   clientPackageEnum,
   clientStatusEnum,
+  clientRequests,
   clientTasks,
   crmStageEnum,
   projects,
   revisionRequests,
   users,
 } from "@/db/schema";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
 import { publishToChannel } from "@/lib/ably";
@@ -99,7 +100,29 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ client, tasks, requests });
+    // Requests & Feedback raised from the portal. Matched on either link so
+    // a request survives the client's portal login being re-pointed.
+    const feedback = await db
+      .select({
+        id: clientRequests.id,
+        subject: clientRequests.subject,
+        details: clientRequests.details,
+        status: clientRequests.status,
+        adminNotes: clientRequests.adminNotes,
+        createdAt: clientRequests.createdAt,
+      })
+      .from(clientRequests)
+      .where(
+        client.userId
+          ? or(
+              eq(clientRequests.clientId, id),
+              eq(clientRequests.userId, client.userId)
+            )
+          : eq(clientRequests.clientId, id)
+      )
+      .orderBy(desc(clientRequests.createdAt));
+
+    return NextResponse.json({ client, tasks, requests, feedback });
   } catch (error) {
     if (error instanceof NextResponse) return error;
     console.error("Client detail error:", error);
