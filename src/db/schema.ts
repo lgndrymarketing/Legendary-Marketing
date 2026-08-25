@@ -151,11 +151,18 @@ export const payments = pgTable("payments", {
 ]);
 
 // Messages
+// A message belongs to a client thread. projectId is the legacy scope and
+// stays for the campaign workspaces that still carry their own thread —
+// but a retainer client has no project, and they still need to talk to the
+// team, so clientId is the scope the portal uses.
 export const messages = pgTable("messages", {
   id: uuid("id").defaultRandom().primaryKey(),
-  projectId: uuid("project_id")
-    .references(() => projects.id, { onDelete: "cascade" })
-    .notNull(),
+  projectId: uuid("project_id").references(() => projects.id, {
+    onDelete: "cascade",
+  }),
+  clientId: uuid("client_id").references(() => agencyClients.id, {
+    onDelete: "cascade",
+  }),
   senderId: uuid("sender_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
@@ -165,6 +172,7 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_messages_project_id").on(table.projectId),
+  index("idx_messages_client_id").on(table.clientId),
 ]);
 
 // Files
