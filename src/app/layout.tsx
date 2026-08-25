@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ThemedClerkProvider } from "@/components/providers/clerk-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { brand } from "@/lib/brand";
 import "./globals.css";
@@ -30,26 +30,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
-        variables: {
-          colorPrimary: "#F54A00",
-          colorBackground: "#ffffff",
-          colorText: "#0F1010",
-          colorInputBackground: "#ffffff",
-          colorInputText: "#0F1010",
-        },
-      }}
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <html
-        lang="en"
-        className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
-        suppressHydrationWarning
-      >
-        <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-          <ThemeProvider>{children}</ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+        {/* Theme first: Clerk's appearance is derived from the resolved
+            theme, so it has to sit inside the provider that resolves it. */}
+        <ThemeProvider>
+          <ThemedClerkProvider>{children}</ThemedClerkProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

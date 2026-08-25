@@ -1,0 +1,1 @@
+ALTER TABLE "agency_clients" ADD COLUMN "ghl_account_name" varchar(255);

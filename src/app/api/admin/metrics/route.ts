@@ -15,9 +15,9 @@ import { requireAdmin } from "@/lib/auth-utils";
  * agency P&L: revenue, costs, margin, MRR/ARR, LTV, churn).
  *
  * Optional `?from=yyyy-mm-dd&to=yyyy-mm-dd` (to inclusive) window the FLOW
- * metrics — revenue, costs, profit, new clients, top customers — and stretch
- * the chart buckets across the window (capped at 24 months). Point-in-time
- * metrics (MRR, ARR, active clients, churn, LTV, monthly burn) always
+ * metrics — revenue, costs, profit, new clients, churn, top customers — and
+ * stretch the chart buckets across the window (capped at 24 months).
+ * Point-in-time metrics (MRR, ARR, active clients, LTV, monthly burn) always
  * reflect the current roster.
  *
  * Row volumes are agency-sized (hundreds, not millions), so rows are pulled
@@ -101,6 +101,7 @@ export async function GET(req: Request) {
             monthlyFee: agencyClients.monthlyFee,
             startDate: agencyClients.startDate,
             status: agencyClients.status,
+            churnedAt: agencyClients.churnedAt,
           })
           .from(agencyClients),
         db
@@ -206,12 +207,6 @@ export async function GET(req: Request) {
     const totalProfit = totalRevenue - totalCosts;
     const profitMargin = totalRevenue > 0 ? totalProfit / totalRevenue : 0;
 
-    // LTV — total collected revenue divided by the number of roster clients
-    // (matches the "grand total of all payments / total clients" definition).
-    const avgLtv =
-      rosterRows.length > 0
-        ? Math.round(totalRevenue / rosterRows.length)
-        : 0;
     const avgMonthsRetained =
       rosterRows.length > 0
         ? rosterRows.reduce(
@@ -283,16 +278,43 @@ export async function GET(req: Request) {
       );
       finalArrSeries = finalMrrSeries.map((v) => v * 12);
       finalActiveClients = active.length;
-      finalClientsLost = rosterRows.filter((c) => c.status === "churned").length;
-      finalChurnRate =
-        rosterRows.length > 0 ? finalClientsLost / rosterRows.length : 0;
+
+      // Churn. Unwindowed this is lifetime: everyone ever churned over the
+      // whole roster. Windowed it's period churn — clients lost DURING the
+      // range over the clients who were on the roster when it opened, so a
+      // custom range never reports the all-time number.
+      if (windowed) {
+        const lost = rosterRows.filter(
+          (c) => c.churnedAt && inWindow(new Date(c.churnedAt))
+        );
+        // The at-risk base: on the roster when the window opened — started
+        // before the window closed and hadn't already churned before it began.
+        const base = rosterRows.filter((c) => {
+          const started = new Date(c.startDate);
+          if (toEx && started >= toEx) return false;
+          if (c.churnedAt && fromParam && new Date(c.churnedAt) < fromParam)
+            return false;
+          return true;
+        });
+        finalClientsLost = lost.length;
+        finalChurnRate = base.length > 0 ? finalClientsLost / base.length : 0;
+      } else {
+        finalClientsLost = rosterRows.filter(
+          (c) => c.status === "churned"
+        ).length;
+        finalChurnRate = finalClientsLost / rosterRows.length;
+      }
+
       finalNewClientsSeries = zeros();
       for (const c of rosterRows) {
         const i = bucketIndex.get(monthKey(new Date(c.startDate)));
         if (i !== undefined) finalNewClientsSeries[i]++;
       }
-      finalNewClientsThisPeriod = rosterRows.filter(
-        (c) => new Date(c.startDate) >= thirtyDaysAgo
+      // "This period" follows the selected range; trailing 30 days otherwise.
+      finalNewClientsThisPeriod = rosterRows.filter((c) =>
+        windowed
+          ? inWindow(new Date(c.startDate))
+          : new Date(c.startDate) >= thirtyDaysAgo
       ).length;
       const byPackage = new Map<string, number>();
       for (const c of active) {
@@ -304,6 +326,20 @@ export async function GET(req: Request) {
         count,
       }));
     }
+
+    // LTV = ARPU per month ÷ churn rate. ARPU is MRR over the active roster,
+    // and the churn rate is the same one shown on the tile beside it, so the
+    // two always reconcile. With no churn the formula has no answer (an
+    // infinite lifetime) — report null and let the UI show a dash rather than
+    // inventing a number.
+    const arpu =
+      finalActiveClients > 0
+        ? Math.round(finalMrr / finalActiveClients)
+        : 0;
+    const avgLtv =
+      finalChurnRate > 0 ? Math.round(arpu / finalChurnRate) : null;
+    const expectedLifetimeMonths =
+      finalChurnRate > 0 ? 1 / finalChurnRate : null;
 
     return NextResponse.json({
       totals: {
@@ -317,6 +353,8 @@ export async function GET(req: Request) {
         activeClients: finalActiveClients,
         newClientsThisPeriod: finalNewClientsThisPeriod,
         avgLtv,
+        arpu,
+        expectedLifetimeMonths,
         avgMonthsRetained,
         churnRate: finalChurnRate,
         clientsLost: finalClientsLost,

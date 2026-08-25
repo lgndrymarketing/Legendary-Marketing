@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageHero, SegmentedTabs, BracketLabel } from "@/components/ui/firecrawl";
-import { SelectPill } from "@/components/ui/filters";
+import { SearchPill, SelectPill, SortPill } from "@/components/ui/filters";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,17 @@ import {
 } from "@/lib/crm";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Filter, Maximize2, Plus, User, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Filter,
+  Maximize2,
+  Plus,
+  User,
+  Users,
+  X,
+} from "lucide-react";
 import { FocusBeam } from "@/components/ui/beam-focus";
 
 interface TaskRow {
@@ -32,6 +42,7 @@ interface TaskRow {
   assigneeName: string | null;
   dueDate: string | null;
   companyName: string | null;
+  clientStatus: string | null;
 }
 
 interface Feed {
@@ -70,13 +81,33 @@ const priorityTone: Record<TaskPriority, string> = {
 const selectClass =
   "h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-orange";
 
+/** The roster carries thousands of checklist tasks — render one page at a
+ * time. Everything above ~50 rows makes the table (three form controls per
+ * row) janky and stretches the row cascade into a visible crawl. */
+const PAGE_SIZE = 25;
+
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+const STATUS_RANK: Record<string, number> = {
+  in_progress: 0,
+  pending: 1,
+  completed: 2,
+};
+
 export default function AdminTasksPage() {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("All Departments");
+  const [query, setQuery] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("active");
+  const [sort, setSort] = useState("default");
+  const [page, setPage] = useState(0);
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -94,7 +125,10 @@ export default function AdminTasksPage() {
   useCrmRealtime(load);
 
   async function patchTask(id: string, patch: Record<string, unknown>) {
-    // Optimistic update; realtime + reload reconcile the source of truth.
+    // Optimistic update, with a rollback if the save is rejected. No blanket
+    // reload: refetching the whole feed on every dropdown change is what made
+    // the table flash between renders.
+    const before = feed?.tasks.find((t) => t.id === id);
     setFeed((prev) =>
       prev
         ? {
@@ -105,33 +139,106 @@ export default function AdminTasksPage() {
           }
         : prev
     );
-    await fetch(`/api/admin/client-tasks/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    load();
+    try {
+      const res = await fetch(`/api/admin/client-tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      if (before) {
+        setFeed((prev) =>
+          prev
+            ? {
+                ...prev,
+                tasks: prev.tasks.map((t) => (t.id === id ? before : t)),
+              }
+            : prev
+        );
+      }
+    }
   }
 
   const tasks = useMemo(() => {
     const dept = DEPT_BY_TAB[tab];
-    return (feed?.tasks ?? []).filter((t) => {
+    const q = query.trim().toLowerCase();
+    const rows = (feed?.tasks ?? []).filter((t) => {
       if (dept && t.department !== dept) return false;
+      if (clientFilter !== "all" && t.clientStatus !== clientFilter)
+        return false;
       if (assigneeFilter !== "all" && t.assigneeId !== assigneeFilter)
         return false;
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (priorityFilter !== "all" && t.priority !== priorityFilter)
         return false;
+      if (
+        q &&
+        !t.title.toLowerCase().includes(q) &&
+        !(t.companyName ?? "").toLowerCase().includes(q) &&
+        !(t.assigneeName ?? "").toLowerCase().includes(q)
+      )
+        return false;
       return true;
     });
-  }, [feed, tab, assigneeFilter, statusFilter, priorityFilter]);
+    // "default" keeps the API order (newest client first, checklist order).
+    if (sort === "default") return rows;
+    return [...rows].sort((a, b) => {
+      switch (sort) {
+        case "due_soon": {
+          // Undated tasks sort last rather than pretending to be urgent.
+          if (!a.dueDate) return b.dueDate ? 1 : 0;
+          if (!b.dueDate) return -1;
+          return a.dueDate.localeCompare(b.dueDate);
+        }
+        case "priority":
+          return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+        case "status":
+          return STATUS_RANK[a.status] - STATUS_RANK[b.status];
+        case "client":
+          return (a.companyName ?? "").localeCompare(b.companyName ?? "");
+        default:
+          return 0;
+      }
+    });
+  }, [
+    feed,
+    tab,
+    query,
+    clientFilter,
+    assigneeFilter,
+    statusFilter,
+    priorityFilter,
+    sort,
+  ]);
 
   const filtersActive =
     tab !== "All Departments" ||
+    query.trim() !== "" ||
+    clientFilter !== "active" ||
     assigneeFilter !== "all" ||
     statusFilter !== "all" ||
     priorityFilter !== "all";
   const doneCount = tasks.filter((t) => t.status === "completed").length;
+
+  const pageCount = Math.max(1, Math.ceil(tasks.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const visible = tasks.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE
+  );
+  // Any filter change starts a new result set — go back to the first page.
+  useEffect(() => {
+    setPage(0);
+  }, [
+    tab,
+    query,
+    clientFilter,
+    assigneeFilter,
+    statusFilter,
+    priorityFilter,
+    sort,
+  ]);
 
   return (
     <div className="space-y-8">
@@ -149,9 +256,15 @@ export default function AdminTasksPage() {
       {/* Department tabs + filter row */}
       <div className="space-y-4">
         <SegmentedTabs options={DEPT_TABS} value={tab} onChange={setTab} />
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <SearchPill
+            className="sm:w-64"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search tasks, clients or assignees…"
+          />
           <SelectPill
-            className="lg:w-48"
+            className="sm:w-44"
             icon={User}
             ariaLabel="Assignee"
             value={assigneeFilter}
@@ -165,7 +278,7 @@ export default function AdminTasksPage() {
             ]}
           />
           <SelectPill
-            className="lg:w-44"
+            className="sm:w-40"
             icon={Filter}
             ariaLabel="Status"
             value={statusFilter}
@@ -173,7 +286,7 @@ export default function AdminTasksPage() {
             options={[{ value: "all", label: "All Statuses" }, ...STATUS_OPTIONS]}
           />
           <SelectPill
-            className="lg:w-44"
+            className="sm:w-40"
             icon={Filter}
             ariaLabel="Priority"
             value={priorityFilter}
@@ -185,19 +298,40 @@ export default function AdminTasksPage() {
               { value: "low", label: "Low" },
             ]}
           />
-          {filtersActive && (
-            <BracketLabel
-              className="lg:ml-auto"
-              n={doneCount}
-              m={tasks.length}
-              label="COMPLETED IN VIEW"
-            />
-          )}
+          <SelectPill
+            className="sm:w-44"
+            icon={Users}
+            ariaLabel="Client status"
+            value={clientFilter}
+            onChange={setClientFilter}
+            options={[
+              { value: "active", label: "Active clients" },
+              { value: "paused", label: "Paused clients" },
+              { value: "churned", label: "Churned clients" },
+              { value: "all", label: "All clients" },
+            ]}
+          />
+          <SortPill
+            className="sm:w-52"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "default", label: "Checklist order" },
+              { value: "due_soon", label: "Due date: soonest first" },
+              { value: "priority", label: "Priority: high → low" },
+              { value: "status", label: "Status: in progress first" },
+              { value: "client", label: "Client A–Z" },
+            ]}
+          />
         </div>
       </div>
 
       {/* Task table */}
       <section>
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
+          <BracketLabel n={tasks.length} label="TASKS" />
+          <BracketLabel n={doneCount} m={tasks.length} label="COMPLETED" />
+        </div>
         {loading ? (
           <TableSkeleton rows={8} />
         ) : tasks.length === 0 ? (
@@ -206,7 +340,7 @@ export default function AdminTasksPage() {
             title={filtersActive ? "No matching tasks" : "No tasks yet"}
             description={
               filtersActive
-                ? "No tasks match the current filters — switch department or clear a filter."
+                ? "No tasks match the current filters. This view shows active clients by default — switch to All clients to include paused and churned ones."
                 : "Create a client from the Clients page to seed its onboarding checklist, or add a custom task."
             }
           />
@@ -225,12 +359,13 @@ export default function AdminTasksPage() {
                 </tr>
               </thead>
               <motion.tbody
+                key={safePage}
                 variants={rowCascade}
                 initial="hidden"
                 animate="visible"
                 className="divide-y divide-border"
               >
-                {tasks.map((t) => (
+                {visible.map((t) => (
                   <motion.tr
                     key={t.id}
                     variants={rowItem}
@@ -256,7 +391,7 @@ export default function AdminTasksPage() {
                       <input
                         type="date"
                         aria-label={`Due date for ${t.title}`}
-                        className="h-8 rounded-lg border border-border bg-background px-2 font-mono text-xs text-muted-foreground outline-none transition-colors focus:border-orange"
+                        className="h-8 w-[9.5rem] rounded-lg border border-transparent bg-transparent px-2 font-mono text-xs text-muted-foreground outline-none transition-colors hover:border-border focus:border-orange"
                         value={t.dueDate ? t.dueDate.slice(0, 10) : ""}
                         onChange={(e) =>
                           patchTask(t.id, {
@@ -273,7 +408,9 @@ export default function AdminTasksPage() {
                       <select
                         aria-label={`Priority for ${t.title}`}
                         className={cn(
-                          "h-8 cursor-pointer rounded-lg border border-transparent bg-transparent pr-1 font-mono text-[11px] font-semibold uppercase tracking-wide outline-none transition-colors hover:border-border focus:border-orange",
+                          // Fixed width: a native select that resizes with its
+                          // label reflows every column to its right on change.
+                          "h-8 w-[6.5rem] cursor-pointer appearance-none rounded-lg border border-transparent bg-transparent px-2 font-mono text-[11px] font-semibold uppercase tracking-wide outline-none transition-colors hover:border-border focus:border-orange",
                           priorityTone[t.priority]
                         )}
                         value={t.priority}
@@ -292,7 +429,7 @@ export default function AdminTasksPage() {
                       <select
                         aria-label={`Status for ${t.title}`}
                         className={cn(
-                          "h-8 cursor-pointer rounded-full border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-wide outline-none transition-colors focus:border-orange",
+                          "h-8 w-[8.5rem] cursor-pointer appearance-none rounded-full border px-3 text-center font-mono text-[11px] font-semibold uppercase tracking-wide outline-none transition-colors focus:border-orange",
                           statusTone[t.status]
                         )}
                         value={t.status}
@@ -321,6 +458,38 @@ export default function AdminTasksPage() {
                 ))}
               </motion.tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pager — the roster carries thousands of checklist tasks. */}
+        {!loading && pageCount > 1 && (
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+              {safePage * PAGE_SIZE + 1}–
+              {Math.min((safePage + 1) * PAGE_SIZE, tasks.length)} of{" "}
+              {tasks.length.toLocaleString("en-US")}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(safePage - 1)}
+                disabled={safePage === 0}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Prev
+              </button>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {safePage + 1} / {pageCount}
+              </span>
+              <button
+                onClick={() => setPage(safePage + 1)}
+                disabled={safePage >= pageCount - 1}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm transition-colors hover:border-orange/40 hover:bg-orange/5 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+              >
+                Next
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </section>

@@ -7,56 +7,83 @@ import {
   projects,
   weeklyReports,
 } from "@/db/schema";
-import { and, asc, inArray, eq } from "drizzle-orm";
+import { asc, inArray, eq } from "drizzle-orm";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 
 /**
  * GET /api/analytics/summary — the signed-in client's performance rollup:
  * total leads, ad spend, tracked revenue, CPL, ROAS, and weekly series.
  *
- * Primary source: COMPLETED weekly reports (the bidirectional reporting
- * loop — agency leads/CPL + client closes/revenue). When the client has no
- * completed reports yet, falls back to the legacy analytics-event stream:
+ * Primary source: weekly reports (the bidirectional reporting loop). Leads,
+ * CPL and ad spend come from EVERY week the agency has entered, so results
+ * appear the moment data entry saves them; revenue and ROAS only count weeks
+ * the client has completed with their closes. `?weeks=n` limits the rollup to
+ * the most recent n weeks (omit for all time).
+ *
+ * When the client has no weekly reports at all, falls back to the legacy
+ * analytics-event stream:
  *   event "lead"    — value = lead count (default 1)
  *   event "spend"   — value = ad spend in cents
  *   event "revenue" — value = attributed revenue in cents
  * and finally to the per-campaign counters on ad_campaigns (flat series).
  */
 
+/** Trailing weeks charted when no explicit window is asked for. */
 const WEEKS = 8;
+/** Windows the client can pick, in weeks. */
+const ALLOWED_WEEKS = [4, 8, 12, 26, 52];
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getAuthenticatedUser();
 
-    // Completed weekly reports first — the true-ROAS source of record.
+    const weeksParam = Number(new URL(req.url).searchParams.get("weeks"));
+    const windowWeeks = ALLOWED_WEEKS.includes(weeksParam) ? weeksParam : null;
+
+    // Weekly reports first — the source of record for this client's results.
     const [ownClient] = await db
       .select({ id: agencyClients.id })
       .from(agencyClients)
       .where(eq(agencyClients.userId, user.id));
     if (ownClient) {
-      const reports = await db
+      const allReports = await db
         .select({
+          weekStart: weeklyReports.weekStart,
           weekEnd: weeklyReports.weekEnd,
           leads: weeklyReports.leads,
           cpl: weeklyReports.cpl,
           totalSpend: weeklyReports.totalSpend,
           revenue: weeklyReports.revenue,
+          status: weeklyReports.status,
         })
         .from(weeklyReports)
-        .where(
-          and(
-            eq(weeklyReports.clientId, ownClient.id),
-            eq(weeklyReports.status, "completed")
-          )
-        )
+        .where(eq(weeklyReports.clientId, ownClient.id))
         .orderBy(asc(weeklyReports.weekEnd));
 
-      if (reports.length > 0) {
-        const recent = reports.slice(-WEEKS);
+      if (allReports.length > 0) {
+        // The window applies to the totals as well as the chart, so the
+        // headline numbers always describe the period on screen.
+        const reports = windowWeeks
+          ? allReports.slice(-windowWeeks)
+          : allReports;
+        const recent = windowWeeks ? reports : reports.slice(-WEEKS);
+
         const totalLeads = reports.reduce((s, r) => s + r.leads, 0);
         const totalSpend = reports.reduce((s, r) => s + r.totalSpend, 0);
-        const totalRevenue = reports.reduce((s, r) => s + (r.revenue ?? 0), 0);
+        // Revenue and ROAS only count weeks the client has completed —
+        // dividing revenue by spend from weeks they haven't answered yet
+        // would understate their return.
+        const answered = reports.filter((r) => r.revenue !== null);
+        const totalRevenue = answered.reduce((s, r) => s + (r.revenue ?? 0), 0);
+        const answeredSpend = answered.reduce((s, r) => s + r.totalSpend, 0);
+
+        const fmtWeek = (d: Date | string) =>
+          new Date(d).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            timeZone: "UTC",
+          });
+
         return NextResponse.json({
           totals: {
             totalLeads,
@@ -64,29 +91,28 @@ export async function GET() {
             totalRevenue,
             avgCpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
             avgRoas:
-              totalSpend > 0
-                ? Math.round((totalRevenue / totalSpend) * 100) / 100
+              answeredSpend > 0
+                ? Math.round((totalRevenue / answeredSpend) * 100) / 100
                 : 0,
           },
-          weeks: recent.map((r) =>
-            new Date(r.weekEnd).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              timeZone: "UTC",
-            })
+          weeks: recent.map(
+            (r) => `${fmtWeek(r.weekStart)} – ${fmtWeek(r.weekEnd)}`
           ),
           series: {
             leads: recent.map((r) => r.leads),
             cpl: recent.map((r) => r.cpl),
             roas: recent.map((r) =>
-              r.totalSpend > 0
-                ? Math.round(((r.revenue ?? 0) / r.totalSpend) * 100) / 100
+              r.revenue !== null && r.totalSpend > 0
+                ? Math.round((r.revenue / r.totalSpend) * 100) / 100
                 : 0
             ),
             spend: recent.map((r) => r.totalSpend),
             revenue: recent.map((r) => r.revenue ?? 0),
           },
           campaigns: [],
+          /** Weeks still waiting on the client's closes + revenue. */
+          pendingWeeks: reports.filter((r) => r.status !== "completed").length,
+          weeksAvailable: allReports.length,
           hasData: true,
         });
       }

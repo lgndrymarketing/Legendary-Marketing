@@ -36,6 +36,7 @@ interface Partner {
 interface Transaction {
   id: string;
   companyName: string | null;
+  contactName: string | null;
   paymentType: "setup_fee" | "monthly_retainer";
   method: string;
   amount: number;
@@ -160,7 +161,13 @@ export default function AdminLedgerPage() {
         return false;
       if (!inRange(t.paidAt, range)) return false;
       if (q) {
-        const hay = [t.companyName, t.method, t.receivedByName, t.notes]
+        const hay = [
+          t.contactName,
+          t.companyName,
+          t.method,
+          t.receivedByName,
+          t.notes,
+        ]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -349,7 +356,7 @@ export default function AdminLedgerPage() {
                       })}
                     </td>
                     <td className="py-3 pr-4 font-medium">
-                      {t.companyName ?? "—"}
+                      {t.contactName ?? t.companyName ?? "—"}
                     </td>
                     <td className="py-3 pr-4 font-mono font-semibold">
                       {usd(t.amount)}

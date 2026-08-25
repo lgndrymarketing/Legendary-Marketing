@@ -74,6 +74,25 @@ export default function ClientCrmPage() {
   const [view, setView] = useState<"board" | "list">("board");
   const [newOpen, setNewOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Deep link from a "new request" notification: /admin/clients?open=<id>
+  // opens that client's panel, where Requests & Feedback lives. Reading
+  // window.location is exactly the "sync from an external system" case an
+  // effect is for; the rule can't tell the difference.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const open = params.get("open");
+    if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEditId(open);
+    params.delete("open");
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + (qs ? `?${qs}` : "")
+    );
+  }, []);
   const [dragId, setDragId] = useState<string | null>(null);
 
   const load = useCallback(() => {

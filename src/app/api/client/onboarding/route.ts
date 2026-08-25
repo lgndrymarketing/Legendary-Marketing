@@ -7,7 +7,8 @@ import { CRM_STAGES, STAGE_LABELS, type CrmStage } from "@/lib/crm";
 
 /**
  * GET /api/client/onboarding — the signed-in client's launch pipeline: their
- * current stage, checklist progress, and per-step completion. Read-only
+ * current stage, checklist progress, per-step completion, and the shared
+ * assets the team linked (drive folder, landing page, plan). Read-only
  * transparency mirror of the admin Client CRM (each step's status is whatever
  * the team set). Returns { empty: true } when the client has no roster record.
  */
@@ -20,6 +21,11 @@ export async function GET() {
         id: agencyClients.id,
         stage: agencyClients.stage,
         companyName: agencyClients.companyName,
+        driveUrl: agencyClients.driveUrl,
+        landingPageUrl: agencyClients.landingPageUrl,
+        saasPlan: agencyClients.saasPlan,
+        package: agencyClients.package,
+        packageLabel: agencyClients.packageLabel,
       })
       .from(agencyClients)
       .where(eq(agencyClients.userId, user.id));
@@ -32,6 +38,8 @@ export async function GET() {
         title: clientTasks.title,
         status: clientTasks.status,
         stage: clientTasks.stage,
+        department: clientTasks.department,
+        order: clientTasks.order,
       })
       .from(clientTasks)
       .where(eq(clientTasks.clientId, client.id))
@@ -53,6 +61,10 @@ export async function GET() {
     return NextResponse.json({
       stage: client.stage,
       stageLabel: STAGE_LABELS[client.stage as CrmStage],
+      // Position in the pipeline — the client's project status IS where the
+      // team has them in the admin stage list.
+      stageIndex: CRM_STAGES.indexOf(client.stage as CrmStage) + 1,
+      stageTotal: CRM_STAGES.length,
       total,
       done,
       stages,
@@ -60,7 +72,21 @@ export async function GET() {
         id: t.id,
         title: t.title,
         status: t.status,
+        stage: t.stage,
       })),
+      // Shared assets — surfaced on the client's Project page. Null means the
+      // team hasn't linked it yet, which the UI states plainly.
+      assets: {
+        driveUrl: client.driveUrl,
+        landingPageUrl: client.landingPageUrl,
+        plan:
+          client.saasPlan ??
+          (client.package === "custom"
+            ? client.packageLabel
+            : client.package
+              ? client.package[0].toUpperCase() + client.package.slice(1)
+              : null),
+      },
     });
   } catch (error) {
     if (error instanceof NextResponse) return error;

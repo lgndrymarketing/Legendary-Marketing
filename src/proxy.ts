@@ -7,6 +7,10 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  // Lead capture from the public site. POST validates and rate-limits by IP;
+  // the GET and PATCH on the same path guard themselves with
+  // requireLeadManager, so they still 401 without a session.
+  "/api/leads",
 ]);
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {

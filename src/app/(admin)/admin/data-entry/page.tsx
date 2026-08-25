@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useCrmRealtime } from "@/hooks/use-crm-realtime";
 import { rowCascade, rowItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { ClipboardEdit, Plus } from "lucide-react";
+import { ClipboardEdit, Plus, Trash2 } from "lucide-react";
 
 interface ReportRow {
   id: string;
@@ -83,6 +83,40 @@ export default function AdminDataEntryPage() {
 
   useEffect(load, [load]);
   useCrmRealtime(load);
+
+  async function remove(r: ReportRow) {
+    // A completed report carries the client's own closes and revenue —
+    // deleting it throws those away too, so say so before it happens.
+    const week = `${fmtDay(r.weekStart)} – ${fmtDay(r.weekEnd)}`;
+    const warning =
+      r.status === "completed"
+        ? `\n\nThis week is completed — the client's closes and ${usd(
+            r.revenue ?? 0
+          )} of revenue will be deleted with it.`
+        : "";
+    if (
+      !window.confirm(
+        `Delete the ${week} entry for ${r.companyName ?? "this client"}?${warning}`
+      )
+    )
+      return;
+    // Drop it locally first so the row disappears on the click.
+    setFeed((prev) =>
+      prev
+        ? { ...prev, reports: prev.reports.filter((x) => x.id !== r.id) }
+        : prev
+    );
+    try {
+      const res = await fetch(`/api/admin/weekly-reports/${r.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setError("Could not delete that entry — try again.");
+    } finally {
+      load();
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -264,6 +298,7 @@ export default function AdminDataEntryPage() {
                   </th>
                   <th className="micro-label py-3 pr-4 text-right">Revenue</th>
                   <th className="micro-label py-3">Status</th>
+                  <th className="py-3" />
                 </tr>
               </thead>
               <motion.tbody
@@ -313,6 +348,15 @@ export default function AdminDataEntryPage() {
                           ? "Pending Client"
                           : "Completed"}
                       </span>
+                    </td>
+                    <td className="py-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => remove(r)}
+                        className="rounded-md p-1.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                        aria-label={`Delete the ${fmtDay(r.weekStart)} entry`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </motion.tr>
                 ))}

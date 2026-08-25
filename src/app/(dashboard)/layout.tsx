@@ -21,6 +21,12 @@ const navItems: ShellNavItem[] = [
     section: "Workspace",
   },
   {
+    label: "Requests",
+    href: "/requests",
+    icon: "MessageSquarePlus",
+    section: "Workspace",
+  },
+  {
     label: "Weekly Report",
     href: "/reports",
     icon: "ClipboardCheck",
@@ -68,7 +74,6 @@ export default async function DashboardLayout({
   return (
     <AppShell
       navItems={navItems}
-      cta={{ label: "New Campaign", href: "/dashboard?new=1" }}
       accountEmail={user?.emailAddresses[0]?.emailAddress}
     >
       {children}

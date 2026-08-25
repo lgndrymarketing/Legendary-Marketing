@@ -25,6 +25,7 @@ interface ClientRow {
   contactName: string;
   companyName: string;
   businessType: string | null;
+  ghlAccountName: string | null;
   package:
     | "bronze"
     | "silver"
@@ -426,7 +427,8 @@ export function ClientRoster({
       const matchesQuery =
         !q ||
         c.companyName.toLowerCase().includes(q) ||
-        c.contactName.toLowerCase().includes(q);
+        c.contactName.toLowerCase().includes(q) ||
+        (c.ghlAccountName ?? "").toLowerCase().includes(q);
       const dl = daysLeft(c.nextDueDate);
       const isOverdue = c.status === "active" && dl !== null && dl < 0;
       const matchesStatus =
@@ -477,7 +479,7 @@ export function ClientRoster({
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-9 w-56 rounded-full pl-9"
-                placeholder="Search clients or companies…"
+                placeholder="Search clients, companies or GHL accounts…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -569,6 +571,14 @@ export function ClientRoster({
                         {client.businessType && (
                           <p className="font-mono text-[10px] text-muted-foreground">
                             {client.businessType}
+                          </p>
+                        )}
+                        {client.ghlAccountName && (
+                          <p
+                            className="font-mono text-[10px] text-muted-foreground"
+                            title="GoHighLevel account"
+                          >
+                            GHL: {client.ghlAccountName}
                           </p>
                         )}
                       </td>

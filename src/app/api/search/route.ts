@@ -8,7 +8,7 @@ import {
   clientTasks,
   leads,
 } from "@/db/schema";
-import { ilike, and, or, inArray } from "drizzle-orm";
+import { ilike, and, eq, or, inArray } from "drizzle-orm";
 import { getAuthenticatedUser, getAccessibleProjectIds } from "@/lib/auth-utils";
 import { isStaff, canManageLeads } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     const accessibleProjectIds = seesAll ? [] : accessible;
     const hasProjects = seesAll || accessibleProjectIds.length > 0;
 
-    const [projectResults, messageResults, fileResults] = hasProjects
+    const [projectResults, fileResults] = hasProjects
       ? await Promise.all([
           db
             .select()
@@ -57,18 +57,6 @@ export async function GET(req: Request) {
                 : and(
                     inArray(projects.id, accessibleProjectIds),
                     ilike(projects.name, pattern)
-                  )
-            )
-            .limit(5),
-          db
-            .select()
-            .from(messages)
-            .where(
-              seesAll
-                ? ilike(messages.content, pattern)
-                : and(
-                    ilike(messages.content, pattern),
-                    inArray(messages.projectId, accessibleProjectIds)
                   )
             )
             .limit(5),
@@ -85,7 +73,37 @@ export async function GET(req: Request) {
             )
             .limit(5),
         ])
-      : [[], [], []];
+      : [[], []];
+
+    // Messages are searched separately from the project-scoped surfaces:
+    // they hang off the client record now, so a retainer client with no
+    // project still has a thread to find.
+    const [ownRoster] = staff
+      ? []
+      : await db
+          .select({ id: agencyClients.id })
+          .from(agencyClients)
+          .where(eq(agencyClients.userId, user.id));
+    const messageScope = seesAll
+      ? undefined
+      : or(
+          ...(accessibleProjectIds.length
+            ? [inArray(messages.projectId, accessibleProjectIds)]
+            : []),
+          ...(ownRoster ? [eq(messages.clientId, ownRoster.id)] : [])
+        );
+    const messageResults =
+      seesAll || accessibleProjectIds.length || ownRoster
+        ? await db
+            .select()
+            .from(messages)
+            .where(
+              messageScope
+                ? and(ilike(messages.content, pattern), messageScope)
+                : ilike(messages.content, pattern)
+            )
+            .limit(5)
+        : [];
 
     // CRM surfaces — staff only.
     const [clientResults, taskResults, leadResults] = staff

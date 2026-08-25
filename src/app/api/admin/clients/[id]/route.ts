@@ -5,13 +5,14 @@ import {
   agencyClients,
   clientPackageEnum,
   clientStatusEnum,
+  clientRequests,
   clientTasks,
   crmStageEnum,
   projects,
   revisionRequests,
   users,
 } from "@/db/schema";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth-utils";
 import { z } from "zod";
 import { publishToChannel } from "@/lib/ably";
@@ -24,6 +25,7 @@ const updateSchema = z
     package: z.enum(clientPackageEnum.enumValues).optional(),
     packageLabel: z.string().max(100).nullable().optional(),
     saasPlan: z.string().max(100).nullable().optional(),
+    ghlAccountName: z.string().max(255).nullable().optional(),
     email: z.string().email().nullable().optional(),
     driveUrl: z.string().max(1000).nullable().optional(),
     landingPageUrl: z.string().max(1000).nullable().optional(),
@@ -98,7 +100,29 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ client, tasks, requests });
+    // Requests & Feedback raised from the portal. Matched on either link so
+    // a request survives the client's portal login being re-pointed.
+    const feedback = await db
+      .select({
+        id: clientRequests.id,
+        subject: clientRequests.subject,
+        details: clientRequests.details,
+        status: clientRequests.status,
+        adminNotes: clientRequests.adminNotes,
+        createdAt: clientRequests.createdAt,
+      })
+      .from(clientRequests)
+      .where(
+        client.userId
+          ? or(
+              eq(clientRequests.clientId, id),
+              eq(clientRequests.userId, client.userId)
+            )
+          : eq(clientRequests.clientId, id)
+      )
+      .orderBy(desc(clientRequests.createdAt));
+
+    return NextResponse.json({ client, tasks, requests, feedback });
   } catch (error) {
     if (error instanceof NextResponse) return error;
     console.error("Client detail error:", error);
@@ -169,7 +193,11 @@ export async function PATCH(
     if (rest.email) rest.email = rest.email.trim().toLowerCase();
 
     const [existing] = await db
-      .select({ email: agencyClients.email, userId: agencyClients.userId })
+      .select({
+        email: agencyClients.email,
+        userId: agencyClients.userId,
+        status: agencyClients.status,
+      })
       .from(agencyClients)
       .where(eq(agencyClients.id, id));
     if (!existing) {
@@ -201,6 +229,11 @@ export async function PATCH(
       .update(agencyClients)
       .set({
         ...rest,
+        // Stamp/clear the churn date so churn can be reported per period.
+        ...(rest.status !== undefined &&
+          rest.status !== existing.status && {
+            churnedAt: rest.status === "churned" ? new Date() : null,
+          }),
         ...(startDate !== undefined && { startDate: new Date(startDate) }),
         ...(nextDueDate !== undefined && {
           nextDueDate: nextDueDate ? new Date(nextDueDate) : null,

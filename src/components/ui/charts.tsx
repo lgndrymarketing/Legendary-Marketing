@@ -2,8 +2,10 @@
 
 /**
  * Financial chart primitives for the orange-on-white system (design.md).
- * AreaChart (axis-labeled Sparkline sibling), DonutChart, BarList — pure
- * SVG + motion, no chart deps, mono micro-labels throughout.
+ * AreaChart / LineChart / BarChart (axis-labeled Sparkline siblings),
+ * DonutChart, BarList — pure SVG + motion, no chart deps, mono micro-labels
+ * throughout. The three axis charts share one frame so a dashboard mixing
+ * them reads as a single system.
  */
 
 import { useId } from "react";
@@ -11,36 +13,29 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { easeOutExpo } from "@/lib/motion";
 
-/** Orange area chart with y-axis ticks and per-point x labels. */
-export function AreaChart({
-  points,
-  xLabels,
-  height = 180,
-  format = (v) => Math.round(v).toLocaleString("en-US"),
-  className,
-}: {
-  points: number[];
-  /** One label per point; rendered under the plot. */
-  xLabels: string[];
-  height?: number;
-  /** Formats y-axis tick values. */
-  format?: (v: number) => string;
-  className?: string;
-}) {
-  const gradId = useId();
-  const w = 100;
-  const h = 100;
-  const max = Math.max(...points, 1);
-  const step = points.length > 1 ? w / (points.length - 1) : w;
-  const pts = points.map(
-    (p, i) => [i * step, h - (p / max) * (h - 12) - 4] as const
-  );
-  const line = pts
-    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`)
-    .join(" ");
-  const area = `${line} L${w},${h} L0,${h} Z`;
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * max);
+/** Shared axis scaffold: y ticks, dotted grid rows, plot, x labels. */
+const CHART_W = 100;
+const CHART_H = 100;
 
+/** Five evenly spaced y ticks from 0 to max. */
+const axisTicks = (max: number) => [0, 0.25, 0.5, 0.75, 1].map((f) => f * max);
+
+function ChartFrame({
+  max,
+  height,
+  format,
+  xLabels,
+  className,
+  children,
+}: {
+  max: number;
+  height: number;
+  format: (v: number) => string;
+  xLabels: string[];
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ticks = axisTicks(max);
   return (
     <div className={cn("flex gap-3", className)}>
       {/* y-axis */}
@@ -62,43 +57,11 @@ export function AreaChart({
             ))}
           </div>
           <svg
-            viewBox={`0 0 ${w} ${h}`}
+            viewBox={`0 0 ${CHART_W} ${CHART_H}`}
             preserveAspectRatio="none"
             className="relative h-full w-full"
           >
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor="var(--color-orange)"
-                  stopOpacity="0.25"
-                />
-                <stop
-                  offset="100%"
-                  stopColor="var(--color-orange)"
-                  stopOpacity="0"
-                />
-              </linearGradient>
-            </defs>
-            <motion.path
-              d={area}
-              fill={`url(#${gradId})`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            />
-            {/* Opacity fade, not pathLength — dash-based draw-ins render with
-                gaps on stretched viewBoxes. */}
-            <motion.path
-              d={line}
-              fill="none"
-              stroke="var(--color-orange)"
-              strokeWidth={1.6}
-              vectorEffect="non-scaling-stroke"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, ease: easeOutExpo }}
-            />
+            {children}
           </svg>
         </div>
         <div className="mt-1.5 flex justify-between font-mono text-[10px] text-muted-foreground">
@@ -108,6 +71,180 @@ export function AreaChart({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Point coordinates in the shared 100×100 viewBox. */
+function plotPoints(points: number[], max: number) {
+  const step = points.length > 1 ? CHART_W / (points.length - 1) : CHART_W;
+  return points.map(
+    (p, i) => [i * step, CHART_H - (p / max) * (CHART_H - 12) - 4] as const
+  );
+}
+
+/** Orange area chart with y-axis ticks and per-point x labels. */
+export function AreaChart({
+  points,
+  xLabels,
+  height = 180,
+  format = (v) => Math.round(v).toLocaleString("en-US"),
+  className,
+}: {
+  points: number[];
+  /** One label per point; rendered under the plot. */
+  xLabels: string[];
+  height?: number;
+  /** Formats y-axis tick values. */
+  format?: (v: number) => string;
+  className?: string;
+}) {
+  const gradId = useId();
+  const max = Math.max(...points, 1);
+  const pts = plotPoints(points, max);
+  const line = pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`)
+    .join(" ");
+  const area = `${line} L${CHART_W},${CHART_H} L0,${CHART_H} Z`;
+
+  return (
+    <ChartFrame
+      max={max}
+      height={height}
+      format={format}
+      xLabels={xLabels}
+      className={className}
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-orange)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="var(--color-orange)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <motion.path
+        d={area}
+        fill={`url(#${gradId})`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      />
+      {/* Opacity fade, not pathLength — dash-based draw-ins render with
+          gaps on stretched viewBoxes. */}
+      <motion.path
+        d={line}
+        fill="none"
+        stroke="var(--color-orange)"
+        strokeWidth={1.6}
+        vectorEffect="non-scaling-stroke"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: easeOutExpo }}
+      />
+    </ChartFrame>
+  );
+}
+
+/** Line chart — the area chart's sibling with dotted points and no fill.
+ * Use where the value is a rate rather than a quantity (CPL, margin). */
+export function LineChart({
+  points,
+  xLabels,
+  height = 180,
+  format = (v) => Math.round(v).toLocaleString("en-US"),
+  className,
+}: {
+  points: number[];
+  xLabels: string[];
+  height?: number;
+  format?: (v: number) => string;
+  className?: string;
+}) {
+  const max = Math.max(...points, 1);
+  const pts = plotPoints(points, max);
+  const line = pts
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`)
+    .join(" ");
+
+  return (
+    <ChartFrame
+      max={max}
+      height={height}
+      format={format}
+      xLabels={xLabels}
+      className={className}
+    >
+      <motion.path
+        d={line}
+        fill="none"
+        stroke="var(--color-orange)"
+        strokeWidth={1.6}
+        vectorEffect="non-scaling-stroke"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, ease: easeOutExpo }}
+      />
+      {/* Dots are ellipses: the viewBox is stretched horizontally, so a
+          circle would render as a squashed oval. */}
+      {pts.map(([x, y], i) => (
+        <motion.ellipse
+          key={i}
+          cx={x}
+          cy={y}
+          rx={0.9}
+          ry={1.6}
+          fill="var(--color-orange)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 + i * 0.03 }}
+        />
+      ))}
+    </ChartFrame>
+  );
+}
+
+/** Vertical bar chart — for discrete per-period values (weekly ROAS). */
+export function BarChart({
+  points,
+  xLabels,
+  height = 180,
+  format = (v) => Math.round(v).toLocaleString("en-US"),
+  className,
+}: {
+  points: number[];
+  xLabels: string[];
+  height?: number;
+  format?: (v: number) => string;
+  className?: string;
+}) {
+  const max = Math.max(...points, 1);
+  const slot = CHART_W / Math.max(points.length, 1);
+  // 60% of the slot, so bars sit apart without a gap-heavy look.
+  const barW = slot * 0.6;
+
+  return (
+    <ChartFrame
+      max={max}
+      height={height}
+      format={format}
+      xLabels={xLabels}
+      className={className}
+    >
+      {points.map((p, i) => {
+        const barH = (p / max) * (CHART_H - 12);
+        return (
+          <motion.rect
+            key={i}
+            x={i * slot + (slot - barW) / 2}
+            width={barW}
+            y={CHART_H - barH}
+            fill="var(--color-orange)"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35, delay: i * 0.04, ease: easeOutExpo }}
+            height={Math.max(barH, p > 0 ? 0.8 : 0)}
+          />
+        );
+      })}
+    </ChartFrame>
   );
 }
 

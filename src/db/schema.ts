@@ -151,11 +151,18 @@ export const payments = pgTable("payments", {
 ]);
 
 // Messages
+// A message belongs to a client thread. projectId is the legacy scope and
+// stays for the campaign workspaces that still carry their own thread —
+// but a retainer client has no project, and they still need to talk to the
+// team, so clientId is the scope the portal uses.
 export const messages = pgTable("messages", {
   id: uuid("id").defaultRandom().primaryKey(),
-  projectId: uuid("project_id")
-    .references(() => projects.id, { onDelete: "cascade" })
-    .notNull(),
+  projectId: uuid("project_id").references(() => projects.id, {
+    onDelete: "cascade",
+  }),
+  clientId: uuid("client_id").references(() => agencyClients.id, {
+    onDelete: "cascade",
+  }),
   senderId: uuid("sender_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
@@ -165,6 +172,7 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_messages_project_id").on(table.projectId),
+  index("idx_messages_client_id").on(table.clientId),
 ]);
 
 // Files
@@ -201,6 +209,68 @@ export const revisionRequests = pgTable("revision_requests", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_revisions_project_id").on(table.projectId),
+]);
+
+// Client requests — the portal's Requests & Feedback surface. Unlike a
+// revision request these are not tied to a project: most clients are on a
+// retainer with no self-serve project row, and they still need a way to ask
+// the team for something.
+export const clientRequestStatusEnum = pgEnum("client_request_status", [
+  "open",
+  "in_progress",
+  "resolved",
+]);
+
+export const clientRequests = pgTable("client_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  // The roster record they belong to, when their portal login is linked.
+  // Kept so the team can read requests from the client's detail panel.
+  clientId: uuid("client_id").references(() => agencyClients.id, {
+    onDelete: "cascade",
+  }),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  details: text("details").notNull(),
+  status: clientRequestStatusEnum("status").notNull().default("open"),
+  // The team's reply, shown back to the client on their request.
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_requests_user_id").on(table.userId),
+  index("idx_client_requests_client_id").on(table.clientId),
+]);
+
+// Client resources — the Guides and Platform Tutorials in the portal. These
+// were hardcoded arrays, so adding a video or fixing a guide meant a deploy.
+export const clientResourceKindEnum = pgEnum("client_resource_kind", [
+  "guide",
+  "tutorial",
+]);
+
+export const clientResources = pgTable("client_resources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  kind: clientResourceKindEnum("kind").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  // Guides: the full text, rendered as paragraphs. A blank line starts a new
+  // one, and a line ending in ":" is treated as that section's heading.
+  body: text("body"),
+  // Tutorials: where the video lives (Loom, YouTube, …) and how long it runs.
+  videoUrl: text("video_url"),
+  duration: varchar("duration", { length: 20 }),
+  // Tutorials: the tab this sits under ("LGNDRY Launchpad", …).
+  track: varchar("track", { length: 100 }),
+  order: integer("order").notNull().default(0),
+  // Unpublished rows stay hidden from the portal — drafts, or a video that
+  // isn't recorded yet.
+  published: boolean("published").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_resources_kind").on(table.kind),
 ]);
 
 // Notifications
@@ -480,10 +550,17 @@ export const agencyClients = pgTable("agency_clients", {
   startDate: timestamp("start_date").defaultNow().notNull(),
   nextDueDate: timestamp("next_due_date"),
   status: clientStatusEnum("status").notNull().default("active"),
+  // When this client churned — set on the status change so churn can be
+  // reported for a date range rather than only lifetime-to-date.
+  churnedAt: timestamp("churned_at"),
   // Current position in the 12-stage launch pipeline (Client CRM board).
   stage: crmStageEnum("stage").notNull().default("onboarding_form"),
   // SaaS plan the client is on (free-form, separate from their package tier).
   saasPlan: varchar("saas_plan", { length: 100 }),
+  // The client's sub-account name in GoHighLevel. Sub-accounts are often
+  // named nothing like the company, so the team records it here to find the
+  // right account without hunting through the GHL agency view.
+  ghlAccountName: varchar("ghl_account_name", { length: 255 }),
   // Login email for the portal invite (kept even before the account exists).
   email: varchar("email", { length: 255 }),
   // Shared asset links surfaced on the client portal.
@@ -675,6 +752,10 @@ export type ProjectPhase = typeof projectPhases.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type File = typeof files.$inferSelect;
 export type RevisionRequest = typeof revisionRequests.$inferSelect;
+export type ClientRequest = typeof clientRequests.$inferSelect;
+export type ClientResource = typeof clientResources.$inferSelect;
+export type NewClientResource = typeof clientResources.$inferInsert;
+export type NewClientRequest = typeof clientRequests.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type OnboardingSubmission = typeof onboardingSubmissions.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
