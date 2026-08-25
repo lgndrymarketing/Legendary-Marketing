@@ -1,22 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PageHero, BracketLabel } from "@/components/ui/firecrawl";
+import { PageHero } from "@/components/ui/firecrawl";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendCard } from "@/components/ui/monthly-trend";
+import { Beam } from "@/components/ui/beam-focus";
 import { rowCascade, rowItem, cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { ClipboardCheck } from "lucide-react";
-import { Beam } from "@/components/ui/beam-focus";
+import { ClipboardCheck, Plus } from "lucide-react";
 
 /**
- * Weekly Reports — the client half of the reporting loop. The agency enters
- * leads + CPL; pending reports surface here for the client to add closes and
- * revenue, completing the week and feeding the true-ROAS totals.
+ * Weekly Report — the client half of the reporting loop. The agency enters
+ * leads + CPL from data entry; the client adds closes and revenue here,
+ * which completes the week and feeds true ROAS.
  */
 
 interface Report {
@@ -45,9 +44,14 @@ const fmtDay = (s: string) =>
     timeZone: "UTC",
   });
 
+const weekLabel = (r: Report) =>
+  `${fmtDay(r.weekStart)} – ${fmtDay(r.weekEnd)}`;
+
 export default function ClientReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Which pending week the form is filling in. */
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     fetch("/api/client/weekly-reports")
@@ -61,8 +65,18 @@ export default function ClientReportsPage() {
 
   useEffect(load, [load]);
 
-  const pending = reports.filter((r) => r.status === "pending_client");
+  const pending = useMemo(
+    () =>
+      reports
+        .filter((r) => r.status === "pending_client")
+        // Oldest outstanding week first — that's the one to clear next.
+        .sort((a, b) => a.weekEnd.localeCompare(b.weekEnd)),
+    [reports]
+  );
   const completed = reports.filter((r) => r.status === "completed");
+
+  const active =
+    pending.find((r) => r.id === activeId) ?? pending[0] ?? null;
 
   // All-time totals over completed weeks; ROAS = revenue / ad spend.
   const totalLeads = completed.reduce((s, r) => s + r.leads, 0);
@@ -72,29 +86,18 @@ export default function ClientReportsPage() {
   const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
 
   const tiles = [
-    {
-      label: "Total Leads",
-      value: totalLeads.toLocaleString("en-US"),
-    },
+    { label: "Total Leads", value: totalLeads.toLocaleString("en-US") },
     { label: "Avg CPL", value: usd(avgCpl) },
     { label: "Total Ad Spend", value: usd(totalSpend) },
-    {
-      label: "Total Revenue",
-      value: usd(totalRevenue),
-      accent: "text-success",
-    },
-    {
-      label: "ROAS",
-      value: `${roas.toFixed(2)}x`,
-      accent: "text-orange",
-    },
+    { label: "Total Revenue", value: usd(totalRevenue), accent: "text-success" },
+    { label: "ROAS", value: `${roas.toFixed(2)}x`, accent: "text-orange" },
   ];
 
   return (
     <div className="space-y-10">
       <PageHero
-        title="Weekly Reports"
-        description="Your ad results week by week — add your closes and revenue to see true return on ad spend."
+        title="Weekly Report"
+        description="Update your sales results to track ROI and ROAS."
       />
 
       {/* All-time totals — hairline-divided band */}
@@ -108,12 +111,7 @@ export default function ClientReportsPage() {
           {tiles.map((t) => (
             <motion.div key={t.label} variants={cascadeItem} className="px-5 py-6">
               <p className="micro-label">{t.label}</p>
-              <p
-                className={cn(
-                  "mt-2 text-2xl font-bold tracking-tight",
-                  t.accent
-                )}
-              >
+              <p className={cn("mt-2 text-2xl font-bold tracking-tight", t.accent)}>
                 {t.value}
               </p>
             </motion.div>
@@ -121,131 +119,151 @@ export default function ClientReportsPage() {
         </motion.section>
       )}
 
-      {/* Action required — pending weeks */}
-      {pending.length > 0 && (
-        <section className="space-y-4">
-          <BracketLabel
-            n={pending.length}
-            label="ACTION REQUIRED · ADD YOUR SALES NUMBERS"
-          />
-          {pending.map((r) => (
-            <PendingReportForm key={r.id} report={r} onDone={load} />
-          ))}
-        </section>
-      )}
-
-      {/* Trends over completed weeks */}
-      {completed.length > 1 && (
-        <section className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          <TrendCard
-            title="Leads per Week"
-            points={completed.map((r) => ({ date: r.weekEnd, value: r.leads }))}
-            format={(v) => Math.round(v).toLocaleString("en-US")}
-          />
-          <TrendCard
-            title="Revenue per Week"
-            points={completed.map((r) => ({
-              date: r.weekEnd,
-              value: r.revenue ?? 0,
-            }))}
-            format={usd}
-          />
-        </section>
-      )}
-
-      {/* History */}
-      <section>
-        <div className="flex items-center gap-2 border-b border-border pb-3">
-          <ClipboardCheck className="h-4 w-4 text-orange" />
-          <h2 className="text-[15px] font-semibold">Report History</h2>
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[22rem_1fr] lg:items-start">
+        {/* Submit Results — the oldest week still waiting on them */}
+        <div>
+          {loading ? (
+            <div className="h-64 rounded-xl border border-border" />
+          ) : active ? (
+            <SubmitResults
+              key={active.id}
+              report={active}
+              outstanding={pending.length}
+              onDone={load}
+            />
+          ) : (
+            <div className="rounded-xl border border-border p-5">
+              <h2 className="text-[15px] font-bold tracking-tight">
+                Submit Results
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {reports.length === 0
+                  ? "Your agency posts your ad results here every week — check back after your first week of ads."
+                  : "You're all caught up. The next week lands here once your agency posts it."}
+              </p>
+            </div>
+          )}
         </div>
-        {loading ? (
-          <div className="pt-4">
-            <TableSkeleton rows={4} />
+
+        {/* Reporting History */}
+        <section>
+          <div className="border-b border-border pb-3">
+            <h2 className="text-[15px] font-bold tracking-tight">
+              Reporting History
+            </h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Past weeks results and ROI.
+            </p>
           </div>
-        ) : reports.length === 0 ? (
-          <EmptyState
-            icon={ClipboardCheck}
-            title="No reports yet"
-            description="Your agency posts your ad results here every week — check back after your first week of ads."
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th className="micro-label py-3 pr-4">Week</th>
-                  <th className="micro-label py-3 pr-4 text-right">Leads</th>
-                  <th className="micro-label py-3 pr-4 text-right">CPL</th>
-                  <th className="micro-label py-3 pr-4 text-right">Ad Spend</th>
-                  <th className="micro-label py-3 pr-4 text-right">Closes</th>
-                  <th className="micro-label py-3 pr-4 text-right">Revenue</th>
-                  <th className="micro-label py-3">Status</th>
-                </tr>
-              </thead>
-              <motion.tbody
-                variants={rowCascade}
-                initial="hidden"
-                animate="visible"
-                className="divide-y divide-border"
-              >
-                {reports.map((r) => (
-                  <motion.tr key={r.id} variants={rowItem}>
-                    <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                      {fmtDay(r.weekStart)} – {fmtDay(r.weekEnd)}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-mono font-semibold">
-                      {r.leads.toLocaleString("en-US")}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-mono">
-                      {usd(r.cpl)}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-mono">
-                      {usd(r.totalSpend)}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-mono">
-                      {r.closes !== null
-                        ? r.closes.toLocaleString("en-US")
-                        : "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-mono">
-                      {r.revenue !== null ? (
-                        <span className="text-success">{usd(r.revenue)}</span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="py-3">
-                      <span
+
+          {loading ? (
+            <div className="pt-4">
+              <TableSkeleton rows={4} />
+            </div>
+          ) : reports.length === 0 ? (
+            <EmptyState
+              icon={ClipboardCheck}
+              title="No reports yet"
+              description="Your agency posts your ad results here every week — check back after your first week of ads."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="micro-label py-3 pr-4">Week</th>
+                    <th className="micro-label py-3 pr-4 text-right">Leads</th>
+                    <th className="micro-label py-3 pr-4 text-right">Closed</th>
+                    <th className="micro-label py-3 pr-4 text-right">Revenue</th>
+                    <th className="micro-label py-3 pr-4 text-right">ROAS</th>
+                    <th className="micro-label py-3">Status</th>
+                  </tr>
+                </thead>
+                <motion.tbody
+                  variants={rowCascade}
+                  initial="hidden"
+                  animate="visible"
+                  className="divide-y divide-border"
+                >
+                  {reports.map((r) => {
+                    const isPending = r.status === "pending_client";
+                    const rowRoas =
+                      r.revenue !== null && r.totalSpend > 0
+                        ? r.revenue / r.totalSpend
+                        : null;
+                    return (
+                      <motion.tr
+                        key={r.id}
+                        variants={rowItem}
+                        // A pending row loads that week into the form —
+                        // otherwise only the oldest one is ever reachable.
+                        onClick={() => isPending && setActiveId(r.id)}
                         className={cn(
-                          "rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide",
-                          r.status === "pending_client"
-                            ? "bg-warning/10 text-warning"
-                            : "bg-success/10 text-success"
+                          "transition-colors",
+                          isPending && "cursor-pointer hover:bg-muted/50",
+                          active?.id === r.id && "bg-accent/40"
                         )}
                       >
-                        {r.status === "pending_client"
-                          ? "Needs Your Input"
-                          : "Completed"}
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                        <td className="py-3 pr-4 font-mono text-xs whitespace-nowrap text-muted-foreground">
+                          {weekLabel(r)}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-mono font-semibold">
+                          {r.leads.toLocaleString("en-US")}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-mono">
+                          {r.closes !== null
+                            ? r.closes.toLocaleString("en-US")
+                            : "—"}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-mono">
+                          {r.revenue !== null ? (
+                            <span className="text-success">{usd(r.revenue)}</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-mono">
+                          {rowRoas !== null ? (
+                            <span className="text-orange">
+                              {rowRoas.toFixed(2)}x
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="py-3">
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide",
+                              isPending
+                                ? "bg-warning/10 text-warning"
+                                : "bg-success/10 text-success"
+                            )}
+                          >
+                            {isPending ? "Pending" : "Completed"}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </motion.tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
 
-/** Inline completion form for one pending week. */
-function PendingReportForm({
+/** Completion form for one pending week, with the agency's numbers on top. */
+function SubmitResults({
   report,
+  outstanding,
   onDone,
 }: {
   report: Report;
+  outstanding: number;
   onDone: () => void;
 }) {
   const [closes, setCloses] = useState("");
@@ -287,50 +305,68 @@ function PendingReportForm({
 
   return (
     <Beam>
-    <form
-      onSubmit={submit}
-      className="rounded-xl border border-orange/30 bg-accent/40 p-5"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-semibold">
-          Week of {fmtDay(report.weekStart)} – {fmtDay(report.weekEnd)}
+      <form onSubmit={submit} className="rounded-xl border border-border p-5">
+        <h2 className="text-[15px] font-bold tracking-tight">Submit Results</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Enter your results for {weekLabel(report)}
         </p>
-        <p className="font-mono text-[11px] uppercase text-muted-foreground">
-          {report.leads.toLocaleString("en-US")} leads · {usd(report.cpl)} CPL ·{" "}
-          {usd(report.totalSpend)} spend
-        </p>
-      </div>
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div>
-          <span className="mb-1.5 block text-[13px] font-medium">
-            Clients Closed
-          </span>
-          <Input
-            inputMode="numeric"
-            placeholder="e.g. 4"
-            value={closes}
-            onChange={(e) => setCloses(e.target.value)}
-          />
-        </div>
-        <div>
-          <span className="mb-1.5 block text-[13px] font-medium">
-            Revenue Generated ($)
-          </span>
-          <Input
-            inputMode="decimal"
-            placeholder="e.g. 6000"
-            value={revenue}
-            onChange={(e) => setRevenue(e.target.value)}
-          />
-        </div>
-        <div className="flex items-end">
-          <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-            {saving ? "Saving…" : "Complete Report"}
+        {outstanding > 1 && (
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-warning">
+            {outstanding} weeks outstanding — pick another from the history.
+          </p>
+        )}
+
+        {/* What the agency posted for this week */}
+        <dl className="mt-4 rounded-lg bg-accent/50 px-4 py-3 text-[13px]">
+          <p className="micro-label">Agency Results</p>
+          <div className="mt-2 flex justify-between gap-3">
+            <dt className="font-medium">Leads Generated</dt>
+            <dd className="font-mono font-semibold">
+              {report.leads.toLocaleString("en-US")}
+            </dd>
+          </div>
+          <div className="mt-1 flex justify-between gap-3">
+            <dt className="font-medium">Ad Spend</dt>
+            <dd className="font-mono font-semibold">{usd(report.totalSpend)}</dd>
+          </div>
+          <div className="mt-1 flex justify-between gap-3">
+            <dt className="font-medium">Cost Per Lead</dt>
+            <dd className="font-mono font-semibold">{usd(report.cpl)}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <span className="mb-1.5 block text-[13px] font-semibold">
+              Clients Closed
+            </span>
+            <Input
+              inputMode="numeric"
+              placeholder="e.g. 4"
+              value={closes}
+              onChange={(e) => setCloses(e.target.value)}
+            />
+          </div>
+          <div>
+            <span className="mb-1.5 block text-[13px] font-semibold">
+              Total Revenue ($)
+            </span>
+            <Input
+              inputMode="decimal"
+              placeholder="e.g. 4500.00"
+              value={revenue}
+              onChange={(e) => setRevenue(e.target.value)}
+            />
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <Button type="submit" className="w-full" disabled={saving}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            {saving ? "Saving…" : "Submit Report"}
           </Button>
         </div>
-      </div>
-      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
-    </form>
+      </form>
     </Beam>
   );
 }
