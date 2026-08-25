@@ -2,7 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 /**
  * Clerk, themed with the app's own palette.
@@ -41,15 +41,12 @@ const PALETTES = {
 } as const;
 
 export function ThemedClerkProvider({ children }: { children: ReactNode }) {
+  // resolvedTheme is undefined until next-themes has read the browser on the
+  // client, so this falls to light for the server render and the hydration
+  // that follows it — the two agree — then re-renders once the real theme
+  // arrives. No mounted flag needed.
   const { resolvedTheme } = useTheme();
-  // next-themes has no answer until it has run on the client. Render light
-  // first — it matches the server HTML, so there's no hydration mismatch —
-  // then switch once the real theme is known.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const palette =
-    mounted && resolvedTheme === "dark" ? PALETTES.dark : PALETTES.light;
+  const palette = resolvedTheme === "dark" ? PALETTES.dark : PALETTES.light;
 
   return (
     <ClerkProvider

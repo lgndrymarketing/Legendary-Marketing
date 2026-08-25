@@ -210,7 +210,11 @@ export function OnboardingTimeline() {
         <div className="mt-5 border-t border-border pt-5">
           <p className="micro-label">Up Next</p>
           <p className="mt-1.5 text-sm font-semibold">
-            {nextStep ? nextStep.title : "Every step is done"}
+            {nextStep
+              ? nextStep.title
+              : data.total > 0
+                ? "Every step is done"
+                : "Your checklist is being set up"}
           </p>
           <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
             {data.done} of {data.total} steps done

@@ -141,6 +141,13 @@
       "when": 1787687306628,
       "tag": "0019_thankful_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1787688207906,
+      "tag": "0020_enable_rls",
+      "breakpoints": true
     }
   ]
 }

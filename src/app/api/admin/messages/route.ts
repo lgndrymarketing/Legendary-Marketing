@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { agencyClients, messages } from "@/db/schema";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { requireStaff } from "@/lib/auth-utils";
 import { createNotification } from "@/lib/notifications";
 import { publishToChannel } from "@/lib/ably";
@@ -42,11 +42,13 @@ export async function GET(req: Request) {
         .orderBy(asc(messages.createdAt))
         .limit(200);
 
-      // Opening the thread is reading it — clears the unread badge.
+      // Opening the thread is reading it — clears the unread badge. Scoped
+      // to unread rows: the page polls this endpoint, and an unconditional
+      // update would write every row of the thread every few seconds.
       await db
         .update(messages)
         .set({ read: true })
-        .where(eq(messages.clientId, clientId));
+        .where(and(eq(messages.clientId, clientId), eq(messages.read, false)));
 
       return NextResponse.json({ messages: thread });
     }

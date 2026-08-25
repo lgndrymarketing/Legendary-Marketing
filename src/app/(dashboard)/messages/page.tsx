@@ -55,6 +55,8 @@ export default function MessagesPage() {
   usePolling<{ messages?: Message[]; ready?: boolean }>({
     url: "/api/client/messages",
     interval: 10000,
+    // Nothing to poll for until their account is linked to a client record.
+    enabled: ready,
     onUpdate: apply,
   });
 
