@@ -24,11 +24,15 @@ export function NewCampaignButton({
   variant = "glow",
   size,
   className,
+  hidden = false,
 }: {
   label?: string;
   variant?: ButtonProps["variant"];
   size?: ButtonProps["size"];
   className?: string;
+  /** Mount the modal without its own trigger — for pages that only need to
+   * answer the topbar CTA's ?new=1 deep link. */
+  hidden?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -117,15 +121,17 @@ export function NewCampaignButton({
 
   return (
     <>
-      <Button
-        variant={variant}
-        size={size}
-        className={className}
-        onClick={() => setOpen(true)}
-      >
-        <Plus className="mr-1 h-4 w-4" />
-        {label}
-      </Button>
+      {!hidden && (
+        <Button
+          variant={variant}
+          size={size}
+          className={className}
+          onClick={() => setOpen(true)}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          {label}
+        </Button>
+      )}
 
       <AnimatePresence>
         {open && (

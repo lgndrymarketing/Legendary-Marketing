@@ -121,6 +121,11 @@ export default async function DashboardPage() {
       {/* Performance Dashboard — campaign results and ROI */}
       <PerformanceOverview />
 
+      {/* Always mounted: the topbar CTA deep-links to /dashboard?new=1, and
+          the modal that answers it used to exist only inside the empty
+          state — so the CTA did nothing once a client had one campaign. */}
+      <NewCampaignButton hidden />
+
       {/* Stats — hairline-divided 3-up, big numerals */}
       <div className="animate-fade-up grid grid-cols-1 divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {stats.map((stat) => (
