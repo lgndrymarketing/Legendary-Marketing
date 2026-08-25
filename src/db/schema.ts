@@ -243,6 +243,36 @@ export const clientRequests = pgTable("client_requests", {
   index("idx_client_requests_client_id").on(table.clientId),
 ]);
 
+// Client resources — the Guides and Platform Tutorials in the portal. These
+// were hardcoded arrays, so adding a video or fixing a guide meant a deploy.
+export const clientResourceKindEnum = pgEnum("client_resource_kind", [
+  "guide",
+  "tutorial",
+]);
+
+export const clientResources = pgTable("client_resources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  kind: clientResourceKindEnum("kind").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  // Guides: the full text, rendered as paragraphs. A blank line starts a new
+  // one, and a line ending in ":" is treated as that section's heading.
+  body: text("body"),
+  // Tutorials: where the video lives (Loom, YouTube, …) and how long it runs.
+  videoUrl: text("video_url"),
+  duration: varchar("duration", { length: 20 }),
+  // Tutorials: the tab this sits under ("LGNDRY Launchpad", …).
+  track: varchar("track", { length: 100 }),
+  order: integer("order").notNull().default(0),
+  // Unpublished rows stay hidden from the portal — drafts, or a video that
+  // isn't recorded yet.
+  published: boolean("published").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_resources_kind").on(table.kind),
+]);
+
 // Notifications
 export const notificationTypeEnum = pgEnum("notification_type", [
   "phase_update",
@@ -723,6 +753,8 @@ export type Message = typeof messages.$inferSelect;
 export type File = typeof files.$inferSelect;
 export type RevisionRequest = typeof revisionRequests.$inferSelect;
 export type ClientRequest = typeof clientRequests.$inferSelect;
+export type ClientResource = typeof clientResources.$inferSelect;
+export type NewClientResource = typeof clientResources.$inferInsert;
 export type NewClientRequest = typeof clientRequests.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type OnboardingSubmission = typeof onboardingSubmissions.$inferSelect;

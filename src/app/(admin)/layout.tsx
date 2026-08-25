@@ -88,6 +88,12 @@ export default async function AdminLayout({
       icon: "MessageSquare",
       section: "Operations",
     },
+    {
+      label: "Guides & Tutorials",
+      href: "/admin/resources",
+      icon: "BookOpen",
+      section: "Operations",
+    },
     ...(canManageAgency(user.role)
       ? [
           {
