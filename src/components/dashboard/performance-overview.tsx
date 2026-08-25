@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { CountUp } from "@/components/ui/firecrawl";
-import { AreaChart } from "@/components/ui/charts";
+import { AreaChart, LineChart, BarChart } from "@/components/ui/charts";
+import { SelectPill } from "@/components/ui/filters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cascade, cascadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import {
+  CalendarRange,
+  DollarSign,
+  Target,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 interface Summary {
   empty?: boolean;
@@ -19,6 +27,8 @@ interface Summary {
   };
   weeks: string[];
   series: { leads: number[]; cpl: number[]; roas: number[] };
+  /** Weeks the agency has posted that are still waiting on the client. */
+  pendingWeeks?: number;
   hasData: boolean;
 }
 
@@ -34,25 +44,117 @@ const ZERO: Summary = {
   hasData: false,
 };
 
-/** Performance Dashboard — leads, CPL, revenue, ROAS with weekly trends.
- * Always visible; zeroes until the agency's tracked metrics start flowing. */
+/** Windows offered to the client. Value is the `?weeks=` query, "" = all time. */
+const RANGES = [
+  { value: "", label: "All Time" },
+  { value: "4", label: "Last 4 Weeks" },
+  { value: "8", label: "Last 8 Weeks" },
+  { value: "12", label: "Last 12 Weeks" },
+  { value: "26", label: "Last 6 Months" },
+  { value: "52", label: "Last Year" },
+];
+
+/** Performance Dashboard — leads, CPL, revenue, ROAS with weekly trends,
+ * fed by the weekly numbers the agency enters. Always visible; zeroes until
+ * the first week is posted. */
 export function PerformanceOverview() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState("");
 
-  useEffect(() => {
-    fetch("/api/analytics/summary")
+  const load = useCallback((weeks: string) => {
+    fetch(weeks ? `/api/analytics/summary?weeks=${weeks}` : "/api/analytics/summary")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && !data.error && !data.empty) setSummary(data);
+        setSummary(data && !data.error && !data.empty ? data : null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    load(range);
+  }, [range, load]);
+
+  const view = summary ?? ZERO;
+  const { totals } = view;
+  const tiles = [
+    {
+      label: "Total Leads",
+      icon: Users,
+      value: totals.totalLeads,
+      format: (v: number) => Math.round(v).toLocaleString("en-US"),
+    },
+    {
+      label: "Avg Cost Per Lead",
+      icon: Target,
+      value: totals.avgCpl,
+      format: usd,
+    },
+    {
+      label: "Total Revenue",
+      icon: DollarSign,
+      value: totals.totalRevenue,
+      format: usdWhole,
+      accent: "text-success",
+    },
+    {
+      label: "Avg ROAS",
+      icon: TrendingUp,
+      value: totals.avgRoas,
+      format: (v: number) => `${v.toFixed(2)}×`,
+      accent: "text-orange",
+    },
+  ];
+
+  // Only the first and last week are labeled — eight full date ranges under a
+  // narrow chart collide into unreadable mush.
+  const xLabels = view.weeks.map((w, i) =>
+    i === 0 || i === view.weeks.length - 1 ? w : ""
+  );
+
+  const charts = [
+    {
+      title: "Leads Generated",
+      caption: "Weekly progression of leads generated",
+      render: (
+        <AreaChart
+          points={view.series.leads}
+          xLabels={xLabels}
+          height={150}
+          format={(v) => Math.round(v).toLocaleString("en-US")}
+        />
+      ),
+    },
+    {
+      title: "Cost Per Lead (CPL)",
+      caption: "Evolution of cost per lead over time",
+      render: (
+        <LineChart
+          points={view.series.cpl}
+          xLabels={xLabels}
+          height={150}
+          format={usd}
+        />
+      ),
+    },
+    {
+      title: "Return on Ad Spend (ROAS)",
+      caption: "Weekly ROAS multiplier",
+      render: (
+        <BarChart
+          points={view.series.roas}
+          xLabels={xLabels}
+          height={150}
+          format={(v) => `${v.toFixed(1)}×`}
+        />
+      ),
+    },
+  ];
+
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-px border-b border-border lg:grid-cols-4">
+      <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="space-y-3 px-5 py-6">
             <Skeleton className="h-3 w-24" />
@@ -63,54 +165,6 @@ export function PerformanceOverview() {
     );
   }
 
-  const view = summary ?? ZERO;
-  const { totals } = view;
-  const tiles = [
-    {
-      label: "Total Leads",
-      value: totals.totalLeads,
-      format: (v: number) => Math.round(v).toLocaleString("en-US"),
-    },
-    {
-      label: "Avg Cost Per Lead",
-      value: totals.avgCpl,
-      format: usd,
-    },
-    {
-      label: "Total Revenue",
-      value: totals.totalRevenue,
-      format: usdWhole,
-      accent: "text-success",
-    },
-    {
-      label: "Avg ROAS",
-      value: totals.avgRoas,
-      format: (v: number) => `${v.toFixed(2)}×`,
-      accent: "text-orange",
-    },
-  ];
-
-  const charts = [
-    {
-      title: "Leads Generated",
-      caption: "Weekly progression of leads",
-      series: view.series.leads,
-      format: (v: number) => Math.round(v).toLocaleString("en-US"),
-    },
-    {
-      title: "Cost Per Lead",
-      caption: "CPL evolution over time",
-      series: view.series.cpl,
-      format: usd,
-    },
-    {
-      title: "Return on Ad Spend",
-      caption: "Weekly ROAS multiplier",
-      series: view.series.roas,
-      format: (v: number) => `${v.toFixed(1)}×`,
-    },
-  ];
-
   return (
     <motion.section
       variants={cascade}
@@ -118,32 +172,56 @@ export function PerformanceOverview() {
       animate="visible"
       className="space-y-8"
     >
-      <div>
-        <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
-          {tiles.map((tile, i) => (
-            <motion.div
-              key={tile.label}
-              variants={cascadeItem}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="micro-label">Performance</p>
+        <SelectPill
+          className="w-44"
+          icon={CalendarRange}
+          ariaLabel="Date range"
+          value={range}
+          onChange={setRange}
+          options={RANGES}
+        />
+      </div>
+
+      {/* Headline metrics — hairline-divided 4-up band */}
+      <div className="grid grid-cols-2 border-b border-border lg:grid-cols-4">
+        {tiles.map((tile, i) => (
+          <motion.div
+            key={tile.label}
+            variants={cascadeItem}
+            className={cn(
+              "px-5 py-6",
+              i % 2 === 1 && "border-l border-border",
+              i >= 2 && "max-lg:border-t max-lg:border-border",
+              i > 0 && "lg:border-l lg:border-border"
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="micro-label">{tile.label}</p>
+              <tile.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </div>
+            <p
               className={cn(
-                "px-5 py-6",
-                i % 2 === 1 && "border-l border-border",
-                i >= 2 && "max-lg:border-t max-lg:border-border",
-                i > 0 && "lg:border-l lg:border-border"
+                "mt-2 text-3xl font-bold tracking-tight",
+                "accent" in tile && tile.accent
               )}
             >
-              <p className="micro-label">{tile.label}</p>
-              <p
-                className={cn(
-                  "mt-2 text-3xl font-bold tracking-tight",
-                  "accent" in tile && tile.accent
-                )}
-              >
-                <CountUp value={tile.value} format={tile.format} />
-              </p>
-            </motion.div>
-          ))}
-        </div>
+              <CountUp value={tile.value} format={tile.format} />
+            </p>
+          </motion.div>
+        ))}
       </div>
+
+      {/* Revenue and ROAS lag until the client posts their closes — say so
+          rather than letting a zero read as a bad week. */}
+      {!!view.pendingWeeks && (
+        <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+          Revenue and ROAS exclude {view.pendingWeeks} week
+          {view.pendingWeeks === 1 ? "" : "s"} awaiting your closes — add them
+          on Weekly Report.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
         {charts.map((chart) => (
@@ -154,15 +232,7 @@ export function PerformanceOverview() {
                 {chart.caption}
               </p>
             </div>
-            <AreaChart
-              className="mt-5"
-              points={chart.series}
-              xLabels={view.weeks.map((w, i) =>
-                i === 0 || i === view.weeks.length - 1 ? w : ""
-              )}
-              height={140}
-              format={chart.format}
-            />
+            <div className="mt-5">{chart.render}</div>
           </motion.div>
         ))}
       </div>
