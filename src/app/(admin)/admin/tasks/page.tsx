@@ -42,12 +42,16 @@ interface TaskRow {
   assigneeName: string | null;
   dueDate: string | null;
   companyName: string | null;
+  contactName: string | null;
   clientStatus: string | null;
 }
 
 interface Feed {
   tasks: TaskRow[];
-  clients: { id: string; companyName: string; status: string }[];
+  /** Totals for the whole filtered set, not just this page. */
+  total: number;
+  done: number;
+  clients: { id: string; companyName: string; contactName: string; status: string }[];
   staff: { id: string; name: string }[];
 }
 
@@ -86,22 +90,12 @@ const selectClass =
  * row) janky and stretches the row cascade into a visible crawl. */
 const PAGE_SIZE = 25;
 
-const PRIORITY_RANK: Record<TaskPriority, number> = {
-  high: 0,
-  medium: 1,
-  low: 2,
-};
-const STATUS_RANK: Record<string, number> = {
-  in_progress: 0,
-  pending: 1,
-  completed: 2,
-};
-
 export default function AdminTasksPage() {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("All Departments");
-  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -111,15 +105,41 @@ export default function AdminTasksPage() {
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
+  // Everything below is resolved by Postgres — the roster carries thousands
+  // of checklist tasks, and pulling them all into the browser to filter here
+  // is what froze the page on open.
+  const query = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set("page", String(page));
+    p.set("pageSize", String(PAGE_SIZE));
+    if (DEPT_BY_TAB[tab]) p.set("dept", DEPT_BY_TAB[tab]);
+    if (assigneeFilter !== "all") p.set("assignee", assigneeFilter);
+    if (statusFilter !== "all") p.set("status", statusFilter);
+    if (priorityFilter !== "all") p.set("priority", priorityFilter);
+    if (clientFilter !== "all") p.set("clientStatus", clientFilter);
+    if (debouncedQuery.trim()) p.set("q", debouncedQuery.trim());
+    p.set("sort", sort);
+    return p.toString();
+  }, [
+    page,
+    tab,
+    assigneeFilter,
+    statusFilter,
+    priorityFilter,
+    clientFilter,
+    debouncedQuery,
+    sort,
+  ]);
+
   const load = useCallback(() => {
-    fetch("/api/admin/client-tasks")
+    fetch(`/api/admin/client-tasks?${query}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: Feed | null) => {
         if (data && Array.isArray(data.tasks)) setFeed(data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [query]);
 
   useEffect(load, [load]);
   useCrmRealtime(load);
@@ -160,85 +180,38 @@ export default function AdminTasksPage() {
     }
   }
 
-  const tasks = useMemo(() => {
-    const dept = DEPT_BY_TAB[tab];
-    const q = query.trim().toLowerCase();
-    const rows = (feed?.tasks ?? []).filter((t) => {
-      if (dept && t.department !== dept) return false;
-      if (clientFilter !== "all" && t.clientStatus !== clientFilter)
-        return false;
-      if (assigneeFilter !== "all" && t.assigneeId !== assigneeFilter)
-        return false;
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
-      if (priorityFilter !== "all" && t.priority !== priorityFilter)
-        return false;
-      if (
-        q &&
-        !t.title.toLowerCase().includes(q) &&
-        !(t.companyName ?? "").toLowerCase().includes(q) &&
-        !(t.assigneeName ?? "").toLowerCase().includes(q)
-      )
-        return false;
-      return true;
-    });
-    // "default" keeps the API order (newest client first, checklist order).
-    if (sort === "default") return rows;
-    return [...rows].sort((a, b) => {
-      switch (sort) {
-        case "due_soon": {
-          // Undated tasks sort last rather than pretending to be urgent.
-          if (!a.dueDate) return b.dueDate ? 1 : 0;
-          if (!b.dueDate) return -1;
-          return a.dueDate.localeCompare(b.dueDate);
-        }
-        case "priority":
-          return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
-        case "status":
-          return STATUS_RANK[a.status] - STATUS_RANK[b.status];
-        case "client":
-          return (a.companyName ?? "").localeCompare(b.companyName ?? "");
-        default:
-          return 0;
-      }
-    });
-  }, [
-    feed,
-    tab,
-    query,
-    clientFilter,
-    assigneeFilter,
-    statusFilter,
-    priorityFilter,
-    sort,
-  ]);
+  // Debounce the search box: each keystroke is a query now.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const filtersActive =
-    tab !== "All Departments" ||
-    query.trim() !== "" ||
-    clientFilter !== "active" ||
-    assigneeFilter !== "all" ||
-    statusFilter !== "all" ||
-    priorityFilter !== "all";
-  const doneCount = tasks.filter((t) => t.status === "completed").length;
-
-  const pageCount = Math.max(1, Math.ceil(tasks.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount - 1);
-  const visible = tasks.slice(
-    safePage * PAGE_SIZE,
-    safePage * PAGE_SIZE + PAGE_SIZE
-  );
   // Any filter change starts a new result set — go back to the first page.
   useEffect(() => {
     setPage(0);
   }, [
     tab,
-    query,
+    debouncedQuery,
     clientFilter,
     assigneeFilter,
     statusFilter,
     priorityFilter,
     sort,
   ]);
+
+  const tasks = feed?.tasks ?? [];
+  const total = feed?.total ?? 0;
+  const doneCount = feed?.done ?? 0;
+  const filtersActive =
+    tab !== "All Departments" ||
+    search.trim() !== "" ||
+    clientFilter !== "active" ||
+    assigneeFilter !== "all" ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all";
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
 
   return (
     <div className="space-y-8">
@@ -259,8 +232,8 @@ export default function AdminTasksPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <SearchPill
             className="sm:w-64"
-            value={query}
-            onChange={setQuery}
+            value={search}
+            onChange={setSearch}
             placeholder="Search tasks, clients or assignees…"
           />
           <SelectPill
@@ -329,8 +302,8 @@ export default function AdminTasksPage() {
       {/* Task table */}
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
-          <BracketLabel n={tasks.length} label="TASKS" />
-          <BracketLabel n={doneCount} m={tasks.length} label="COMPLETED" />
+          <BracketLabel n={total} label="TASKS" />
+          <BracketLabel n={doneCount} m={total} label="COMPLETED" />
         </div>
         {loading ? (
           <TableSkeleton rows={8} />
@@ -365,7 +338,7 @@ export default function AdminTasksPage() {
                 animate="visible"
                 className="divide-y divide-border"
               >
-                {visible.map((t) => (
+                {tasks.map((t) => (
                   <motion.tr
                     key={t.id}
                     variants={rowItem}
@@ -376,7 +349,7 @@ export default function AdminTasksPage() {
                   >
                     <td className="py-3 pr-4 font-medium">{t.title}</td>
                     <td className="py-3 pr-4 text-muted-foreground">
-                      {t.companyName ?? "—"}
+                      {t.contactName ?? t.companyName ?? "—"}
                     </td>
                     <td className="py-3 pr-4">
                       {t.assigneeName ? (
@@ -466,8 +439,8 @@ export default function AdminTasksPage() {
           <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
             <p className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
               {safePage * PAGE_SIZE + 1}–
-              {Math.min((safePage + 1) * PAGE_SIZE, tasks.length)} of{" "}
-              {tasks.length.toLocaleString("en-US")}
+              {Math.min((safePage + 1) * PAGE_SIZE, total)} of{" "}
+              {total.toLocaleString("en-US")}
             </p>
             <div className="flex items-center gap-2">
               <button

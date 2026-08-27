@@ -109,6 +109,7 @@ export async function GET(req: Request) {
             amount: clientPayments.amount,
             paidAt: clientPayments.paidAt,
             companyName: agencyClients.companyName,
+            contactName: agencyClients.contactName,
           })
           .from(clientPayments)
           .leftJoin(
@@ -236,7 +237,9 @@ export async function GET(req: Request) {
       spendByName.set(name, (spendByName.get(name) ?? 0) + total);
     }
     for (const p of collected) {
-      const name = p.companyName ?? "Unknown";
+      // Named by the client, matching payment history — the team knows
+      // these people by name, not by their company.
+      const name = p.contactName ?? p.companyName ?? "Unknown";
       spendByName.set(name, (spendByName.get(name) ?? 0) + p.amount);
     }
     const topCustomers = [...spendByName.entries()]
