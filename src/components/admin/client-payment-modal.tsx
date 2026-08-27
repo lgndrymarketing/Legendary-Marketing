@@ -13,6 +13,7 @@ export { PAYMENT_METHODS };
 export interface RosterClient {
   id: string;
   companyName: string;
+  contactName?: string | null;
   setupFee: number;
   monthlyFee: number;
 }
@@ -233,7 +234,9 @@ export function ClientPaymentModal({
                     <option value="">Select client…</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.companyName}
+                        {c.contactName
+                          ? `${c.contactName} · ${c.companyName}`
+                          : c.companyName}
                       </option>
                     ))}
                   </select>
