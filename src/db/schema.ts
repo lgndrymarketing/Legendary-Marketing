@@ -273,6 +273,32 @@ export const clientResources = pgTable("client_resources", {
   index("idx_client_resources_kind").on(table.kind),
 ]);
 
+// MCP access keys — let an admin plug the agency into an AI assistant
+// (Claude, ChatGPT, and anything else that speaks MCP). Admin-only, and the
+// server double-checks at request time that the creator still IS an admin,
+// so demoting or deleting an admin kills their keys with them.
+//
+// Only a SHA-256 hash of the key is stored; the plaintext is shown once at
+// creation and cannot be recovered — only revoked and reissued.
+export const mcpKeys = pgTable("mcp_keys", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  // Label the admin gave it ("Duke's Claude", "ChatGPT — Uri").
+  name: varchar("name", { length: 100 }).notNull(),
+  keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+  // First characters of the plaintext, for recognising a key in the list.
+  keyPrefix: varchar("key_prefix", { length: 16 }).notNull(),
+  createdBy: uuid("created_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  requestCount: integer("request_count").notNull().default(0),
+  // Soft revoke — the row stays as an audit trail of that the key existed.
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_mcp_keys_hash").on(table.keyHash),
+]);
+
 // Notifications
 export const notificationTypeEnum = pgEnum("notification_type", [
   "phase_update",
@@ -754,6 +780,7 @@ export type File = typeof files.$inferSelect;
 export type RevisionRequest = typeof revisionRequests.$inferSelect;
 export type ClientRequest = typeof clientRequests.$inferSelect;
 export type ClientResource = typeof clientResources.$inferSelect;
+export type McpKey = typeof mcpKeys.$inferSelect;
 export type NewClientResource = typeof clientResources.$inferInsert;
 export type NewClientRequest = typeof clientRequests.$inferInsert;
 export type Payment = typeof payments.$inferSelect;

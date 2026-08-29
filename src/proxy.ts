@@ -11,6 +11,9 @@ const isPublicRoute = createRouteMatcher([
   // the GET and PATCH on the same path guard themselves with
   // requireLeadManager, so they still 401 without a session.
   "/api/leads",
+  // MCP endpoint for external AI assistants — no Clerk session exists there.
+  // It authenticates itself with hashed admin-issued keys (lib/mcp-server.ts).
+  "/api/mcp(.*)",
 ]);
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
