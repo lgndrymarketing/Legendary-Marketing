@@ -4,6 +4,7 @@ import { Plug, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isGhlConfigured } from "@/lib/ghl";
 import { GhlSyncButton } from "./ghl-sync-button";
+import { McpKeysManager } from "./mcp-keys";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { canManageAgency } from "@/lib/permissions";
 
@@ -48,6 +49,9 @@ export default async function AdminIntegrationsPage() {
         title="Integrations"
         description="Connect LGNDRY to the tools that power revenue tracking and real-time client communication."
       />
+
+      {/* AI assistants over MCP */}
+      <McpKeysManager />
 
       {/* GoHighLevel */}
       <section className="border-b border-border pb-8">
